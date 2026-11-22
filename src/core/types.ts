@@ -41,3 +41,6 @@ export function needsOf(req: ChatRequest): Needs {
     conversationId: hash(firstUser ? textOf(firstUser.content) : ''),
   };
 }
+
+// A request the client must fix; servers answer it with HTTP 400.
+export class BadRequest extends Error { readonly status = 400; }

@@ -3,7 +3,8 @@ import { Readable } from 'node:stream';
 import { timingSafeEqual, createHmac, randomBytes } from 'node:crypto';
 import { route, NoCapacityError, type RouteDeps } from '../core/orchestrator.js';
 import { sseData, mapChatSse } from '../core/sse.js';
-import type { ChatRequest } from '../core/types.js';
+import { BadRequest, type ChatRequest } from '../core/types.js';
+import { fromResponses, toResponses, toResponsesStream, responsesError } from '../core/responses.js';
 import { fromAnthropic, toAnthropic, toAnthropicStream, countTokens, anthropicError } from '../core/anthropic.js';
 import { localToken, saveState } from './state.js';
 
@@ -17,8 +18,8 @@ const MARKER = { app: 'freetokens' };
 // A format adapter turns an inbound body into a chat request and a chat response back into its own shape.
 export interface Format {
   toChat(body: unknown): ChatRequest;
-  fromChat(json: unknown, requestedModel: string): unknown;
-  fromChatStream(requestedModel: string): TransformStream<Uint8Array, Uint8Array>;
+  fromChat(json: unknown, requestedModel: string, body: unknown): unknown;
+  fromChatStream(requestedModel: string, body: unknown): TransformStream<Uint8Array, Uint8Array>;
   error(status: number, message: string): unknown;
   direct?: (body: unknown) => unknown; // answered locally, without a provider
 }
@@ -37,11 +38,13 @@ const openai: Format = {
 
 const anthropic: Format = { toChat: fromAnthropic, fromChat: toAnthropic, fromChatStream: toAnthropicStream, error: anthropicError };
 const anthropicCount: Format = { ...anthropic, direct: countTokens };
+const responses: Format = { toChat: fromResponses, fromChat: toResponses, fromChatStream: toResponsesStream, error: responsesError };
 
 export const FORMATS: Record<string, Format> = {
   '/v1/chat/completions': openai,
   '/v1/messages': anthropic,
   '/v1/messages/count_tokens': anthropicCount,
+  '/v1/responses': responses,
 };
 
 class HttpError extends Error { constructor(readonly status: number, message: string) { super(message); } }
@@ -95,11 +98,11 @@ export function makeHandler(deps: RouteDeps, token: string, formats: Record<stri
       }
       if (chat.stream) {
         res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache' });
-        const out = response.body!.pipeThrough(fmt.fromChatStream(requested));
+        const out = response.body!.pipeThrough(fmt.fromChatStream(requested, body));
         Readable.fromWeb(out as any).pipe(res);
         res.on('close', () => out.cancel().catch(() => {}));
       } else {
-        send(res, 200, fmt.fromChat(await response.json(), requested));
+        send(res, 200, fmt.fromChat(await response.json(), requested, body));
       }
     } catch (e) {
       if (e instanceof NoCapacityError) {
@@ -107,7 +110,7 @@ export function makeHandler(deps: RouteDeps, token: string, formats: Record<stri
         const headers: Record<string, string> = status === 429 ? { 'retry-after': String(Math.max(1, Math.ceil((e.retryAt - deps.tracker.now()) / 1000))) } : {};
         return send(res, status, errOf.error(status, e.message), headers);
       }
-      if (e instanceof HttpError) return send(res, e.status, errOf.error(e.status, e.message));
+      if (e instanceof HttpError || e instanceof BadRequest) return send(res, e.status, errOf.error(e.status, e.message));
       return send(res, 500, errOf.error(500, `Internal error: ${(e as Error).message}`));
     } finally {
       try { saveState(deps.tracker.state); } catch { /* state is best effort */ }
