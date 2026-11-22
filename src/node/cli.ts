@@ -10,6 +10,7 @@ import { loadState, saveState, localToken } from './state.js';
 import { openKeyStore, type KeyStore } from './keys.js';
 import { runAdd, runList, runRemove } from './add.js';
 import { launchSpec, setupFile, undoSetup, manualSetup } from './harness.js';
+import { currentCatalogue, updateCatalogue } from './remote.js';
 
 export const HELP = `freeaitokens: free AI models for your coding tools, on one local endpoint.
 
@@ -122,8 +123,11 @@ export async function main(argv: string[]): Promise<void> {
   const a = parseArgs(argv);
   if (a.help) { process.stdout.write(HELP + '\n'); return; }
   if (!COMMANDS.has(a.command)) fail(`Unknown command "${a.command}". Run \`freeaitokens --help\` to see the commands.`);
-  const catalogue = loadCatalogue();
+  let catalogue = currentCatalogue(loadCatalogue());
+  const update = updateCatalogue();
   const keys = openKeyStore();
+  // Commands that show providers wait briefly for a newer list; the endpoint swaps it in when it arrives.
+  if (['add', 'list', 'remove'].includes(a.command)) catalogue = (await update) ?? catalogue;
 
   switch (a.command) {
     case 'add': return runAdd(catalogue, keys, fetch);
@@ -148,10 +152,14 @@ export async function main(argv: string[]): Promise<void> {
       return fail(`Unknown tool "${tool ?? ''}". Supported: opencode, cline, aider, continue. For Claude Code and Codex use \`freeaitokens claude\` or \`freeaitokens codex\`.`);
     }
     case 'claude':
-    case 'codex':
-      return launch(a.command, a, makeDeps(catalogue, keys, a));
+    case 'codex': {
+      const deps = makeDeps(catalogue, keys, a);
+      void update.then((c) => { if (c) deps.catalogue = c; });
+      return launch(a.command, a, deps);
+    }
     default: {
       const deps = makeDeps(catalogue, keys, a);
+      void update.then((c) => { if (c) deps.catalogue = c; });
       const srv = await startServer(deps, a.port);
       if (srv.reused) { process.stdout.write(`freeaitokens is already running on port ${srv.port}.\n`); return; }
       const keyed = catalogue.filter((p) => !p.keyless && keys.get(p.id)).length;

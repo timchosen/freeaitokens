@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { banner, parseArgs, HELP } from '../src/node/cli.ts';
 
 const run = (...args: string[]) => spawnSync(process.execPath, ['--import', 'tsx', 'src/node/cli.ts', ...args], {
-  encoding: 'utf8', env: { ...process.env, FREEAITOKENS_HOME: mkdtempSync(join(tmpdir(), 'ft-c-')), FREEAITOKENS_KEYS: 'file' },
+  encoding: 'utf8', env: { ...process.env, FREEAITOKENS_HOME: mkdtempSync(join(tmpdir(), 'ft-c-')), FREEAITOKENS_KEYS: 'file', FREEAITOKENS_CATALOGUE: 'bundled' },
 });
 
 test('--help lists every command', () => {

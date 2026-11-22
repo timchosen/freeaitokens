@@ -13,6 +13,7 @@ export interface Provider {
   steps: string[];
   keyPattern?: string;
   connect?: 'openrouter';
+  discover?: string; // regex of model ids the catalogue service may add automatically
   limits?: Limits;
   models: Model[];
 }
@@ -40,6 +41,7 @@ export function parseCatalogue(json: unknown): Provider[] {
       if (typeof m.quality !== 'number' || m.quality < 0 || m.quality > 1) fail(mw, 'quality');
     }
     if (p.keyPattern !== undefined) new RegExp(p.keyPattern); // throws on a bad pattern
+    if (p.discover !== undefined) new RegExp(p.discover);
     return p as Provider;
   });
 }

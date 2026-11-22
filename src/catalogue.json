@@ -1,6 +1,7 @@
 [
   {
     "id": "kilo",
+    "discover": "[:/]free$",
     "name": "Kilo Gateway",
     "baseUrl": "https://api.kilo.ai/api/gateway/v1",
     "keyless": true,
@@ -49,6 +50,7 @@
   },
   {
     "id": "openrouter",
+    "discover": ":free$",
     "name": "OpenRouter",
     "baseUrl": "https://openrouter.ai/api/v1",
     "keyless": false,
