@@ -20,5 +20,8 @@
     "test": "tsx --test test/*.test.ts",
     "build": "tsc && cp src/catalogue.json dist/catalogue.json",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@napi-rs/keyring": "^2.1.2"
   }
 }
