@@ -33,7 +33,7 @@ export function parseDuration(v: string | null): number | null {
 }
 
 export class LimitTracker {
-  constructor(readonly state: LimitState, private now: () => number = Date.now) {}
+  constructor(readonly state: LimitState, readonly now: () => number = Date.now) {}
 
   private win(key: string): { minute: Window; day: Window } {
     const t = this.now();

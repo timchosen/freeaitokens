@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { candidates, type RouteOptions } from '../src/core/orchestrator.ts';
 import { LimitTracker, emptyState } from '../src/core/limits.ts';
 import { parseCatalogue, type Provider } from '../src/core/catalogue.ts';
-import type { Needs } from '../src/core/types.ts';
+import { needsOf, type Needs } from '../src/core/types.ts';
 
 const base = { keyless: false, paid: false, terms: 'ok', steps: ['x'], keyUrl: 'https://k', keyPattern: '.+' };
 export const fixture: Provider[] = parseCatalogue([
@@ -104,4 +104,152 @@ test('previous model does not win a clear gap', () => {
   const t = tracker();
   t.setLastModel('c', 'b/y');
   assert.deepEqual(ids(candidates(needs(), p, allKeys, t, opts)), ['a/x', 'b/y']);
+});
+
+// ── route: trying candidates and failing over ──────────────────────────────
+import { route, NoCapacityError, type RouteDeps } from '../src/core/orchestrator.ts';
+
+type Reply = Response | Error | (() => Response);
+function deps(replies: Record<string, Reply[]>, extra: Partial<RouteDeps> = {}) {
+  const c = { t: 1_000_000 };
+  const tracker = new LimitTracker(emptyState(), () => c.t);
+  const tried: string[] = [];
+  const f = (async (url: string, init: RequestInit) => {
+    const host = new URL(url).hostname.split('.')[0];
+    const model = JSON.parse(init.body as string).model;
+    const k = `${host}/${model}`;
+    tried.push(k);
+    const r = replies[k]?.shift();
+    if (!r) return JSON.parse(init.body as string).stream
+      ? new Response('data: {"choices":[]}\n\ndata: [DONE]\n\n', { headers: { 'content-type': 'text/event-stream' } })
+      : new Response('{"choices":[{"message":{"content":"ok"}}]}', { status: 200 });
+    if (r instanceof Error) throw r;
+    return typeof r === 'function' ? r() : r;
+  }) as unknown as typeof fetch;
+  const slept: number[] = [];
+  const d: RouteDeps = { catalogue: fixture, keys: allKeys, tracker, fetch: f, opts, sleep: async (ms) => { slept.push(ms); c.t += ms; }, ...extra };
+  return { d, tried, slept, tracker, c };
+}
+const req = { messages: [{ role: 'user' as const, content: 'hi' }], tools: [{}] };
+const ok = (s = 'ok') => new Response(JSON.stringify({ choices: [{ message: { content: s } }] }));
+// Error is raised on the read after the chunks, as a dropped connection would.
+const sse = (chunks: string[], fail = false) => () => {
+  const q = [...chunks];
+  return new Response(new ReadableStream({
+    pull(ctl) {
+      const ch = q.shift();
+      if (ch !== undefined) ctl.enqueue(new TextEncoder().encode(ch));
+      else if (fail) ctl.error(new Error('boom'));
+      else ctl.close();
+    },
+  }), { headers: { 'content-type': 'text/event-stream' } });
+};
+
+test('fails over on 429 and cools the first candidate for Retry-After', async () => {
+  const { d, tried, tracker, c } = deps({ 'free1/small': [new Response('{}', { status: 429, headers: { 'retry-after': '1.5' } })] });
+  const r = await route(req, d);
+  assert.deepEqual(tried, ['free1/small', 'free1/big']);
+  assert.equal(r.candidate.key, 'free1/big');
+  assert.equal(tracker.coolingUntil('free1/small'), c.t + 1500);
+});
+
+test('fails over on 500', async () => {
+  const { d, tried, tracker, c } = deps({ 'free1/small': [new Response('bad', { status: 500 })] });
+  await route(req, d);
+  assert.deepEqual(tried, ['free1/small', 'free1/big']);
+  assert.equal(tracker.coolingUntil('free1/small'), c.t + 30_000);
+});
+
+test('fails over on network error', async () => {
+  const { d, tried } = deps({ 'free1/small': [new Error('ECONNRESET')] });
+  await route(req, d);
+  assert.deepEqual(tried, ['free1/small', 'free1/big']);
+});
+
+test('fails over on 401 and cools for a day', async () => {
+  const { d, tracker, c } = deps({ 'free1/small': [new Response('{}', { status: 401 })] });
+  await route(req, d);
+  assert.equal(tracker.coolingUntil('free1/small'), c.t + 86_400_000);
+});
+
+test('fails over on a 200 that is not a chat completion', async () => {
+  const { d, tried } = deps({ 'free1/small': [new Response('{"error":{"message":"quota"}}')] });
+  await route(req, d);
+  assert.deepEqual(tried, ['free1/small', 'free1/big']);
+});
+
+test('returns a 400 without trying another candidate', async () => {
+  const { d, tried } = deps({ 'free1/small': [new Response('{"error":"bad"}', { status: 400 })] });
+  const r = await route(req, d);
+  assert.equal(r.response.status, 400);
+  assert.deepEqual(tried, ['free1/small']);
+});
+
+test('records the attempt and remembers the model for the conversation', async () => {
+  const { d, tracker } = deps({});
+  const r = await route(req, d);
+  assert.equal(tracker.state.stats['free1/small'].ok, 1);
+  assert.equal(tracker.lastModel(needsOf(req).conversationId), r.candidate.key);
+});
+
+test('streaming: failure before first data line fails over', async () => {
+  const { d, tried } = deps({ 'free1/small': [sse([': keepalive\n\n'], true)] });
+  const r = await route({ ...req, stream: true }, d);
+  assert.deepEqual(tried, ['free1/small', 'free1/big']);
+  assert.equal(r.candidate.key, 'free1/big');
+});
+
+test('streaming: passes chunks through and keeps the first data line', async () => {
+  const { d } = deps({ 'free1/small': [sse(['data: {"a":1}\n\n', 'data: [DONE]\n\n'])] });
+  const r = await route({ ...req, stream: true }, d);
+  assert.equal(await r.response.text(), 'data: {"a":1}\n\ndata: [DONE]\n\n');
+});
+
+test('streaming: upstream ends abruptly after first chunk', async () => {
+  const { d } = deps({ 'free1/small': [sse(['data: {"a":1}\n\n'], true)] });
+  const r = await route({ ...req, stream: true }, d);
+  const text = await r.response.text();
+  assert.ok(text.startsWith('data: {"a":1}\n\n'));
+  const last = text.trim().split('\n\n').at(-1)!;
+  assert.match(last, /^data: .*"error"/);
+});
+
+test('streaming: upstream closes without [DONE] gets an error line', async () => {
+  const { d } = deps({ 'free1/small': [sse(['data: {"a":1}\n\n'])] });
+  const r = await route({ ...req, stream: true }, d);
+  assert.match((await r.response.text()).trim().split('\n\n').at(-1)!, /"error"/);
+});
+
+const allCool = (tracker: LimitTracker, ms: number) => { for (const k of ['free1/big', 'free1/small', 'free2/m', 'paid/best']) tracker.coolDown(k, ms); };
+
+test('waits when a cooldown ends in 10 s', async () => {
+  const { d, tracker, slept } = deps({});
+  allCool(tracker, 10_000);
+  const r = await route(req, d);
+  assert.deepEqual(slept, [10_000]);
+  assert.equal(r.response.status, 200);
+});
+
+test('throws NoCapacityError with retryAt when it ends in 5 min', async () => {
+  const { d, tracker, slept, c } = deps({});
+  allCool(tracker, 300_000);
+  await assert.rejects(route(req, d), (e: unknown) => e instanceof NoCapacityError && e.reason === 'limits' && e.retryAt === c.t + 300_000);
+  assert.deepEqual(slept, []);
+});
+
+test('throws too-large when no model has enough context', async () => {
+  const { d, tried } = deps({});
+  const huge = { messages: [{ role: 'user' as const, content: 'x'.repeat(1_000_000) }] };
+  await assert.rejects(route(huge, d), (e: unknown) => e instanceof NoCapacityError && e.reason === 'too-large');
+  assert.deepEqual(tried, []);
+});
+
+test('calls onPaid and counts the paid request', async () => {
+  const paid: string[] = [];
+  const { d, tracker } = deps({}, { onPaid: (c) => paid.push(c.key) });
+  for (const k of ['free1/big', 'free1/small', 'free2/m']) tracker.coolDown(k, 3_600_000);
+  const r = await route(req, d);
+  assert.equal(r.candidate.key, 'paid/best');
+  assert.deepEqual(paid, ['paid/best']);
+  assert.equal(tracker.paidAllowed(1), false);
 });
