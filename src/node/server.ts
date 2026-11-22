@@ -6,7 +6,8 @@ import { sseData, mapChatSse } from '../core/sse.js';
 import { BadRequest, type ChatRequest } from '../core/types.js';
 import { fromResponses, toResponses, toResponsesStream, responsesError } from '../core/responses.js';
 import { fromAnthropic, toAnthropic, toAnthropicStream, countTokens, anthropicError } from '../core/anthropic.js';
-import { localToken, saveState } from './state.js';
+import { localToken, saveState, loadState } from './state.js';
+import { LimitTracker } from '../core/limits.js';
 
 export interface ServerHandle { port: number; address: string; reused: boolean; close(): Promise<void> }
 
@@ -146,4 +147,19 @@ export async function startServer(deps: RouteDeps, port = DEFAULT_PORT, extraFor
     port: a.port, address: a.address, reused: false,
     close: () => new Promise((r) => { server.closeAllConnections(); server.close(() => r()); }),
   };
+}
+
+// For a launcher that reused another launcher's endpoint: if that one stops, take the port over.
+export function keepServing(deps: RouteDeps, port: number, everyMs = 2000): { owns: () => boolean; stop: () => Promise<void> } {
+  let own: ServerHandle | null = null, busy = false;
+  const timer = setInterval(async () => {
+    if (own || busy) return;
+    busy = true;
+    try {
+      const s = await startServer(deps, port);
+      if (!s.reused) { deps.tracker = new LimitTracker(loadState()); own = s; clearInterval(timer); }
+    } catch { /* another program took the port: keep trying */ } finally { busy = false; }
+  }, everyMs);
+  timer.unref?.();
+  return { owns: () => own !== null, stop: async () => { clearInterval(timer); await own?.close(); } };
 }

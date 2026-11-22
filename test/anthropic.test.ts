@@ -161,3 +161,13 @@ test('server: errors come back in Anthropic shape', async () => {
   assert.equal(j.type, 'error');
   assert.equal(j.error.type, 'authentication_error');
 });
+
+test('stream reports estimated input tokens when the provider sends none', async () => {
+  const body = { model: 'claude-x', max_tokens: 10, messages: [{ role: 'user', content: 'x'.repeat(4000) }] };
+  const raw = 'data: {"choices":[{"delta":{"content":"hi"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n';
+  const text = await new Response(new Response(raw).body!.pipeThrough(toAnthropicStream('claude-x', body))).text();
+  const ev = text.trim().split('\n\n').map((e) => JSON.parse(e.split('\n')[1].slice(6)));
+  const delta = ev.find((e) => e.type === 'message_delta');
+  assert.ok(delta.usage.input_tokens >= 1000, JSON.stringify(delta.usage));
+  assert.ok(ev[0].message.usage.input_tokens >= 1000);
+});

@@ -93,10 +93,11 @@ export function toAnthropic(chat: unknown, requestedModel: string): unknown {
   };
 }
 
-export function toAnthropicStream(requestedModel: string): TransformStream<Uint8Array, Uint8Array> {
+export function toAnthropicStream(requestedModel: string, body?: unknown): TransformStream<Uint8Array, Uint8Array> {
   const enc = new TextEncoder();
   let started = false, ended = false, index = -1, open: 'text' | 'tool' | null = null, sawTool = false;
-  let finish: string | undefined, usage = { input_tokens: 0, output_tokens: 0 };
+  // Estimate until the provider reports usage: Claude Code sizes its context (and compacts) from input_tokens.
+  let finish: string | undefined, usage = { input_tokens: body ? countTokens(body).input_tokens : 0, output_tokens: 0 };
   const toolBlock = new Map<number, number>(); // chat tool_call index -> block index
 
   const translate = new TransformStream<string, Uint8Array>({
@@ -111,7 +112,7 @@ export function toAnthropicStream(requestedModel: string): TransformStream<Uint8
       const close = () => { if (open) emit('content_block_stop', { index }); open = null; };
       const finishUp = () => {
         start(); close();
-        emit('message_delta', { delta: { stop_reason: sawTool ? 'tool_use' : STOP[finish ?? 'stop'] ?? 'end_turn', stop_sequence: null }, usage: { output_tokens: usage.output_tokens } });
+        emit('message_delta', { delta: { stop_reason: sawTool ? 'tool_use' : STOP[finish ?? 'stop'] ?? 'end_turn', stop_sequence: null }, usage: { input_tokens: usage.input_tokens, output_tokens: usage.output_tokens } });
         emit('message_stop', {});
         ended = true;
       };
@@ -125,7 +126,7 @@ export function toAnthropicStream(requestedModel: string): TransformStream<Uint8
         return;
       }
       start();
-      if (j.usage) usage = { input_tokens: j.usage.prompt_tokens ?? 0, output_tokens: j.usage.completion_tokens ?? 0 };
+      if (j.usage) usage = { input_tokens: j.usage.prompt_tokens ?? usage.input_tokens, output_tokens: j.usage.completion_tokens ?? 0 };
       const ch = j.choices?.[0];
       if (!ch) return;
       const d = ch.delta ?? {};

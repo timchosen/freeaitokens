@@ -178,11 +178,61 @@ test('fails over on a 200 that is not a chat completion', async () => {
   assert.deepEqual(tried, ['free1/small', 'free1/big']);
 });
 
-test('returns a 400 without trying another candidate', async () => {
-  const { d, tried } = deps({ 'free1/small': [new Response('{"error":"bad"}', { status: 400 })] });
+test('fails over on a 404 and cools that model for 10 minutes', async () => {
+  const { d, tried, tracker, c } = deps({ 'free1/small': [new Response('{"error":"model not found"}', { status: 404 })] });
+  const r = await route(req, d);
+  assert.deepEqual(tried, ['free1/small', 'free1/big']);
+  assert.equal(r.response.status, 200);
+  assert.equal(tracker.coolingUntil('free1/small'), c.t + 600_000);
+});
+
+test('fails over on a 400 without cooling the model', async () => {
+  const { d, tried, tracker } = deps({ 'free1/small': [new Response('{"error":"schema"}', { status: 400 })] });
+  const r = await route(req, d);
+  assert.deepEqual(tried, ['free1/small', 'free1/big']);
+  assert.equal(r.response.status, 200);
+  assert.equal(tracker.coolingUntil('free1/small'), 0);
+});
+
+test('returns the 4xx after three providers reject the request', async () => {
+  const bad = () => new Response('{"error":"bad"}', { status: 400 });
+  const { d, tried } = deps({ 'free1/small': [bad()], 'free1/big': [bad()], 'free2/m': [bad()] });
   const r = await route(req, d);
   assert.equal(r.response.status, 400);
-  assert.deepEqual(tried, ['free1/small']);
+  assert.deepEqual(tried, ['free1/small', 'free1/big', 'free2/m']);
+});
+
+const stalled = (chunks: string[] = []) => () => {
+  const q = [...chunks];
+  return new Response(new ReadableStream({
+    pull(ctl) { const ch = q.shift(); if (ch !== undefined) ctl.enqueue(new TextEncoder().encode(ch)); else return new Promise(() => {}); },
+  }), { headers: { 'content-type': 'text/event-stream' } });
+};
+
+test('streaming: a stream that stalls before the first data line fails over', async () => {
+  const { d, tried } = deps({ 'free1/small': [stalled()] }, { idleMs: 30 });
+  const r = await route({ ...req, stream: true }, d);
+  assert.deepEqual(tried, ['free1/small', 'free1/big']);
+  assert.equal(r.candidate.key, 'free1/big');
+});
+
+test('streaming: a stream that stalls mid-answer ends with an error line', async () => {
+  const { d } = deps({ 'free1/small': [stalled(['data: {"a":1}\n\n'])] }, { idleMs: 30 });
+  const r = await route({ ...req, stream: true }, d);
+  assert.match((await r.response.text()).trim().split('\n\n').at(-1)!, /"error"/);
+});
+
+test('a non-streaming body that stalls fails over', async () => {
+  const { d, tried } = deps({ 'free1/small': [stalled()] }, { idleMs: 30 });
+  const r = await route(req, d);
+  assert.deepEqual(tried, ['free1/small', 'free1/big']);
+  assert.equal(r.response.status, 200);
+});
+
+test('an image counts as a fixed number of tokens, not its base64 length', () => {
+  const img = { messages: [{ role: 'user' as const, content: [{ type: 'image_url', image_url: { url: 'data:image/png;base64,' + 'A'.repeat(700_000) } }, { type: 'text', text: 'what is this' }] }] };
+  const n = needsOf(img as any).tokens;
+  assert.ok(n >= 1000 && n < 3000, String(n));
 });
 
 test('records the attempt and remembers the model for the conversation', async () => {

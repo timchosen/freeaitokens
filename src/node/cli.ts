@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url';
 import { parseCatalogue, type Provider } from '../core/catalogue.js';
 import { LimitTracker } from '../core/limits.js';
 import type { RouteDeps } from '../core/orchestrator.js';
-import { startServer, DEFAULT_PORT, type ServerHandle } from './server.js';
+import { startServer, keepServing, DEFAULT_PORT, type ServerHandle } from './server.js';
 import { loadState, saveState, localToken } from './state.js';
 import { openKeyStore, type KeyStore } from './keys.js';
 import { runAdd, runList, runRemove } from './add.js';
@@ -101,7 +101,13 @@ async function launch(tool: 'claude' | 'codex', a: Args, deps: RouteDeps): Promi
   const srv: ServerHandle = await startServer(deps, a.port);
   const spec = launchSpec(tool, srv.port, localToken(), a.rest);
   const child = spawn(spec.cmd, spec.args, { stdio: 'inherit', env: { ...process.env, ...spec.env } });
-  const done = async (code: number) => { saveState(deps.tracker.state); await srv.close(); process.exit(code); };
+  // A reused endpoint belongs to another session: take it over if that session ends first, and leave its state alone.
+  const follow = srv.reused ? keepServing(deps, srv.port) : null;
+  const done = async (code: number) => {
+    if (!follow || follow.owns()) saveState(deps.tracker.state);
+    await srv.close(); await follow?.stop();
+    process.exit(code);
+  };
   child.on('error', (e: any) => {
     const name = tool === 'claude' ? 'Claude Code' : 'Codex';
     process.stderr.write(e?.code === 'ENOENT' ? `${name} is not installed or not on your PATH (looked for "${spec.cmd}").\n` : `Could not start ${name}: ${e.message}\n`);

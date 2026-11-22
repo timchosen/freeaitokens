@@ -1,5 +1,5 @@
 // OpenAI Responses <-> internal chat format (what Codex speaks). Stateless only.
-import { BadRequest, type ChatMessage, type ChatRequest, type ContentPart, type ToolCall } from './types.js';
+import { BadRequest, needsOf, type ChatMessage, type ChatRequest, type ContentPart, type ToolCall } from './types.js';
 import { sseData } from './sse.js';
 
 const CUSTOM_PARAMS = { type: 'object', properties: { input: { type: 'string', description: 'The raw tool input.' } }, required: ['input'] };
@@ -105,12 +105,17 @@ export function toResponses(chat: unknown, requestedModel: string, body?: unknow
   return { id: rid('resp'), object: 'response', created_at: Math.floor(Date.now() / 1000), status: 'completed', model: requestedModel, output, usage: usageOf(j.usage) };
 }
 
+// Until the provider reports usage, Codex gets an estimate to size its context by.
+function estimate(body: unknown): number {
+  try { return needsOf(fromResponses(body)).tokens; } catch { return 0; }
+}
+
 export function toResponsesStream(requestedModel: string, body?: unknown): TransformStream<Uint8Array, Uint8Array> {
   const enc = new TextEncoder();
   const custom = customToolNames(body);
   const id = rid('resp');
   const created = Math.floor(Date.now() / 1000);
-  let seq = 0, started = false, ended = false, usage = usageOf(undefined);
+  let seq = 0, started = false, ended = false, usage = usageOf({ prompt_tokens: estimate(body) });
   const output: any[] = [];
   let text: { idx: number; id: string; text: string } | null = null;
   const calls = new Map<number, { idx: number; id: string; callId: string; name: string; args: string; open: boolean }>();

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { startServer } from '../src/node/server.ts';
+import { startServer, keepServing } from '../src/node/server.ts';
 import { makeDeps, setUpstream, chatJson, chatSse, auth, url, post, srv, token, upstreamBodies } from './helpers.ts';
 
 
@@ -78,6 +78,16 @@ test('reuses a running instance', async () => {
   assert.equal(again.port, srv.port);
   await again.close();
   assert.equal((await fetch(url('/health'))).status, 200);
+});
+
+test('a reusing launcher takes over when the first server stops', async () => {
+  const port = srv.port;
+  const f = keepServing(makeDeps(), port, 20);
+  await srv.close();
+  for (let i = 0; i < 100 && !f.owns(); i++) await new Promise((r) => setTimeout(r, 20));
+  assert.equal(f.owns(), true);
+  assert.equal((await fetch(url('/health'))).status, 200);
+  await f.stop();
 });
 
 test('fails clearly when the port belongs to another program', async (t) => {

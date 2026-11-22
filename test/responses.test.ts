@@ -197,3 +197,10 @@ test('namespace tool groups from recorded requests are dropped', () => {
   assert.ok(names.includes('exec_command'));
   assert.ok(!names.some((n: string) => n.startsWith('mcp__')));
 });
+
+test('stream reports estimated input tokens when the provider sends none', async () => {
+  const body = { model: 'gpt-5', input: [{ type: 'message', role: 'user', content: [{ type: 'input_text', text: 'x'.repeat(4000) }] }] };
+  const ev = await events([{ choices: [{ delta: { content: "hi" }, finish_reason: "stop" }] }], body);
+  const done = ev.find((e) => e.event === 'response.completed')!;
+  assert.ok(done.data.response.usage.input_tokens >= 1000, JSON.stringify(done.data.response.usage));
+});

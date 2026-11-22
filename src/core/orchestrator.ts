@@ -58,10 +58,19 @@ export interface RouteDeps {
   opts: RouteOptions;
   sleep: (ms: number) => Promise<void>;
   onPaid?: (c: Candidate) => void;
+  idleMs?: number; // longest silence from a provider before it counts as stalled
 }
 
 const MAX_WAIT_MS = 30_000;
-const COOL = { rateLimit: 60_000, error: 30_000, auth: 86_400_000 };
+const COOL = { rateLimit: 60_000, error: 30_000, auth: 86_400_000, gone: 600_000 };
+const IDLE_MS = 60_000;
+const MAX_REJECTS = 3; // a request three providers reject is probably the client's to fix
+
+// Rejects if p takes longer than ms.
+function timed<T>(p: Promise<T>, ms: number): Promise<T> {
+  let t: ReturnType<typeof setTimeout> | undefined;
+  return Promise.race([p, new Promise<never>((_, rej) => { t = setTimeout(() => rej(new Error('provider stalled')), ms); })]).finally(() => clearTimeout(t));
+}
 const enc = new TextEncoder();
 const dec = new TextDecoder();
 const ERROR_LINE = enc.encode('data: {"error":{"message":"upstream ended before the answer was complete"}}\n\n');
@@ -75,25 +84,26 @@ function retryAfterMs(h: Headers, now: number): number {
 }
 
 // Read until the first `data:` line. Returns the buffered chunks and the live reader, or null on failure.
-async function peek(body: ReadableStream<Uint8Array>): Promise<{ head: Uint8Array[]; reader: ReadableStreamDefaultReader<Uint8Array> } | null> {
+async function peek(body: ReadableStream<Uint8Array>, idleMs: number): Promise<{ head: Uint8Array[]; reader: ReadableStreamDefaultReader<Uint8Array> } | null> {
   const reader = body.getReader();
   const head: Uint8Array[] = [];
   let text = '';
   try {
     while (!/(^|\n)data:/.test(text)) {
-      const { done, value } = await reader.read();
+      const { done, value } = await timed(reader.read(), idleMs);
       if (done) return null;
       head.push(value);
       text += dec.decode(value, { stream: true });
     }
     return { head, reader };
   } catch {
+    reader.cancel().catch(() => {});
     return null;
   }
 }
 
 // Replays the peeked chunks, then the rest; appends an error line if the source fails or never sends [DONE].
-function guarded(head: Uint8Array[], reader: ReadableStreamDefaultReader<Uint8Array>): ReadableStream<Uint8Array> {
+function guarded(head: Uint8Array[], reader: ReadableStreamDefaultReader<Uint8Array>, idleMs: number): ReadableStream<Uint8Array> {
   let tail = '';
   const see = (c: Uint8Array) => { tail = (tail + dec.decode(c, { stream: true })).slice(-32); return c; };
   head.forEach(see);
@@ -101,11 +111,12 @@ function guarded(head: Uint8Array[], reader: ReadableStreamDefaultReader<Uint8Ar
     start(ctl) { for (const c of head) ctl.enqueue(c); },
     async pull(ctl) {
       try {
-        const { done, value } = await reader.read();
+        const { done, value } = await timed(reader.read(), idleMs);
         if (!done) { ctl.enqueue(see(value)); return; }
         if (!tail.includes('[DONE]')) ctl.enqueue(ERROR_LINE);
       } catch {
         ctl.enqueue(ERROR_LINE);
+        reader.cancel().catch(() => {});
       }
       ctl.close();
     },
@@ -119,6 +130,8 @@ export async function route(req: ChatRequest, deps: RouteDeps, waited = false): 
   if (!deps.catalogue.some((p) => p.models.some((m) => m.context >= needs.tokens))) {
     throw new NoCapacityError('too-large', tracker.now());
   }
+  const idleMs = deps.idleMs ?? IDLE_MS;
+  let rejected: { response: Response; candidate: Candidate } | null = null, rejects = 0;
   for (const c of candidates(needs, deps.catalogue, deps.keys, tracker, deps.opts)) {
     const start = tracker.now();
     const fail = (coolMs: number) => { tracker.record(c.key, needs.tokens, false, tracker.now() - start); tracker.coolDown(c.key, coolMs); };
@@ -133,15 +146,22 @@ export async function route(req: ChatRequest, deps: RouteDeps, waited = false): 
     if (res.status === 429) { fail(retryAfterMs(res.headers, tracker.now())); continue; }
     if (res.status === 401 || res.status === 403) { fail(COOL.auth); continue; }
     if (res.status >= 500) { fail(COOL.error); continue; }
-    if (res.status >= 400) { tracker.record(c.key, needs.tokens, false, tracker.now() - start); return { response: res, candidate: c }; }
+    if (res.status >= 400) {
+      // Usually provider-specific (stale model id, schema dialect, context size): try the next one.
+      if (res.status === 404) fail(COOL.gone);
+      else tracker.record(c.key, needs.tokens, false, tracker.now() - start);
+      rejected = { response: new Response(await timed(res.text(), idleMs).catch(() => ''), { status: res.status, headers: res.headers }), candidate: c };
+      if (++rejects >= MAX_REJECTS) return rejected;
+      continue;
+    }
 
     let response: Response;
     if (req.stream) {
-      const p = res.body ? await peek(res.body) : null;
+      const p = res.body ? await peek(res.body, idleMs) : null;
       if (!p) { fail(COOL.error); continue; }
-      response = new Response(guarded(p.head, p.reader), { status: 200, headers: { 'content-type': 'text/event-stream' } });
+      response = new Response(guarded(p.head, p.reader, idleMs), { status: 200, headers: { 'content-type': 'text/event-stream' } });
     } else {
-      const text = await res.text().catch(() => '');
+      const text = await timed(res.text(), idleMs).catch(() => { res.body?.cancel().catch(() => {}); return ''; });
       let json: any;
       try { json = JSON.parse(text); } catch { /* handled below */ }
       if (!Array.isArray(json?.choices)) { fail(COOL.error); continue; }
@@ -153,6 +173,7 @@ export async function route(req: ChatRequest, deps: RouteDeps, waited = false): 
     return { response, candidate: c };
   }
 
+  if (rejected) return rejected;
   const cooling = Object.values(tracker.state.cooling).filter((u) => u > tracker.now());
   const retryAt = cooling.length ? Math.min(...cooling) : tracker.now() + COOL.rateLimit;
   if (!waited && retryAt - tracker.now() <= MAX_WAIT_MS) {
