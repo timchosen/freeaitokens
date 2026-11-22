@@ -14,7 +14,9 @@
     "freetokens": "dist/node/cli.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "test": "tsx --test test/*.test.ts",
@@ -24,5 +26,7 @@
   "dependencies": {
     "@clack/prompts": "^1.8.1",
     "@napi-rs/keyring": "^2.1.2"
-  }
+  },
+  "license": "MIT",
+  "description": "Free AI models for Claude Code, Codex and OpenCode on one local endpoint."
 }
