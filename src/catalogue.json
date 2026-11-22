@@ -48,22 +48,6 @@
     ]
   },
   {
-    "id": "mistral",
-    "name": "Mistral",
-    "baseUrl": "https://api.mistral.ai/v1",
-    "keyless": false,
-    "paid": false,
-    "terms": "ok",
-    "signupUrl": "https://console.mistral.ai",
-    "keyUrl": "https://console.mistral.ai/api-keys",
-    "steps": ["Sign in or create an account and choose the free \"Experiment\" plan (it asks for a phone number).", "Click \"Create new key\".", "Copy the key."],
-    "keyPattern": "^[A-Za-z0-9]{32}$",
-    "models": [
-      { "id": "devstral-latest", "context": 131072, "tools": true, "images": false, "quality": 0.6, "limits": { "rpm": 2, "tpm": 500000 } },
-      { "id": "mistral-medium-latest", "context": 131072, "tools": true, "images": true, "quality": 0.6, "limits": { "rpm": 2, "tpm": 500000 } }
-    ]
-  },
-  {
     "id": "openrouter",
     "name": "OpenRouter",
     "baseUrl": "https://openrouter.ai/api/v1",

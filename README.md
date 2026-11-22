@@ -38,7 +38,6 @@ The launchers only affect that one session. Run `claude` or `codex` normally and
 | Kilo Gateway | No | About 200 requests an hour per IP. Free prompts may be used for training. |
 | Groq | Free key | |
 | Cerebras | Free key | |
-| Mistral | Free key | Free "Experiment" plan asks for a phone number. |
 | OpenRouter | Free account | One-click connect in the browser. About 50 free requests a day. |
 | Google Gemini | Free key | Google's terms limit the API to professional or business use. |
 
