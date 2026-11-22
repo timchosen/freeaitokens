@@ -107,3 +107,10 @@ test('runList shows provider name, key status and remaining daily requests, and 
   assert.match(out, /999/); // gpt-oss-120b has 1000 a day, one used
   assert.ok(!out.includes(groqKey));
 });
+
+test('runList shows the free allowance, not "left today", for a provider with no key', () => {
+  const store: KeyStore = { backend: 'file', get: () => null, set() {}, remove() {} };
+  const line = runList(catalogue, store, new LimitTracker(emptyState())).split('\n').find((l) => l.startsWith('Groq'))!;
+  assert.ok(!line.includes('left today'), line);
+  assert.match(line, /up to 1000 free requests a day per model/);
+});

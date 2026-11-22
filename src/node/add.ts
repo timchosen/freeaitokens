@@ -170,6 +170,11 @@ export async function runAdd(catalogue: Provider[], keys: KeyStore, f: Fetch): P
 export function runList(catalogue: Provider[], keys: KeyStore, tracker: LimitTracker): string {
   const lines = catalogue.map((prov) => {
     const status = prov.keyless ? 'no key needed' : keys.get(prov.id) ? 'key added' : 'not added';
+    // Without a key nothing is "left": show what adding one would give.
+    if (status === 'not added') {
+      const rpd = Math.max(0, ...prov.models.map((m) => m.limits?.rpd ?? 0));
+      return `${prov.name.padEnd(18)} ${status.padEnd(14)} ${rpd ? `up to ${rpd} free requests a day per model` : ''}`.trimEnd();
+    }
     const left = prov.models.flatMap((m) => {
       if (!m.limits?.rpd) return [];
       const used = tracker.state.windows[`${prov.id}/${m.id}`];
