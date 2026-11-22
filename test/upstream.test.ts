@@ -31,3 +31,20 @@ test('overrides model id', async () => {
   await callUpstream(cand('k'), { messages: [], model: 'free' }, s.f);
   assert.equal(JSON.parse(s.calls[0].init.body as string).model, 'real-model');
 });
+
+const withId = (id: string): Candidate => ({ ...cand('k'), provider: { ...p, id } });
+const tool = { type: 'function', function: { name: 't', parameters: { $schema: 'x', type: 'object', additionalProperties: false, properties: { a: { type: 'object', additionalProperties: false } } } } };
+
+test('turns off parallel tool calls for NVIDIA when tools are sent', async () => {
+  const s = spy();
+  await callUpstream(withId('nvidia'), { messages: [], tools: [tool] } as any, s.f);
+  assert.equal(JSON.parse(s.calls[0].init.body as string).parallel_tool_calls, false);
+});
+
+test('leaves other providers\' tools untouched', async () => {
+  const s = spy();
+  await callUpstream(cand('k'), { messages: [], tools: [tool] } as any, s.f);
+  const b = JSON.parse(s.calls[0].init.body as string);
+  assert.deepEqual(b.tools[0], tool);
+  assert.equal(b.parallel_tool_calls, undefined);
+});

@@ -142,7 +142,7 @@ export async function runAdd(catalogue: Provider[], keys: KeyStore, f: Fetch): P
       const k = keySteps(prov);
       p.note(k.text, `Get a ${prov.name} key`);
       openBrowser(k.open);
-      const watch = readClipboard() !== null && await p.confirm({ message: 'Watch the clipboard for your key? (it is only read during this step)' });
+      const watch = !!prov.keyPattern && readClipboard() !== null && await p.confirm({ message: 'Watch the clipboard for your key? (it is only read during this step)' });
       if (p.isCancel(watch)) { p.cancel('Nothing added.'); return; }
       if (watch) {
         const s = p.spinner();

@@ -40,8 +40,14 @@ The launchers only affect that one session. Run `claude` or `codex` normally and
 | Cerebras | Free key | |
 | OpenRouter | Free account | One-click connect in the browser. About 50 free requests a day. |
 | Google Gemini | Free key | Google's terms limit the API to professional or business use. |
+| SEA-LION | Free trial key | 10 requests a minute. Content may be used to improve the service. |
+| Typhoon | Free key | A research showcase: usage data is collected to improve the models. |
+| NVIDIA NIM | Free key | A trial for prototyping and testing, not production use. |
+| Z.ai (GLM) | Free key | Only the Flash models are free. |
 
 The provider list updates itself. A small service checks every provider every 6 hours, drops models that have gone and adds new free ones, then publishes a signed list. freeaitokens checks for it at most every 6 hours, only accepts it if the signature is valid and every provider's address, key page and sign-up steps match this repository, and otherwise keeps the list it has. Set `FREEAITOKENS_CATALOGUE=bundled` to use only the list built into the package.
+
+Some sign-up links may be referral links. `freeaitokens add` always marks them "(referral link)" and shows the provider's own key page next to them.
 
 `freeaitokens add` opens each provider's key page, shows the steps, and can pick the key up from your clipboard when you copy it (only during that step, and only if you agree). Keys are tested before they are saved, and stored in your system keychain. Where there is no keychain (some Linux servers, Termux), they go in a file only you can read, and it says so.
 

@@ -22,7 +22,6 @@ test('keyed providers have onboarding data', () => {
   for (const p of parseCatalogue(raw).filter((p) => !p.keyless)) {
     assert.ok(p.keyUrl, p.id);
     assert.ok(p.steps.length > 0, p.id);
-    assert.ok(p.keyPattern || p.connect, p.id);
   }
 });
 

@@ -83,5 +83,157 @@
       { "id": "gemini-3.5-flash", "context": 1048576, "tools": true, "images": true, "quality": 0.8, "limits": { "rpm": 10, "rpd": 20, "tpm": 250000 } },
       { "id": "gemma-4-31b-it", "context": 32768, "tools": false, "images": true, "quality": 0.5, "limits": { "rpm": 15, "rpd": 1000 } }
     ]
+  },
+  {
+    "id": "sealion",
+    "name": "SEA-LION",
+    "baseUrl": "https://api.sea-lion.ai/v1",
+    "keyless": false,
+    "paid": false,
+    "terms": "ok",
+    "termsNote": "Google sign-in, one trial key per user, and the terms allow AI Singapore to use content to improve its services.",
+    "signupUrl": "https://playground.sea-lion.ai/",
+    "keyUrl": "https://playground.sea-lion.ai/key-manager",
+    "steps": [
+      "Sign in to playground.sea-lion.ai with your Google account.",
+      "Open API Key and click Create New Trial API Key.",
+      "Copy the key right away (it is shown only once)."
+    ],
+    "models": [
+      {
+        "id": "aisingapore/Qwen-SEA-LION-v4.5-27B-IT",
+        "context": 262144,
+        "tools": true,
+        "images": false,
+        "quality": 0.55,
+        "limits": {
+          "rpm": 10
+        }
+      },
+      {
+        "id": "aisingapore/Llama-SEA-LION-v3.5-70B-R",
+        "context": 131072,
+        "tools": false,
+        "images": false,
+        "quality": 0.4,
+        "limits": {
+          "rpm": 10
+        }
+      }
+    ]
+  },
+  {
+    "id": "typhoon",
+    "name": "Typhoon",
+    "baseUrl": "https://api.opentyphoon.ai/v1",
+    "keyless": false,
+    "paid": false,
+    "terms": "caution",
+    "termsNote": "A free research showcase API: SCB 10X collects usage data to improve its models and API.",
+    "signupUrl": "https://playground.opentyphoon.ai/",
+    "keyUrl": "https://playground.opentyphoon.ai/api-key",
+    "steps": [
+      "Create an account at playground.opentyphoon.ai.",
+      "Open API Keys and create a new key.",
+      "Copy the key right away (it is shown only once)."
+    ],
+    "models": [
+      {
+        "id": "typhoon-v2.5-30b-a3b-instruct",
+        "context": 131072,
+        "tools": true,
+        "images": false,
+        "quality": 0.45,
+        "limits": {
+          "rpm": 200
+        }
+      }
+    ]
+  },
+  {
+    "id": "nvidia",
+    "name": "NVIDIA NIM",
+    "baseUrl": "https://integrate.api.nvidia.com/v1",
+    "keyless": false,
+    "paid": false,
+    "terms": "caution",
+    "termsNote": "Free access is a trial for prototyping and testing only; production use needs an NVIDIA AI Enterprise license, and rate limits vary by model and load.",
+    "signupUrl": "https://build.nvidia.com",
+    "keyUrl": "https://build.nvidia.com/settings/api-keys",
+    "steps": [
+      "Sign in or create a free NVIDIA account at build.nvidia.com",
+      "Open any model page and click Get API Key",
+      "Copy the key that starts with nvapi-"
+    ],
+    "keyPattern": "^nvapi-[A-Za-z0-9_-]{20,}$",
+    "models": [
+      {
+        "id": "moonshotai/kimi-k3.1-pro",
+        "context": 1048576,
+        "tools": true,
+        "images": true,
+        "quality": 0.85
+      },
+      {
+        "id": "z-ai/glm-5.3-flash",
+        "context": 1048576,
+        "tools": true,
+        "images": true,
+        "quality": 0.75
+      },
+      {
+        "id": "mistralai/mistral-large-4-1t-a52b",
+        "context": 1048576,
+        "tools": true,
+        "images": true,
+        "quality": 0.72
+      },
+      {
+        "id": "nvidia/nemotron-3-ultra-550b-a55b",
+        "context": 262144,
+        "tools": true,
+        "images": false,
+        "quality": 0.7
+      }
+    ]
+  },
+  {
+    "id": "zai",
+    "name": "Z.ai (GLM)",
+    "baseUrl": "https://api.z.ai/api/paas/v4",
+    "keyless": false,
+    "paid": false,
+    "terms": "caution",
+    "termsNote": "Only the Flash models are free. Their rate limits are not published and show only in the Z.ai console.",
+    "signupUrl": "https://z.ai/model-api",
+    "keyUrl": "https://z.ai/manage-apikey/apikey-list",
+    "steps": [
+      "Create a free account at z.ai",
+      "Open API Keys in the Z.ai console",
+      "Click Create a new API key and copy it"
+    ],
+    "models": [
+      {
+        "id": "glm-4.7-flash",
+        "context": 200000,
+        "tools": true,
+        "images": false,
+        "quality": 0.6
+      },
+      {
+        "id": "glm-4.5-flash",
+        "context": 128000,
+        "tools": true,
+        "images": false,
+        "quality": 0.5
+      },
+      {
+        "id": "glm-4.6v-flash",
+        "context": 128000,
+        "tools": false,
+        "images": true,
+        "quality": 0.45
+      }
+    ]
   }
 ]
