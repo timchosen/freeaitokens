@@ -19,6 +19,11 @@ test('matchKey rejects ordinary text', () => {
   assert.equal(matchKey(byId('groq'), `my key is ${groqKey}`), null);
 });
 
+test('matchKey accepts both Gemini key formats', () => {
+  for (const k of ['AIza' + 'a'.repeat(35), 'AQ.' + 'Ab_-1'.repeat(10)]) assert.equal(matchKey(byId('gemini'), k), k);
+  assert.equal(matchKey(byId('gemini'), 'AQ.'), null);
+});
+
 test("matchKey rejects another provider's key", () => {
   assert.equal(matchKey(byId('cerebras'), groqKey), null);
 });

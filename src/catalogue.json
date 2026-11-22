@@ -77,8 +77,8 @@
     "termsNote": "Google's terms limit the API to professional or business use. Free-tier prompts may be used to improve Google's products.",
     "signupUrl": "https://aistudio.google.com",
     "keyUrl": "https://aistudio.google.com/apikey",
-    "steps": ["Sign in with a Google account.", "Click \"Create API key\".", "Copy the key (it starts with AIza)."],
-    "keyPattern": "^AIza[0-9A-Za-z_-]{35}$",
+    "steps": ["Sign in with a Google account.", "Click \"Create API key\".", "Copy the key (it starts with AQ. or AIza)."],
+    "keyPattern": "^(AIza[0-9A-Za-z_-]{35}|AQ\\.[0-9A-Za-z_-]{20,})$",
     "models": [
       { "id": "gemini-3.5-flash", "context": 1048576, "tools": true, "images": true, "quality": 0.8, "limits": { "rpm": 10, "rpd": 20, "tpm": 250000 } },
       { "id": "gemma-4-31b-it", "context": 32768, "tools": false, "images": true, "quality": 0.5, "limits": { "rpm": 15, "rpd": 1000 } }
