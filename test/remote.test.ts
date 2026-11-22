@@ -5,7 +5,8 @@ import { mkdtempSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { signPayload } from '../worker/src/build.ts';
-import { fetchCatalogue, readCache, writeCache } from '../src/node/remote.ts';
+import { fetchCatalogue, readCache, writeCache, cachedCatalogue } from '../src/node/remote.ts';
+import { parseCatalogue } from '../src/core/catalogue.ts';
 
 const kp = generateKeyPairSync('ed25519');
 const PRIV = kp.privateKey.export({ format: 'der', type: 'pkcs8' }).toString('base64');
@@ -78,4 +79,19 @@ test('rejects a signed list that changes anything about a provider except its mo
     const env = await signPayload({ issued: '2026-11-22T06:00:00Z', providers: [prov(o)] }, PRIV);
     assert.equal(await fetchCatalogue(opts(serve(env, [prov()]))), null, JSON.stringify(o));
   }
+});
+
+test('the cache is not used when it disagrees with the bundled list about a provider', async () => {
+  writeCache(await signPayload({ issued: '2026-11-22T06:00:00Z', providers: [prov({ baseUrl: 'https://old.example/v1' })] }, PRIV));
+  assert.equal(cachedCatalogue(parseCatalogue([prov()]), PUB, Date.parse('2026-11-22T07:00:00Z')), null);
+});
+
+test('the cache is not used once it is more than 7 days old', async () => {
+  writeCache(await signPayload({ issued: '2026-11-01T00:00:00Z', providers: [prov()] }, PRIV));
+  assert.equal(cachedCatalogue(parseCatalogue([prov()]), PUB, Date.parse('2026-11-09T00:00:00Z')), null);
+});
+
+test('a matching cache is used, including providers the bundled list does not have yet', async () => {
+  writeCache(await signPayload({ issued: '2026-11-22T06:00:00Z', providers: [prov(), prov({ id: 'new' })] }, PRIV));
+  assert.deepEqual(cachedCatalogue(parseCatalogue([prov()]), PUB, Date.parse('2026-11-22T07:00:00Z'))?.map((p) => p.id), ['a', 'new']);
 });

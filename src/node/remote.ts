@@ -29,11 +29,12 @@ export function verifyEnvelope(env: unknown, publicKey: string): Signed | null {
   }
 }
 
-function matchesRepo(providers: Provider[], repo: Provider[]): boolean {
+// Every provider must exist in `repo` with the same fields; `allowNew` lets through providers `repo` lacks.
+function matchesRepo(providers: Provider[], repo: Provider[], allowNew = false): boolean {
   const byId = new Map(repo.map((p) => [p.id, p]));
   return providers.every((p) => {
     const r = byId.get(p.id);
-    return !!r && withoutModels(p) === withoutModels(r);
+    return r ? withoutModels(p) === withoutModels(r) : allowNew;
   });
 }
 
@@ -67,16 +68,25 @@ export function writeCache(env: Envelope): void {
 }
 
 // Set when the catalogue service is deployed; while empty, the bundled list is always used.
-export const CATALOGUE_URL = '';
-export const PUBLIC_KEY = '';
+export const CATALOGUE_URL = 'https://freeaitokens-catalogue.cmon-ground-ai.workers.dev/catalogue.json';
+export const PUBLIC_KEY = 'MCowBQYDK2VwAyEAQnMYussPFgif+/u6z16moBG07CWjrXpmnPbfeATWvH0=';
 export const GITHUB_URL = 'https://raw.githubusercontent.com/timchosen/freeaitokens/main/src/catalogue.json';
 const CHECK_EVERY_MS = 6 * 3_600_000;
+const CACHE_MAX_AGE_MS = 7 * 86_400_000;
+
+// The cached list, unless it is too old or disagrees with this release about a provider both have
+// (a release that moves a provider must win over an older signed list).
+export function cachedCatalogue(bundled: Provider[], publicKey: string, now = Date.now()): Provider[] | null {
+  const c = readCache(publicKey);
+  if (!c || now - Date.parse(c.issued) > CACHE_MAX_AGE_MS) return null;
+  return matchesRepo(c.providers, bundled, true) ? c.providers : null;
+}
 
 const updatesOff = () => !CATALOGUE_URL || !PUBLIC_KEY || process.env.FREEAITOKENS_CATALOGUE === 'bundled';
 
 // The best list available right now without the network.
 export function currentCatalogue(bundled: Provider[]): Provider[] {
-  return (updatesOff() ? null : readCache(PUBLIC_KEY)?.providers) ?? bundled;
+  return (updatesOff() ? null : cachedCatalogue(bundled, PUBLIC_KEY)) ?? bundled;
 }
 
 // A newer verified list, if one is due and available; caches it. Resolves null otherwise, never throws.

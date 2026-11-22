@@ -41,6 +41,8 @@ The launchers only affect that one session. Run `claude` or `codex` normally and
 | OpenRouter | Free account | One-click connect in the browser. About 50 free requests a day. |
 | Google Gemini | Free key | Google's terms limit the API to professional or business use. |
 
+The provider list updates itself. A small service checks every provider every 6 hours, drops models that have gone and adds new free ones, then publishes a signed list. freeaitokens checks for it at most every 6 hours, only accepts it if the signature is valid and every provider's address, key page and sign-up steps match this repository, and otherwise keeps the list it has. Set `FREEAITOKENS_CATALOGUE=bundled` to use only the list built into the package.
+
 `freeaitokens add` opens each provider's key page, shows the steps, and can pick the key up from your clipboard when you copy it (only during that step, and only if you agree). Keys are tested before they are saved, and stored in your system keychain. Where there is no keychain (some Linux servers, Termux), they go in a file only you can read, and it says so.
 
 `freeaitokens list` shows what you have and what is left today. `freeaitokens remove <provider>` deletes a key.
