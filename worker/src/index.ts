@@ -1,5 +1,5 @@
 import { parseCatalogue } from '../../src/core/catalogue.js';
-import { buildCatalogue, signPayload } from './build.js';
+import { buildCatalogue, signPayload, emptyProbeState, type ProbeState } from './build.js';
 
 interface Env {
   CATALOGUE: KVNamespace;
@@ -13,7 +13,10 @@ async function refresh(env: Env): Promise<void> {
   if (!res.ok) throw new Error(`source ${res.status}`);
   const base = parseCatalogue(await res.json());
   const keyFor = (id: string) => env[`KEY_${id.toUpperCase().replace(/[^A-Z0-9]/g, '_')}` as `KEY_${string}`];
-  const providers = await buildCatalogue(base, keyFor, fetch);
+  const saved = await env.CATALOGUE.get('state');
+  const prev: ProbeState = saved ? JSON.parse(saved) : emptyProbeState();
+  const { providers, state } = await buildCatalogue(base, keyFor, fetch, prev, 45);
+  await env.CATALOGUE.put('state', JSON.stringify(state));
   const envelope = await signPayload({ issued: new Date().toISOString(), providers }, env.SIGNING_KEY);
   await env.CATALOGUE.put('latest', JSON.stringify(envelope));
 }

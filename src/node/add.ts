@@ -139,8 +139,9 @@ export async function runAdd(catalogue: Provider[], keys: KeyStore, f: Fetch): P
       p.log.step('Opening OpenRouter in your browser. Sign in and approve the connection.');
       try { key = await connectOpenRouter(f); } catch (e) { p.log.error((e as Error).message); }
     } else {
-      p.note(prov.steps.map((s, i) => `${i + 1}. ${s}`).join('\n') + `\n\n${prov.keyUrl}`, `Get a ${prov.name} key`);
-      openBrowser(prov.keyUrl!);
+      const k = keySteps(prov);
+      p.note(k.text, `Get a ${prov.name} key`);
+      openBrowser(k.open);
       const watch = readClipboard() !== null && await p.confirm({ message: 'Watch the clipboard for your key? (it is only read during this step)' });
       if (p.isCancel(watch)) { p.cancel('Nothing added.'); return; }
       if (watch) {
@@ -165,6 +166,15 @@ export async function runAdd(catalogue: Provider[], keys: KeyStore, f: Fetch): P
     const again = await p.confirm({ message: 'Try again?' });
     if (p.isCancel(again) || !again) { p.cancel('Nothing added.'); return; }
   }
+}
+
+// The steps to show and the page to open. A referral sign-up link is opened first and always labelled.
+export function keySteps(prov: Provider): { text: string; open: string } {
+  const steps = prov.steps.map((s, i) => `${i + 1}. ${s}`).join('\n');
+  if (prov.referral && prov.signupUrl) {
+    return { text: `${steps}\n\nSign up: ${prov.signupUrl} (referral link)\nKeys: ${prov.keyUrl}`, open: prov.signupUrl };
+  }
+  return { text: `${steps}\n\n${prov.keyUrl}`, open: prov.keyUrl! };
 }
 
 export function runList(catalogue: Provider[], keys: KeyStore, tracker: LimitTracker): string {

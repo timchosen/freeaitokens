@@ -4,7 +4,7 @@ type Fetch = typeof fetch;
 export interface Envelope { payload: string; signature: string }
 
 const PROBE_TIMEOUT_MS = 20_000;
-const MAX_NEW_PER_RUN = 10; // keeps a run under the Workers free plan's 50 subrequests
+const MAX_NEW_PER_RUN = 10;
 const NOT_CHAT = /whisper|tts|speech|embed|guard|moderation|rerank|image|audio|orpheus|transcri/i;
 const GONE = /not[ _-]?found|does not exist|decommission|deprecated|no longer (available|supported)|unknown model|invalid model/i;
 
@@ -49,29 +49,53 @@ async function listModels(p: Provider, key: string | undefined, f: Fetch): Promi
   }
 }
 
+// What the service remembers between runs, so each run can test only part of the list.
+export interface ProbeState { probedAt: Record<string, number>; gone: Record<string, number>; found: Record<string, Model[]> }
+export const emptyProbeState = (): ProbeState => ({ probedAt: {}, gone: {}, found: {} });
+
 // Refreshes the repo's catalogue against the providers themselves. Providers come only from `base`.
-export async function buildCatalogue(base: Provider[], keyFor: (id: string) => string | undefined, f: Fetch): Promise<Provider[]> {
-  let budget = MAX_NEW_PER_RUN;
-  const out: Provider[] = [];
-  for (const p of base) {
-    const key = keyFor(p.id);
-    if (!p.keyless && !key) { out.push(p); continue; } // nothing to test with: publish as the repo has it
-    const models: Model[] = [];
-    for (const m of p.models) if ((await probe(p, m.id, key, f)) !== 'gone') models.push(m);
-    if (p.discover) {
-      const want = new RegExp(p.discover);
-      const known = new Set(p.models.map((m) => m.id));
-      for (const c of await listModels(p, key, f)) {
-        if (budget <= 0) break;
-        if (known.has(c.id) || !want.test(c.id) || NOT_CHAT.test(c.id)) continue;
-        budget--;
-        const r = await probe(p, c.id, key, f);
-        if (typeof r === 'object') models.push({ id: c.id, context: c.context ?? 32768, tools: r.tools, images: false, quality: 0.4, ...(p.models[0]?.limits ? { limits: p.models[0].limits } : {}) });
-      }
-    }
-    if (models.length) out.push({ ...p, models });
+// `budget` caps outbound calls (Workers free plan: 50 per run); models checked longest ago go first.
+export async function buildCatalogue(base: Provider[], keyFor: (id: string) => string | undefined, f: Fetch,
+  state: ProbeState = emptyProbeState(), budget = 40, now = Date.now()): Promise<{ providers: Provider[]; state: ProbeState }> {
+  const usable = base.filter((p) => p.keyless || keyFor(p.id));
+  const modelsOf = (p: Provider) => {
+    const seen = new Set(p.models.map((m) => m.id));
+    return [...p.models, ...(state.found[p.id] ?? []).filter((m) => !seen.has(m.id))];
+  };
+  const tasks = usable.flatMap((p) => modelsOf(p).map((m) => ({ p, m, key: `${p.id}/${m.id}` })))
+    .sort((a, b) => (state.probedAt[a.key] ?? 0) - (state.probedAt[b.key] ?? 0));
+  for (const t of tasks) {
+    if (budget <= 0) break;
+    budget--;
+    const r = await probe(t.p, t.m.id, keyFor(t.p.id), f);
+    state.probedAt[t.key] = now;
+    if (r === 'gone') state.gone[t.key] = now; else delete state.gone[t.key];
   }
-  return out;
+  let fresh = MAX_NEW_PER_RUN;
+  for (const p of usable) {
+    if (!p.discover || budget <= 1 || fresh <= 0) continue;
+    budget--;
+    const want = new RegExp(p.discover);
+    const known = new Set(modelsOf(p).map((m) => m.id));
+    for (const c of await listModels(p, keyFor(p.id), f)) {
+      if (budget <= 0 || fresh <= 0) break;
+      if (known.has(c.id) || state.gone[`${p.id}/${c.id}`] || !want.test(c.id) || NOT_CHAT.test(c.id)) continue;
+      budget--; fresh--;
+      const r = await probe(p, c.id, keyFor(p.id), f);
+      state.probedAt[`${p.id}/${c.id}`] = now;
+      if (r === 'gone') { state.gone[`${p.id}/${c.id}`] = now; continue; }
+      if (typeof r !== 'object') continue;
+      (state.found[p.id] ??= []).push({ id: c.id, context: c.context ?? 32768, tools: r.tools, images: false, quality: 0.4, ...(p.models[0]?.limits ? { limits: p.models[0].limits } : {}) });
+    }
+  }
+  for (const id of Object.keys(state.found)) state.found[id] = state.found[id].filter((m) => !state.gone[`${id}/${m.id}`]);
+  const providers: Provider[] = [];
+  for (const p of base) {
+    if (!usable.includes(p)) { providers.push(p); continue; } // nothing to test with: publish as the repo has it
+    const models = modelsOf(p).filter((m) => !state.gone[`${p.id}/${m.id}`]);
+    if (models.length) providers.push({ ...p, models });
+  }
+  return { providers, state };
 }
 
 const b64 = (u: Uint8Array) => btoa(String.fromCharCode(...u));

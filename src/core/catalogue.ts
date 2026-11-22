@@ -13,6 +13,7 @@ export interface Provider {
   steps: string[];
   keyPattern?: string;
   connect?: 'openrouter';
+  referral?: boolean; // signupUrl carries a referral code; always labelled where shown
   discover?: string; // regex of model ids the catalogue service may add automatically
   limits?: Limits;
   models: Model[];

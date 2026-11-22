@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { matchKey, validateKey, connectOpenRouter, runList } from '../src/node/add.ts';
+import { matchKey, validateKey, connectOpenRouter, runList, keySteps } from '../src/node/add.ts';
 import { parseCatalogue } from '../src/core/catalogue.ts';
 import { LimitTracker, emptyState } from '../src/core/limits.ts';
 import type { KeyStore } from '../src/node/keys.ts';
@@ -113,4 +113,14 @@ test('runList shows the free allowance, not "left today", for a provider with no
   const line = runList(catalogue, store, new LimitTracker(emptyState())).split('\n').find((l) => l.startsWith('Groq'))!;
   assert.ok(!line.includes('left today'), line);
   assert.match(line, /up to 1000 free requests a day per model/);
+});
+
+test('keySteps shows and opens the sign-up link, labelled, when it is a referral link', () => {
+  const plain = keySteps({ ...byId('groq') });
+  assert.equal(plain.open, byId('groq').keyUrl);
+  assert.ok(!plain.text.includes('referral'));
+  const ref = keySteps({ ...byId('groq'), signupUrl: 'https://console.groq.com/?ref=abc', referral: true });
+  assert.equal(ref.open, 'https://console.groq.com/?ref=abc');
+  assert.match(ref.text, /https:\/\/console\.groq\.com\/\?ref=abc \(referral link\)/);
+  assert.ok(ref.text.includes(byId('groq').keyUrl!));
 });
