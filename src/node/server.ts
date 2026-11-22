@@ -4,6 +4,7 @@ import { timingSafeEqual, createHmac, randomBytes } from 'node:crypto';
 import { route, NoCapacityError, type RouteDeps } from '../core/orchestrator.js';
 import { sseData, mapChatSse } from '../core/sse.js';
 import type { ChatRequest } from '../core/types.js';
+import { fromAnthropic, toAnthropic, toAnthropicStream, countTokens, anthropicError } from '../core/anthropic.js';
 import { localToken, saveState } from './state.js';
 
 export interface ServerHandle { port: number; address: string; reused: boolean; close(): Promise<void> }
@@ -19,6 +20,7 @@ export interface Format {
   fromChat(json: unknown, requestedModel: string): unknown;
   fromChatStream(requestedModel: string): TransformStream<Uint8Array, Uint8Array>;
   error(status: number, message: string): unknown;
+  direct?: (body: unknown) => unknown; // answered locally, without a provider
 }
 
 const openaiError = (_s: number, message: string) => ({ error: { message, type: 'freetokens_error' } });
@@ -31,6 +33,15 @@ const openai: Format = {
     return { writable: s.writable, readable: s.readable.pipeThrough(t) };
   },
   error: openaiError,
+};
+
+const anthropic: Format = { toChat: fromAnthropic, fromChat: toAnthropic, fromChatStream: toAnthropicStream, error: anthropicError };
+const anthropicCount: Format = { ...anthropic, direct: countTokens };
+
+export const FORMATS: Record<string, Format> = {
+  '/v1/chat/completions': openai,
+  '/v1/messages': anthropic,
+  '/v1/messages/count_tokens': anthropicCount,
 };
 
 class HttpError extends Error { constructor(readonly status: number, message: string) { super(message); } }
@@ -74,6 +85,7 @@ export function makeHandler(deps: RouteDeps, token: string, formats: Record<stri
     if (req.method !== 'POST' || !fmt) return send(res, 404, errOf.error(404, `Unknown endpoint ${req.method} ${path}.`));
     try {
       const body: any = await readJson(req);
+      if (fmt.direct) return send(res, 200, fmt.direct(body));
       const chat = fmt.toChat(body);
       const requested = typeof body?.model === 'string' ? body.model : 'free';
       const { response } = await route(chat, deps);
@@ -118,7 +130,7 @@ async function isOurs(port: number, token: string): Promise<boolean> {
 
 export async function startServer(deps: RouteDeps, port = DEFAULT_PORT, extraFormats: Record<string, Format> = {}): Promise<ServerHandle> {
   const token = localToken();
-  const server = http.createServer(makeHandler(deps, token, { '/v1/chat/completions': openai, ...extraFormats }));
+  const server = http.createServer(makeHandler(deps, token, { ...FORMATS, ...extraFormats }));
   try {
     await new Promise<void>((resolve, reject) => { server.once('error', reject); server.listen(port, HOST, resolve); });
   } catch (e: any) {
