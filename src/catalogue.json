@@ -15,20 +15,6 @@
     ]
   },
   {
-    "id": "ovh",
-    "name": "OVH AI Endpoints",
-    "baseUrl": "https://oai.endpoints.kepler.ai.cloud.ovh.net/v1",
-    "keyless": true,
-    "paid": false,
-    "terms": "ok",
-    "termsNote": "No account needed. About 2 requests a minute per model, so it is a slow last resort.",
-    "steps": [],
-    "models": [
-      { "id": "gpt-oss-120b", "context": 131072, "tools": true, "images": false, "quality": 0.6, "limits": { "rpm": 2 } },
-      { "id": "Qwen3.5-397B-A17B", "context": 262144, "tools": true, "images": false, "quality": 0.7, "limits": { "rpm": 2 } }
-    ]
-  },
-  {
     "id": "groq",
     "name": "Groq",
     "baseUrl": "https://api.groq.com/openai/v1",

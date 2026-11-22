@@ -36,7 +36,6 @@ The launchers only affect that one session. Run `claude` or `codex` normally and
 | Provider | Key needed | Notes |
 |---|---|---|
 | Kilo Gateway | No | About 200 requests an hour per IP. Free prompts may be used for training. |
-| OVH AI Endpoints | No | About 2 requests a minute per model. A slow last resort. |
 | Groq | Free key | |
 | Cerebras | Free key | |
 | Mistral | Free key | Free "Experiment" plan asks for a phone number. |
