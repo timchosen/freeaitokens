@@ -41,6 +41,21 @@ test('validateKey ok on 200 and sends one tiny request with the key', async () =
   assert.equal(JSON.parse(seen[0].init.body).max_tokens, 1);
 });
 
+test('validateKey tries the next model when one is too slow, and stops at a rejected key', async () => {
+  const prov = byId('nvidia');
+  const tried: string[] = [];
+  const slowFirst = (async (_u: string, init: RequestInit) => {
+    const m = JSON.parse(init.body as string).model; tried.push(m);
+    if (m === prov.models[0].id) throw new DOMException('The operation was aborted due to timeout.', 'TimeoutError');
+    return new Response('{}', { status: 200 });
+  }) as unknown as typeof fetch;
+  assert.deepEqual(await validateKey(prov, 'nvapi-x', slowFirst), { ok: true });
+  assert.deepEqual(tried, [prov.models[0].id, prov.models[1].id]);
+  const seen: any[] = [];
+  assert.deepEqual(await validateKey(prov, 'nvapi-x', fakeFetch(403, seen)), { ok: false, reason: 'key rejected' });
+  assert.equal(seen.length, 1);
+});
+
 test('validateKey treats 429 as a working key', async () => {
   assert.deepEqual(await validateKey(byId('groq'), groqKey, fakeFetch(429)), { ok: true });
 });

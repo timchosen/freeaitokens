@@ -13,20 +13,25 @@ export function matchKey(prov: Provider, text: string): string | null {
   return new RegExp(`^(?:${prov.keyPattern.replace(/^\^|\$$/g, '')})$`).test(t) ? t : null;
 }
 
+// A bad key is refused at once; a slow or broken model only means: try the next one (at most 3).
 export async function validateKey(prov: Provider, key: string, f: Fetch): Promise<{ ok: true } | { ok: false; reason: string }> {
-  try {
-    const r = await f(`${prov.baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
-      body: JSON.stringify({ model: prov.models[0].id, messages: [{ role: 'user', content: 'hi' }], max_tokens: 1 }),
-      signal: AbortSignal.timeout(30_000),
-    });
-    if (r.ok || r.status === 429) return { ok: true }; // 429: the key works, it is just busy
-    if (r.status === 401 || r.status === 403) return { ok: false, reason: 'key rejected' };
-    return { ok: false, reason: `${prov.name} answered with status ${r.status}` };
-  } catch (e) {
-    return { ok: false, reason: `could not reach ${prov.name}: ${(e as Error).message}` };
+  let reason = '';
+  for (const m of prov.models.slice(0, 3)) {
+    try {
+      const r = await f(`${prov.baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
+        body: JSON.stringify({ model: m.id, messages: [{ role: 'user', content: 'hi' }], max_tokens: 1 }),
+        signal: AbortSignal.timeout(20_000),
+      });
+      if (r.ok || r.status === 429) return { ok: true }; // 429: the key works, it is just busy
+      if (r.status === 401 || r.status === 403) return { ok: false, reason: 'key rejected' };
+      reason = `${prov.name} answered with status ${r.status}`;
+    } catch (e) {
+      reason = `could not reach ${prov.name}: ${(e as Error).message}`;
+    }
   }
+  return { ok: false, reason };
 }
 
 const quiet = { stdio: ['ignore', 'pipe', 'ignore'] as ['ignore', 'pipe', 'ignore'], timeout: 1500, encoding: 'utf8' as const };
