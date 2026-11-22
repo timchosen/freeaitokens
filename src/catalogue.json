@@ -41,8 +41,8 @@
     "keyPattern": "^gsk_[A-Za-z0-9]{40,64}$",
     "models": [
       { "id": "openai/gpt-oss-120b", "context": 131072, "tools": true, "images": false, "quality": 0.6, "limits": { "rpm": 30, "rpd": 1000, "tpm": 8000, "tpd": 200000 } },
-      { "id": "qwen/qwen3-32b", "context": 131072, "tools": true, "images": false, "quality": 0.5, "limits": { "rpm": 60, "rpd": 1000, "tpm": 6000, "tpd": 500000 } },
-      { "id": "llama-3.3-70b-versatile", "context": 131072, "tools": true, "images": false, "quality": 0.45, "limits": { "rpm": 30, "rpd": 1000, "tpm": 12000, "tpd": 100000 } }
+      { "id": "qwen/qwen3.8-27b", "context": 131072, "tools": true, "images": false, "quality": 0.5, "limits": { "rpm": 60, "rpd": 1000, "tpm": 6000, "tpd": 500000 } },
+      { "id": "openai/gpt-oss-20b", "context": 131072, "tools": true, "images": false, "quality": 0.4, "limits": { "rpm": 30, "rpd": 1000, "tpm": 12000, "tpd": 100000 } }
     ]
   },
   {
