@@ -1,6 +1,6 @@
 import http from 'node:http';
 import { Readable } from 'node:stream';
-import { timingSafeEqual } from 'node:crypto';
+import { timingSafeEqual, createHmac, randomBytes } from 'node:crypto';
 import { route, NoCapacityError, type RouteDeps } from '../core/orchestrator.js';
 import { sseData, mapChatSse } from '../core/sse.js';
 import type { ChatRequest } from '../core/types.js';
@@ -59,8 +59,12 @@ function send(res: http.ServerResponse, status: number, body: unknown, headers: 
 
 export function makeHandler(deps: RouteDeps, token: string, formats: Record<string, Format>) {
   return async (req: http.IncomingMessage, res: http.ServerResponse) => {
-    const path = (req.url ?? '/').split('?')[0];
-    if (req.method === 'GET' && path === '/health') return send(res, 200, MARKER);
+    const [path, query = ''] = (req.url ?? '/').split('?');
+    if (req.method === 'GET' && path === '/health') {
+      // Proof of the local token, so a launcher never reuses a program that merely copies the marker.
+      const nonce = new URLSearchParams(query).get('nonce');
+      return send(res, 200, nonce ? { ...MARKER, proof: proofOf(token, nonce) } : MARKER);
+    }
     const fmt = formats[path];
     const errOf = fmt ?? openai;
     if (!tokenOk(req, token)) return send(res, 401, errOf.error(401, 'Missing or wrong local token. Run `freetokens` to see it.'));
@@ -99,21 +103,26 @@ export function makeHandler(deps: RouteDeps, token: string, formats: Record<stri
   };
 }
 
-async function isOurs(port: number): Promise<boolean> {
+const proofOf = (token: string, nonce: string) => createHmac('sha256', token).update(nonce).digest('hex');
+
+async function isOurs(port: number, token: string): Promise<boolean> {
   try {
-    const r = await fetch(`http://${HOST}:${port}/health`, { signal: AbortSignal.timeout(2000) });
-    return JSON.stringify(await r.json()) === JSON.stringify(MARKER);
+    const nonce = randomBytes(16).toString('hex');
+    const r = await fetch(`http://${HOST}:${port}/health?nonce=${nonce}`, { signal: AbortSignal.timeout(2000) });
+    const j: any = await r.json();
+    return j?.app === MARKER.app && j.proof === proofOf(token, nonce);
   } catch {
     return false;
   }
 }
 
 export async function startServer(deps: RouteDeps, port = DEFAULT_PORT, extraFormats: Record<string, Format> = {}): Promise<ServerHandle> {
-  const server = http.createServer(makeHandler(deps, localToken(), { '/v1/chat/completions': openai, ...extraFormats }));
+  const token = localToken();
+  const server = http.createServer(makeHandler(deps, token, { '/v1/chat/completions': openai, ...extraFormats }));
   try {
     await new Promise<void>((resolve, reject) => { server.once('error', reject); server.listen(port, HOST, resolve); });
   } catch (e: any) {
-    if (e?.code === 'EADDRINUSE' && (await isOurs(port))) return { port, address: HOST, reused: true, close: async () => {} };
+    if (e?.code === 'EADDRINUSE' && (await isOurs(port, token))) return { port, address: HOST, reused: true, close: async () => {} };
     if (e?.code === 'EADDRINUSE') throw new Error(`Port ${port} is already used by another program. Pick another with --port <n>.`);
     throw e;
   }
