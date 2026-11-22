@@ -9,5 +9,16 @@
     "@types/node": "^26.6.6",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
+  },
+  "bin": {
+    "freetokens": "dist/node/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "test": "tsx --test test/*.test.ts",
+    "build": "tsc && cp src/catalogue.json dist/catalogue.json",
+    "typecheck": "tsc --noEmit"
   }
 }
