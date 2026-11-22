@@ -1,0 +1,33 @@
+{
+ "model": "claude-sonnet-5-5",
+ "max_tokens": 3072,
+ "system": [
+  {
+   "type": "text",
+   "text": "SYSTEM"
+  },
+  {
+   "type": "text",
+   "text": "SYSTEM",
+   "cache_control": {
+    "type": "ephemeral"
+   }
+  },
+  {
+   "type": "text",
+   "text": "SYSTEM",
+   "cache_control": {
+    "type": "ephemeral"
+   }
+  }
+ ],
+ "messages": [
+  {
+   "role": "user",
+   "content": "TEXT"
+  }
+ ],
+ "metadata": {
+  "user_id": "redacted"
+ }
+}
