@@ -45,6 +45,20 @@ The launchers only affect that one session. Run `claude` or `codex` normally and
 | NVIDIA NIM | Free key | A trial for prototyping and testing, not production use. |
 | Z.ai (GLM) | Free key | Only the Flash models are free. |
 
+Resellers. Their models are rated below most of the providers above, so they are mostly a fallback. `freeaitokens add` shows each one's caveats before you sign up.
+
+| Provider | Key needed | Notes |
+|---|---|---|
+| Nabh Cloud | Free key | GPT OSS 20B only, 500 requests a day. |
+| KiosAPI | Free key | Small daily quota; amounts not published. |
+| Kenari | Free key | 50 requests a day per free model. No company named. |
+| Plugsky | Free key | 100 requests a day. The free model's underlying model is not disclosed. |
+| ZRO (MoonMath) | Free key | Daily DeepSeek V4.1 Flash; amount not stated. |
+| Requesty | Free key | 200 requests a day. May train on free-plan content. |
+| BazaarLink | Free key | Small daily allowance. Some requests are kept in full. |
+| Logfare | Free key + Discord | 5,000 requests a day. Logs everything, used for evals unless you opt out. |
+| CheapLLM | Free key | Free during beta, then very small hourly limits. |
+
 The provider list updates itself. A small service checks every provider every 6 hours, drops models that have gone and adds new free ones, then publishes a signed list. freeaitokens checks for it at most every 6 hours, only accepts it if the signature is valid and every provider's address, key page and sign-up steps match this repository, and otherwise keeps the list it has. Set `FREEAITOKENS_CATALOGUE=bundled` to use only the list built into the package.
 
 Some sign-up links may be referral links. `freeaitokens add` always marks them "(referral link)" and shows the provider's own key page next to them.
