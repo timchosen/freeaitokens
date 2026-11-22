@@ -17,17 +17,17 @@ test('claude spec sets both env vars and passes args through', () => {
   assert.equal(s.env.ANTHROPIC_API_KEY, '');
 });
 
-test('codex spec selects the freetokens provider and keeps the token out of args', () => {
+test('codex spec selects the freeaitokens provider and keeps the token out of args', () => {
   const s = launchSpec('codex', 5000, TOKEN, ['exec', 'fix it']);
   assert.equal(s.cmd, 'codex');
   assert.deepEqual(s.args.slice(-2), ['exec', 'fix it']);
   const joined = s.args.join(' ');
-  assert.match(joined, /model_providers\.freetokens\.base_url="http:\/\/127\.0\.0\.1:5000\/v1"/);
-  assert.match(joined, /model_providers\.freetokens\.wire_api="responses"/);
-  assert.match(joined, /model_providers\.freetokens\.env_key="FREETOKENS_TOKEN"/);
-  assert.match(joined, /model_provider="freetokens"/);
+  assert.match(joined, /model_providers\.freeaitokens\.base_url="http:\/\/127\.0\.0\.1:5000\/v1"/);
+  assert.match(joined, /model_providers\.freeaitokens\.wire_api="responses"/);
+  assert.match(joined, /model_providers\.freeaitokens\.env_key="FREEAITOKENS_TOKEN"/);
+  assert.match(joined, /model_provider="freeaitokens"/);
   assert.ok(!joined.includes(TOKEN));
-  assert.equal(s.env.FREETOKENS_TOKEN, TOKEN);
+  assert.equal(s.env.FREEAITOKENS_TOKEN, TOKEN);
 });
 
 test('opencode setup adds the provider and preserves existing providers and default model', () => {
@@ -38,10 +38,10 @@ test('opencode setup adds the provider and preserves existing providers and defa
   assert.equal(j.model, 'anthropic/claude');
   assert.equal(j.theme, 'dark');
   assert.deepEqual(j.provider.mine, { name: 'Mine' });
-  assert.equal(j.provider.freetokens.npm, '@ai-sdk/openai-compatible');
-  assert.equal(j.provider.freetokens.options.baseURL, 'http://127.0.0.1:4949/v1');
-  assert.equal(j.provider.freetokens.options.apiKey, TOKEN);
-  assert.ok(j.provider.freetokens.models.free);
+  assert.equal(j.provider.freeaitokens.npm, '@ai-sdk/openai-compatible');
+  assert.equal(j.provider.freeaitokens.options.baseURL, 'http://127.0.0.1:4949/v1');
+  assert.equal(j.provider.freeaitokens.options.apiKey, TOKEN);
+  assert.ok(j.provider.freeaitokens.models.free);
 });
 
 test('opencode setup writes a backup, undo restores it byte for byte', () => {
@@ -61,13 +61,13 @@ test('setup aborts on invalid JSON and leaves the file unchanged', () => {
   writeFileSync(f, bad);
   assert.throws(() => setupFile('opencode', 4949, TOKEN, f), /not valid JSON/);
   assert.equal(readFileSync(f, 'utf8'), bad);
-  assert.equal(existsSync(f + '.freetokens-backup'), false);
+  assert.equal(existsSync(f + '.freeaitokens-backup'), false);
 });
 
 test('setup creates the config when none exists; undo removes it', () => {
   const f = tmp();
   setupFile('opencode', 4949, TOKEN, f);
-  assert.ok(JSON.parse(readFileSync(f, 'utf8')).provider.freetokens);
+  assert.ok(JSON.parse(readFileSync(f, 'utf8')).provider.freeaitokens);
   undoSetup('opencode', f);
   assert.equal(existsSync(f), false);
 });
@@ -77,7 +77,7 @@ test('running setup twice does not overwrite the original backup', () => {
   writeFileSync(f, '{"model":"orig"}');
   setupFile('opencode', 4949, TOKEN, f);
   setupFile('opencode', 5000, TOKEN, f);
-  assert.equal(JSON.parse(readFileSync(f, 'utf8')).provider.freetokens.options.baseURL, 'http://127.0.0.1:5000/v1');
+  assert.equal(JSON.parse(readFileSync(f, 'utf8')).provider.freeaitokens.options.baseURL, 'http://127.0.0.1:5000/v1');
   undoSetup('opencode', f);
   assert.equal(readFileSync(f, 'utf8'), '{"model":"orig"}');
 });

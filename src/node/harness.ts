@@ -16,15 +16,15 @@ export function launchSpec(tool: LaunchTool, port: number, token: string, args: 
   return {
     cmd: 'codex',
     args: [
-      ...c('model_providers.freetokens.name="freetokens"'),
-      ...c(`model_providers.freetokens.base_url="${base}/v1"`),
-      ...c('model_providers.freetokens.wire_api="responses"'),
-      ...c('model_providers.freetokens.env_key="FREETOKENS_TOKEN"'),
-      ...c('model_provider="freetokens"'),
+      ...c('model_providers.freeaitokens.name="freeaitokens"'),
+      ...c(`model_providers.freeaitokens.base_url="${base}/v1"`),
+      ...c('model_providers.freeaitokens.wire_api="responses"'),
+      ...c('model_providers.freeaitokens.env_key="FREEAITOKENS_TOKEN"'),
+      ...c('model_provider="freeaitokens"'),
       ...c('model="free"'),
       ...args,
     ],
-    env: { FREETOKENS_TOKEN: token },
+    env: { FREEAITOKENS_TOKEN: token },
   };
 }
 
@@ -32,8 +32,8 @@ export function defaultConfigPath(_tool: FileTool): string {
   return join(process.env.XDG_CONFIG_HOME || join(homedir(), '.config'), 'opencode', 'opencode.json');
 }
 
-const backupOf = (f: string) => f + '.freetokens-backup';
-const createdMarkerOf = (f: string) => f + '.freetokens-created';
+const backupOf = (f: string) => f + '.freeaitokens-backup';
+const createdMarkerOf = (f: string) => f + '.freeaitokens-created';
 
 // Adds the local endpoint as an extra selectable provider; the user's default model stays theirs.
 export function setupFile(tool: FileTool, port: number, token: string, configPath = defaultConfigPath(tool)): { backup: string } {
@@ -52,9 +52,9 @@ export function setupFile(tool: FileTool, port: number, token: string, configPat
     else { mkdirSync(dirname(configPath), { recursive: true }); writeFileSync(createdMarkerOf(configPath), ''); }
   }
   config.$schema ??= 'https://opencode.ai/config.json';
-  config.provider = { ...(config.provider ?? {}), freetokens: {
+  config.provider = { ...(config.provider ?? {}), freeaitokens: {
     npm: '@ai-sdk/openai-compatible',
-    name: 'freetokens (free models)',
+    name: 'freeaitokens (free models)',
     options: { baseURL: `http://127.0.0.1:${port}/v1`, apiKey: token },
     models: { free: { name: 'Best free model', limit: { context: 262144, output: 32768 } } },
   } };
@@ -67,7 +67,7 @@ export function undoSetup(tool: FileTool, configPath = defaultConfigPath(tool)):
   const marker = createdMarkerOf(configPath);
   if (existsSync(backup)) { copyFileSync(backup, configPath); rmSync(backup); return; }
   if (existsSync(marker)) { rmSync(configPath, { force: true }); rmSync(marker); return; }
-  throw new Error(`Nothing to undo: no freetokens backup next to ${configPath}.`);
+  throw new Error(`Nothing to undo: no freeaitokens backup next to ${configPath}.`);
 }
 
 // Tools with no safe automatic setup: print what to paste.
@@ -77,6 +77,6 @@ export function manualSetup(tool: string, port: number, token: string): string {
     `  Base URL: http://127.0.0.1:${port}/v1`,
     `  API key:  ${token}`,
     `  Model:    free`,
-    `Keep \`freetokens\` running in a terminal while you use it.`,
+    `Keep \`freeaitokens\` running in a terminal while you use it.`,
   ].join('\n');
 }

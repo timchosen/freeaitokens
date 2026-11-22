@@ -5,7 +5,7 @@ import { randomBytes } from 'node:crypto';
 import { emptyState, type LimitState } from '../core/limits.js';
 
 export function stateDir(): string {
-  const d = process.env.FREETOKENS_HOME || join(homedir(), '.freetokens');
+  const d = process.env.FREEAITOKENS_HOME || join(homedir(), '.freeaitokens');
   mkdirSync(d, { recursive: true, mode: 0o700 });
   return d;
 }
@@ -16,7 +16,7 @@ export function loadState(): LimitState {
   try {
     return { ...emptyState(), ...JSON.parse(readFileSync(f, 'utf8')) };
   } catch {
-    process.stderr.write(`freetokens: ${f} was unreadable, starting with empty usage counters\n`);
+    process.stderr.write(`freeaitokens: ${f} was unreadable, starting with empty usage counters\n`);
     return emptyState();
   }
 }

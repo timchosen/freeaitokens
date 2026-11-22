@@ -11,17 +11,17 @@ import { openKeyStore, type KeyStore } from './keys.js';
 import { runAdd, runList, runRemove } from './add.js';
 import { launchSpec, setupFile, undoSetup, manualSetup } from './harness.js';
 
-export const HELP = `freetokens: free AI models for your coding tools, on one local endpoint.
+export const HELP = `freeaitokens: free AI models for your coding tools, on one local endpoint.
 
 Usage:
-  freetokens                 Start the local endpoint and keep it running
-  freetokens add             Add a free provider key (guided)
-  freetokens list            Show providers, key status and what is left today
-  freetokens remove <id>     Delete a stored key
-  freetokens claude [args]   Run Claude Code on free models (this session only)
-  freetokens codex [args]    Run Codex on free models (this session only)
-  freetokens setup <tool>    Add freetokens to opencode, or print settings for cline, aider, continue
-  freetokens setup <tool> --undo   Restore the tool's config from the backup
+  freeaitokens                 Start the local endpoint and keep it running
+  freeaitokens add             Add a free provider key (guided)
+  freeaitokens list            Show providers, key status and what is left today
+  freeaitokens remove <id>     Delete a stored key
+  freeaitokens claude [args]   Run Claude Code on free models (this session only)
+  freeaitokens codex [args]    Run Codex on free models (this session only)
+  freeaitokens setup <tool>    Add freeaitokens to opencode, or print settings for cline, aider, continue
+  freeaitokens setup <tool> --undo   Restore the tool's config from the backup
 
 Options:
   --port <n>       Port for the local endpoint (default ${DEFAULT_PORT})
@@ -67,15 +67,15 @@ export function parseArgs(argv: string[]): Args {
 
 export function banner(port: number, token: string, s: { keyless: number; keyed: number; backend: string }): string {
   const lines: string[] = [];
-  if (s.keyless + s.keyed === 0) lines.push('No providers are usable yet.', 'Run `freetokens add` in another terminal to add a free key.');
-  else lines.push('freetokens is running.');
+  if (s.keyless + s.keyed === 0) lines.push('No providers are usable yet.', 'Run `freeaitokens add` in another terminal to add a free key.');
+  else lines.push('freeaitokens is running.');
   lines.push(
     `  Endpoint:  http://127.0.0.1:${port}/v1`,
     `  Token:     ${token}`,
     `  Providers: ${s.keyless} need no key, ${s.keyed} use your keys (${s.backend === 'file' ? 'stored in a file' : 'system keychain'})`,
   );
-  if (s.keyless + s.keyed > 0 && s.keyed === 0) lines.push('Next: run `freetokens add` to add a free key. Coding sessions need more than the no-key providers allow.');
-  lines.push('Use it: freetokens claude | freetokens codex | freetokens setup opencode', 'Stop with Ctrl+C.');
+  if (s.keyless + s.keyed > 0 && s.keyed === 0) lines.push('Next: run `freeaitokens add` to add a free key. Coding sessions need more than the no-key providers allow.');
+  lines.push('Use it: freeaitokens claude | freeaitokens codex | freeaitokens setup opencode', 'Stop with Ctrl+C.');
   return lines.join('\n');
 }
 
@@ -121,7 +121,7 @@ async function launch(tool: 'claude' | 'codex', a: Args, deps: RouteDeps): Promi
 export async function main(argv: string[]): Promise<void> {
   const a = parseArgs(argv);
   if (a.help) { process.stdout.write(HELP + '\n'); return; }
-  if (!COMMANDS.has(a.command)) fail(`Unknown command "${a.command}". Run \`freetokens --help\` to see the commands.`);
+  if (!COMMANDS.has(a.command)) fail(`Unknown command "${a.command}". Run \`freeaitokens --help\` to see the commands.`);
   const catalogue = loadCatalogue();
   const keys = openKeyStore();
 
@@ -130,8 +130,8 @@ export async function main(argv: string[]): Promise<void> {
     case 'list': process.stdout.write(runList(catalogue, keys, new LimitTracker(loadState())) + '\n'); return;
     case 'remove': {
       const id = a.rest[0];
-      if (!id) fail('Say which provider, for example: freetokens remove groq');
-      if (!catalogue.some((p) => p.id === id)) fail(`No provider called "${id}". Run \`freetokens list\` to see them.`);
+      if (!id) fail('Say which provider, for example: freeaitokens remove groq');
+      if (!catalogue.some((p) => p.id === id)) fail(`No provider called "${id}". Run \`freeaitokens list\` to see them.`);
       runRemove(id, keys);
       process.stdout.write(`Removed the ${id} key.\n`);
       return;
@@ -141,11 +141,11 @@ export async function main(argv: string[]): Promise<void> {
       if (tool === 'opencode') {
         if (a.undo) { undoSetup('opencode'); process.stdout.write('Restored your OpenCode config.\n'); return; }
         const { backup } = setupFile('opencode', a.port, localToken());
-        process.stdout.write(`Added "freetokens" as a provider in OpenCode (pick the model "freetokens/free").\nBackup: ${backup}\nUndo: freetokens setup opencode --undo\nKeep \`freetokens\` running while you use it.\n`);
+        process.stdout.write(`Added "freeaitokens" as a provider in OpenCode (pick the model "freeaitokens/free").\nBackup: ${backup}\nUndo: freeaitokens setup opencode --undo\nKeep \`freeaitokens\` running while you use it.\n`);
         return;
       }
       if (tool === 'cline' || tool === 'aider' || tool === 'continue') { process.stdout.write(manualSetup(tool, a.port, localToken()) + '\n'); return; }
-      return fail(`Unknown tool "${tool ?? ''}". Supported: opencode, cline, aider, continue. For Claude Code and Codex use \`freetokens claude\` or \`freetokens codex\`.`);
+      return fail(`Unknown tool "${tool ?? ''}". Supported: opencode, cline, aider, continue. For Claude Code and Codex use \`freeaitokens claude\` or \`freeaitokens codex\`.`);
     }
     case 'claude':
     case 'codex':
@@ -153,7 +153,7 @@ export async function main(argv: string[]): Promise<void> {
     default: {
       const deps = makeDeps(catalogue, keys, a);
       const srv = await startServer(deps, a.port);
-      if (srv.reused) { process.stdout.write(`freetokens is already running on port ${srv.port}.\n`); return; }
+      if (srv.reused) { process.stdout.write(`freeaitokens is already running on port ${srv.port}.\n`); return; }
       const keyed = catalogue.filter((p) => !p.keyless && keys.get(p.id)).length;
       process.stdout.write(banner(srv.port, localToken(), { keyless: catalogue.filter((p) => p.keyless).length, keyed, backend: keys.backend }) + '\n');
       process.on('SIGINT', async () => { saveState(deps.tracker.state); await srv.close(); process.exit(0); });

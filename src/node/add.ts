@@ -85,7 +85,7 @@ export async function connectOpenRouter(f: Fetch, open: (url: string) => void = 
   auth.searchParams.set('code_challenge', challenge);
   auth.searchParams.set('code_challenge_method', 'S256');
   auth.searchParams.set('state', state);
-  auth.searchParams.set('key_label', 'freetokens');
+  auth.searchParams.set('key_label', 'freeaitokens');
   open(auth.toString());
   let timer: NodeJS.Timeout | undefined;
   try {

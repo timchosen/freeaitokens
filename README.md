@@ -1,25 +1,25 @@
-# freetokens
+# freeaitokens
 
 Free AI models for the coding tools you already use. One command starts a local endpoint backed by providers' free tiers, picks the best available model for every request, and moves to another one when a provider hits its limit.
 
 ```bash
-npx freetokens
+npx freeaitokens
 ```
 
 That works straight away, with no account, on providers that need no key. Then add a free key or two so longer coding sessions don't run out:
 
 ```bash
-npx freetokens add
+npx freeaitokens add
 ```
 
 ## Use it with your tools
 
 | Tool | How |
 |---|---|
-| Claude Code | `npx freetokens claude` (any Claude Code arguments work after it) |
-| Codex | `npx freetokens codex` |
-| OpenCode | `npx freetokens setup opencode`, then pick the model `freetokens/free` |
-| Cline, Aider, Continue | `npx freetokens setup cline` prints the three values to paste |
+| Claude Code | `npx freeaitokens claude` (any Claude Code arguments work after it) |
+| Codex | `npx freeaitokens codex` |
+| OpenCode | `npx freeaitokens setup opencode`, then pick the model `freeaitokens/free` |
+| Cline, Aider, Continue | `npx freeaitokens setup cline` prints the three values to paste |
 | Anything OpenAI-compatible | Base URL `http://127.0.0.1:4949/v1`, model `free`, key from the startup banner |
 
 The launchers only affect that one session. Run `claude` or `codex` normally and they use your own account as before. `setup opencode` adds a provider next to your existing ones and keeps a backup; `--undo` restores it.
@@ -43,9 +43,9 @@ The launchers only affect that one session. Run `claude` or `codex` normally and
 | OpenRouter | Free account | One-click connect in the browser. About 50 free requests a day. |
 | Google Gemini | Free key | Google's terms limit the API to professional or business use. |
 
-`freetokens add` opens each provider's key page, shows the steps, and can pick the key up from your clipboard when you copy it (only during that step, and only if you agree). Keys are tested before they are saved, and stored in your system keychain. Where there is no keychain (some Linux servers, Termux), they go in a file only you can read, and it says so.
+`freeaitokens add` opens each provider's key page, shows the steps, and can pick the key up from your clipboard when you copy it (only during that step, and only if you agree). Keys are tested before they are saved, and stored in your system keychain. Where there is no keychain (some Linux servers, Termux), they go in a file only you can read, and it says so.
 
-`freetokens list` shows what you have and what is left today. `freetokens remove <provider>` deletes a key.
+`freeaitokens list` shows what you have and what is left today. `freeaitokens remove <provider>` deletes a key.
 
 ## Paid keys
 

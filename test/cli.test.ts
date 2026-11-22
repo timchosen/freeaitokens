@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { banner, parseArgs, HELP } from '../src/node/cli.ts';
 
 const run = (...args: string[]) => spawnSync(process.execPath, ['--import', 'tsx', 'src/node/cli.ts', ...args], {
-  encoding: 'utf8', env: { ...process.env, FREETOKENS_HOME: mkdtempSync(join(tmpdir(), 'ft-c-')), FREETOKENS_KEYS: 'file' },
+  encoding: 'utf8', env: { ...process.env, FREEAITOKENS_HOME: mkdtempSync(join(tmpdir(), 'ft-c-')), FREEAITOKENS_KEYS: 'file' },
 });
 
 test('--help lists every command', () => {
@@ -45,15 +45,15 @@ test('arguments after a launcher command are not read as our flags', () => {
   assert.deepEqual(parseArgs(['codex', 'exec', '--port', 'x']).rest, ['exec', '--port', 'x']);
 });
 
-test('first-run banner contains the endpoint URL, the token once, and "freetokens add"', () => {
+test('first-run banner contains the endpoint URL, the token once, and "freeaitokens add"', () => {
   const token = 'ft-' + 'a'.repeat(32);
   const b = banner(4949, token, { keyless: 2, keyed: 0, backend: 'keychain' });
   assert.ok(b.includes('http://127.0.0.1:4949/v1'));
   assert.equal(b.split(token).length - 1, 1);
-  assert.ok(b.includes('freetokens add'));
+  assert.ok(b.includes('freeaitokens add'));
 });
 
 test('banner leads with adding a key when nothing is usable', () => {
   const b = banner(4949, 'ft-x', { keyless: 0, keyed: 0, backend: 'keychain' });
-  assert.match(b.split('\n')[0] + b.split('\n')[1], /freetokens add/);
+  assert.match(b.split('\n')[0] + b.split('\n')[1], /freeaitokens add/);
 });

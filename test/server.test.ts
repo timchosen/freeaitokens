@@ -19,7 +19,7 @@ test('accepts the token as Bearer and as x-api-key', async () => {
 });
 
 test('health needs no token and returns the marker', async () => {
-  assert.deepEqual(await (await fetch(url('/health'))).json(), { app: 'freetokens' });
+  assert.deepEqual(await (await fetch(url('/health'))).json(), { app: 'freeaitokens' });
 });
 
 test('models lists the single virtual model', async () => {
@@ -99,7 +99,7 @@ test('fails clearly when the port belongs to another program', async (t) => {
 });
 
 test('does not reuse a program that only fakes the health marker', async (t) => {
-  const fake = http.createServer((_q, s) => s.end('{"app":"freetokens"}'));
+  const fake = http.createServer((_q, s) => s.end('{"app":"freeaitokens"}'));
   await new Promise<void>((r) => fake.listen(0, '127.0.0.1', r));
   t.after(() => { fake.closeAllConnections(); fake.close(); });
   const port = (fake.address() as any).port;

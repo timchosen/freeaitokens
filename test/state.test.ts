@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { loadState, saveState, localToken, stateDir } from '../src/node/state.ts';
 import { emptyState } from '../src/core/limits.ts';
 
-beforeEach(() => { process.env.FREETOKENS_HOME = mkdtempSync(join(tmpdir(), 'ft-')); });
+beforeEach(() => { process.env.FREEAITOKENS_HOME = mkdtempSync(join(tmpdir(), 'ft-')); });
 
 test('corrupt state file loads empty', () => {
   writeFileSync(join(stateDir(), 'state.json'), '{"windows":');

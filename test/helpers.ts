@@ -29,7 +29,7 @@ export const auth = () => ({ authorization: `Bearer ${token}`, 'content-type': '
 export const url = (p: string) => base + p;
 
 beforeEach(async () => {
-  process.env.FREETOKENS_HOME = mkdtempSync(join(tmpdir(), 'ft-'));
+  process.env.FREEAITOKENS_HOME = mkdtempSync(join(tmpdir(), 'ft-'));
   token = localToken();
   upstreamBodies.length = 0;
   srv = await startServer(makeDeps(), 0);

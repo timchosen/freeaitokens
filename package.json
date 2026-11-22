@@ -1,5 +1,5 @@
 {
-  "name": "freetokens",
+  "name": "freeaitokens",
   "version": "0.1.0",
   "type": "module",
   "engines": {
@@ -11,7 +11,7 @@
     "typescript": "^7.0.2"
   },
   "bin": {
-    "freetokens": "dist/node/cli.js"
+    "freeaitokens": "dist/node/cli.js"
   },
   "files": [
     "dist",
@@ -29,5 +29,24 @@
     "@napi-rs/keyring": "^2.1.2"
   },
   "license": "MIT",
-  "description": "Free AI models for Claude Code, Codex and OpenCode on one local endpoint."
+  "description": "Free AI models for Claude Code, Codex and OpenCode on one local endpoint.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/timchosen/freeaitokens.git"
+  },
+  "homepage": "https://github.com/timchosen/freeaitokens#readme",
+  "bugs": {
+    "url": "https://github.com/timchosen/freeaitokens/issues"
+  },
+  "keywords": [
+    "claude-code",
+    "codex",
+    "opencode",
+    "llm",
+    "free",
+    "openai-compatible",
+    "router",
+    "groq",
+    "openrouter"
+  ]
 }

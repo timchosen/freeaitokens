@@ -10,7 +10,7 @@ export interface KeyStore {
   backend: 'keychain' | 'file';
 }
 
-const SERVICE = 'freetokens';
+const SERVICE = 'freeaitokens';
 
 function keychainStore(): KeyStore {
   return {
@@ -45,7 +45,7 @@ function fileStore(): KeyStore {
 }
 
 export function openKeyStore(forceFile = false): KeyStore {
-  if (forceFile || process.env.FREETOKENS_KEYS === 'file') return fileStore();
+  if (forceFile || process.env.FREEAITOKENS_KEYS === 'file') return fileStore();
   try {
     new Entry(SERVICE, '__probe__').getPassword();
     return keychainStore();

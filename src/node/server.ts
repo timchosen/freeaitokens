@@ -14,7 +14,7 @@ export interface ServerHandle { port: number; address: string; reused: boolean; 
 export const DEFAULT_PORT = 4949;
 const HOST = '127.0.0.1';
 const MAX_BODY = 50 * 1024 * 1024;
-const MARKER = { app: 'freetokens' };
+const MARKER = { app: 'freeaitokens' };
 
 // A format adapter turns an inbound body into a chat request and a chat response back into its own shape.
 export interface Format {
@@ -25,7 +25,7 @@ export interface Format {
   direct?: (body: unknown) => unknown; // answered locally, without a provider
 }
 
-const openaiError = (_s: number, message: string) => ({ error: { message, type: 'freetokens_error' } });
+const openaiError = (_s: number, message: string) => ({ error: { message, type: 'freeaitokens_error' } });
 const openai: Format = {
   toChat: (b) => b as ChatRequest,
   fromChat: (j: any) => ({ ...j, model: 'free' }),
@@ -82,9 +82,9 @@ export function makeHandler(deps: RouteDeps, token: string, formats: Record<stri
     }
     const fmt = formats[path];
     const errOf = fmt ?? openai;
-    if (!tokenOk(req, token)) return send(res, 401, errOf.error(401, 'Missing or wrong local token. Run `freetokens` to see it.'));
+    if (!tokenOk(req, token)) return send(res, 401, errOf.error(401, 'Missing or wrong local token. Run `freeaitokens` to see it.'));
     if (req.method === 'GET' && path === '/v1/models') {
-      return send(res, 200, { object: 'list', data: [{ id: 'free', object: 'model', created: 0, owned_by: 'freetokens' }] });
+      return send(res, 200, { object: 'list', data: [{ id: 'free', object: 'model', created: 0, owned_by: 'freeaitokens' }] });
     }
     if (req.method !== 'POST' || !fmt) return send(res, 404, errOf.error(404, `Unknown endpoint ${req.method} ${path}.`));
     try {

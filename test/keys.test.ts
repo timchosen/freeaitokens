@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { openKeyStore } from '../src/node/keys.ts';
 import { stateDir } from '../src/node/state.ts';
 
-beforeEach(() => { process.env.FREETOKENS_HOME = mkdtempSync(join(tmpdir(), 'ft-')); });
+beforeEach(() => { process.env.FREEAITOKENS_HOME = mkdtempSync(join(tmpdir(), 'ft-')); });
 
 test('set, get and remove round-trip', () => {
   const k = openKeyStore(true);

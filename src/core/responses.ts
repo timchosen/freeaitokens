@@ -198,5 +198,5 @@ export function toResponsesStream(requestedModel: string, body?: unknown): Trans
 }
 
 export function responsesError(_status: number, message: string): unknown {
-  return { error: { message, type: 'freetokens_error' } };
+  return { error: { message, type: 'freeaitokens_error' } };
 }
