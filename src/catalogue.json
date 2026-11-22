@@ -57,7 +57,8 @@
     "steps": ["Sign in or create a free account.", "Open \"API Keys\" in the left menu.", "Copy the key (it starts with csk-)."],
     "keyPattern": "^csk-[A-Za-z0-9]{20,80}$",
     "models": [
-      { "id": "gpt-oss-120b", "context": 131072, "tools": true, "images": false, "quality": 0.6, "limits": { "rpm": 30, "rpd": 1000, "tpm": 60000, "tpd": 1000000 } }
+      { "id": "gpt-oss-120b", "context": 131072, "tools": true, "images": false, "quality": 0.6, "limits": { "rpm": 5, "rpd": 2400, "tpm": 30000, "tpd": 1000000 } },
+      { "id": "qwen-3.8-27b", "context": 131072, "tools": true, "images": false, "quality": 0.5, "limits": { "rpm": 450, "rpd": 648000, "tpm": 150000, "tpd": 216000000 } }
     ]
   },
   {
