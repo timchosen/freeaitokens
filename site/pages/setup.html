@@ -1,0 +1,32 @@
+<!-- title: Setup | description: Add your first free AI keys to FreeAITokens and connect Claude Code, Codex, VS Code, Zed and other tools. -->
+<div class="page">
+  <h1>Setup</h1>
+  <p class="lead">Two steps: add a few free keys, then point your AI tool at FreeAITokens.</p>
+
+  <h2 id="keys">1. Add free keys</h2>
+  <p>{{keyless}} providers work with no account at all. Every free account you add raises your total.</p>
+  <ol>
+    <li>Click the FreeAITokens icon in your menu bar or system tray and choose <b>Add a provider</b>.</li>
+    <li>Pick a provider. The app opens its sign-up page and tells you exactly what to click.</li>
+    <li>Create a free account, copy the key it gives you, and paste it into the app. The app checks the key before saving it.</li>
+  </ol>
+  <p>Good ones to start with: <b>Cerebras</b> and <b>Groq</b> (large free allowances), <b>OpenRouter</b> (one click to connect) and <b>Google Gemini</b>.</p>
+  <p class="small muted">Keys stay on your computer, in its keychain where it has one, and are only ever sent to the provider they belong to. Use your own accounts, one per provider. <a href="/disclaimer">Why that matters</a>.</p>
+
+  <h2 id="tools">2. Connect your tool</h2>
+  <p>Your local address is <code>http://127.0.0.1:4949</code>. The app's menu has <b>Copy endpoint</b> and <b>Copy local token</b> for anything that asks.</p>
+  <div class="cards">
+    <div class="card"><h3>Claude Code</h3><p>Start it through FreeAITokens:</p><div class="cmd"><code>npx freeaitokens claude</code><button class="copy" data-copy="npx freeaitokens claude">Copy</button></div><p class="small muted">Only that session uses free models; run <code>claude</code> normally for your own account.</p></div>
+    <div class="card"><h3>Codex</h3><div class="cmd"><code>npx freeaitokens codex</code><button class="copy" data-copy="npx freeaitokens codex">Copy</button></div></div>
+    <div class="card"><h3>Gemini CLI</h3><div class="cmd"><code>npx freeaitokens gemini</code><button class="copy" data-copy="npx freeaitokens gemini">Copy</button></div></div>
+    <div class="card"><h3>OpenCode</h3><div class="cmd"><code>npx freeaitokens setup opencode</code><button class="copy" data-copy="npx freeaitokens setup opencode">Copy</button></div><p class="small muted">Then pick the model <code>freeaitokens/free</code>. <code>--undo</code> restores your old settings.</p></div>
+    <div class="card"><h3>VS Code, Zed, JetBrains</h3><p>Prints exactly what to paste into the editor's settings:</p><div class="cmd"><code>npx freeaitokens setup vscode</code><button class="copy" data-copy="npx freeaitokens setup vscode">Copy</button></div><p class="small muted">Use <code>zed</code> or <code>jetbrains</code> instead of <code>vscode</code>.</p></div>
+    <div class="card"><h3>Cline, Continue, Roo Code, Crush</h3><div class="cmd"><code>npx freeaitokens setup cline</code><button class="copy" data-copy="npx freeaitokens setup cline">Copy</button></div><p class="small muted">Or the tool's own name instead of <code>cline</code>.</p></div>
+    <div class="card"><h3>Kilo Code, Qwen Code, Goose, Aider</h3><div class="cmd"><code>npx freeaitokens aider</code><button class="copy" data-copy="npx freeaitokens aider">Copy</button></div><p class="small muted">Or <code>kilo</code>, <code>qwen</code>, <code>goose</code>.</p></div>
+    <div class="card"><h3>Any other app</h3><p>If it lets you set a custom OpenAI address:</p><ul class="small"><li>Base URL <code>http://127.0.0.1:4949/v1</code></li><li>Model <code>free</code></li><li>API key: <b>Copy local token</b> in the app's menu</li></ul></div>
+  </div>
+  <p class="small muted">The commands above need Node.js. If you don't have it, <a href="/ask-your-ai">ask your AI</a> to do this part, or get Node.js from <a href="https://nodejs.org">nodejs.org</a>.</p>
+
+  <h2>Not supported</h2>
+  <p><b>Cursor</b> sends custom addresses through its own servers, which can't reach your computer. <b>The ChatGPT app</b> can't use a custom address at all.</p>
+</div>

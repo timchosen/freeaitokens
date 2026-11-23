@@ -1,0 +1,23 @@
+<!-- title: The install script | description: Exactly what the FreeAITokens one-line installer does, with its full source for macOS, Linux and Windows. -->
+<div class="page">
+  <h1>What the install script does</h1>
+  <p class="lead">Pasting a command from a website into Terminal means trusting that website. Here is everything the FreeAITokens installer does, and its full source.</p>
+
+  <h2>In plain words</h2>
+  <ol>
+    <li>Works out whether you have a Mac, Linux or Windows computer.</li>
+    <li>Downloads the latest FreeAITokens app from its public <a href="https://github.com/timchosen/freeaitokens/releases">GitHub releases</a>.</li>
+    <li>Mac: puts the app in your Applications folder (replacing an older copy) and opens it. Linux: saves it as <code>~/.local/bin/freeaitokens-app</code>. Windows: runs the normal installer.</li>
+    <li>Deletes the downloaded file. It changes nothing else: no admin password, no settings, no other software.</li>
+  </ol>
+  <p>The whole script sits inside one function that runs only at the very end, so a download cut off halfway does nothing.</p>
+  <p>To read it before running it: <code>curl -fsSL https://freeaitokens.co/install | less</code></p>
+
+  <h2>Mac and Linux: <a href="/install">/install</a></h2>
+  <pre><code>{{installScript}}</code></pre>
+
+  <h2>Windows: <a href="/install.ps1">/install.ps1</a></h2>
+  <pre><code>{{installPs1}}</code></pre>
+
+  <p class="small muted">Both files are also in the <a href="https://github.com/timchosen/freeaitokens/tree/main/site/static">source repository</a>. Found a problem? <a href="https://github.com/timchosen/freeaitokens/security/policy">Report it privately</a>.</p>
+</div>

@@ -55,7 +55,7 @@ export function build(outDir = join(here, 'dist')) {
   mkdirSync(outDir, { recursive: true });
   cpSync(join(here, 'static'), outDir, { recursive: true });
   const s = stats(catalogue);
-  const fill = { providers: String(s.providers), models: String(s.models), keyless: String(s.keyless), monthly: billions(s.monthlyTokens), providerTable: providerTable(catalogue) };
+  const fill = { providers: String(s.providers), models: String(s.models), keyless: String(s.keyless), monthly: billions(s.monthlyTokens), providerTable: providerTable(catalogue), installScript: esc(readFileSync(join(here, 'static/install'), 'utf8')), installPs1: esc(readFileSync(join(here, 'static/install.ps1'), 'utf8')) };
   for (const f of readdirSync(join(here, 'pages')).filter((f) => f.endsWith('.html'))) {
     const src = readFileSync(join(here, 'pages', f), 'utf8');
     const meta = /^<!--\s*title:\s*(.*?)\s*\|\s*description:\s*(.*?)\s*-->\n?/.exec(src);

@@ -1,0 +1,82 @@
+<!-- title: Docs | description: How FreeAITokens works: the command line, supported request formats, embeddings and images, options, and all {{providers}} free providers with their limits. -->
+<div class="page wide">
+  <h1>Docs</h1>
+  <p class="lead">The detail behind FreeAITokens, for developers and the curious. If you just want it working, <a href="/download">download the app</a> and follow <a href="/setup">Setup</a>.</p>
+
+  <nav class="toc" aria-label="On this page">
+    <ul>
+      <li><a href="#command-line">Command line</a></li>
+      <li><a href="#tools">Use it with your tools</a></li>
+      <li><a href="#how">What it does</a></li>
+      <li><a href="#media">Not only chat</a></li>
+      <li><a href="#paid">Paid keys and options</a></li>
+      <li><a href="#providers">All {{providers}} providers</a></li>
+      <li><a href="#unsupported">Not supported yet</a></li>
+    </ul>
+  </nav>
+
+  <h2 id="command-line">Command line</h2>
+  <p>With Node.js 20 or newer you don't need the app:</p>
+  <pre><code>npx freeaitokens               # start the local endpoint
+npx freeaitokens add           # add a free provider key (guided)
+npx freeaitokens list          # providers, key status, what is left today
+npx freeaitokens remove &lt;id&gt;   # delete a stored key</code></pre>
+  <p>Or install it once: <code>npm install -g freeaitokens</code>. The endpoint listens on <code>127.0.0.1:4949</code> only and needs the local token from the startup banner. The app and the command share keys and settings.</p>
+
+  <h2 id="tools">Use it with your tools</h2>
+  <div class="table"><table>
+    <thead><tr><th>Tool</th><th>How</th></tr></thead>
+    <tbody>
+      <tr><td>Claude Code</td><td><code>npx freeaitokens claude</code> (any Claude Code arguments work after it)</td></tr>
+      <tr><td>Codex</td><td><code>npx freeaitokens codex</code></td></tr>
+      <tr><td>Gemini CLI</td><td><code>npx freeaitokens gemini</code></td></tr>
+      <tr><td>OpenCode</td><td><code>npx freeaitokens setup opencode</code>, then the model <code>freeaitokens/free</code></td></tr>
+      <tr><td>Kilo Code CLI, Qwen Code, Goose, Aider</td><td><code>npx freeaitokens kilo</code> / <code>qwen</code> / <code>goose</code> / <code>aider</code></td></tr>
+      <tr><td>Zed, JetBrains AI, VS Code</td><td><code>npx freeaitokens setup zed</code> / <code>jetbrains</code> / <code>vscode</code> prints what to paste</td></tr>
+      <tr><td>Continue, Cline, Crush, Roo Code</td><td><code>npx freeaitokens setup cline</code> (or the tool's name) prints the values</td></tr>
+      <tr><td>Anything OpenAI-compatible</td><td>Base URL <code>http://127.0.0.1:4949/v1</code>, model <code>free</code>, key from the startup banner</td></tr>
+      <tr><td>Anthropic, Gemini or Ollama clients</td><td>Base URL <code>http://127.0.0.1:4949</code>, the same key</td></tr>
+    </tbody>
+  </table></div>
+  <p>Launchers only affect that one session and write nothing to your tool's config. <code>setup opencode</code> adds a provider next to your existing ones and keeps a backup; <code>--undo</code> restores it.</p>
+
+  <h2 id="how">What it does</h2>
+  <ul>
+    <li><b>Picks a model per request.</b> Only models that can handle it: enough context, tool calling when the tool needs it, images when there are images. It prefers better models that have been fast and reliable for you, and stays on the same model through a conversation unless another is clearly better.</li>
+    <li><b>Fails over.</b> On a rate limit, server error or timeout it tries the next model before your tool sees anything. If everything is busy and capacity returns within 30 seconds it waits; otherwise it tells you when.</li>
+    <li><b>Tracks free limits</b> per provider, model and key, by the minute and by the day, and corrects itself from the limits providers report.</li>
+    <li><b>Speaks five formats:</b> OpenAI chat completions, Anthropic Messages (Claude Code), OpenAI Responses (Codex), Gemini (Gemini CLI) and Ollama (<code>/api/chat</code>).</li>
+    <li><b>Keeps an up-to-date provider list</b>, signed and checked before use, so new free models arrive without an update.</li>
+  </ul>
+
+  <h2 id="media">Not only chat</h2>
+  <p>The same endpoint takes the OpenAI routes for embeddings (<code>/v1/embeddings</code>), plain completions (<code>/v1/completions</code>), images (<code>/v1/images/generations</code>), text to speech (<code>/v1/audio/speech</code>), transcription (<code>/v1/audio/transcriptions</code>) and video (<code>/v1/videos</code>), each sent to a free provider that offers it, with the same failover and limits.</p>
+  <ul>
+    <li><b>Free today:</b> embeddings (Gemini, OpenRouter, SEA-LION, Cloudflare, OVH), completions (Cerebras, OpenRouter, OVH), images (Cloudflare Flux, OpenRouter), text to speech (Groq, OpenRouter, Cloudflare), transcription (Groq, Cloudflare, OVH). No provider offers free video yet.</li>
+    <li><b>Embeddings:</b> vectors from different models can't be compared. Send the model name the response gave you (for example <code>gemini-embedding-001</code>) and later requests stay on it.</li>
+  </ul>
+
+  <h2 id="paid">Paid keys and options</h2>
+  <p>Paid keys can sit below the free ones as a last resort: used only when no free model can serve the request, each paid request is printed, with a daily cap.</p>
+  <div class="table"><table>
+    <thead><tr><th>Option</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td><code>--port &lt;n&gt;</code></td><td>Port for the local endpoint (default 4949)</td></tr>
+      <tr><td><code>--free-only</code></td><td>Never use paid keys</td></tr>
+      <tr><td><code>--paid-cap &lt;n&gt;</code></td><td>Most paid requests per day (default 200)</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="providers">All {{providers}} providers</h2>
+  <p>Together they publish up to {{monthly}} free tokens a month. That figure adds up published free limits, counting 2,000 tokens a request where only a request limit is published; most of it comes from a few large allowances, and you get it only with a key for each provider. Providers that publish no limit count as zero.</p>
+  {{providerTable}}
+
+  <h2 id="unsupported">Not supported yet</h2>
+  <ul>
+    <li><b>Cursor:</b> it sends custom-endpoint traffic through its own servers, which can't reach a local address.</li>
+    <li><b>The ChatGPT app:</b> it can't use a custom endpoint.</li>
+    <li>Image editing, audio translation, realtime voice.</li>
+    <li>Codex's connected-app (MCP) tools and web search are not passed to free models: they add more context than free models accept.</li>
+  </ul>
+  <p>Source code, issues and the full README: <a href="https://github.com/timchosen/freeaitokens">GitHub</a>.</p>
+</div>

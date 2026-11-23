@@ -1,2 +1,68 @@
-<!-- title: Home | description: Free AI for your tools: FreeAITokens combines the free allowances of {{providers}} AI providers on your own computer. -->
-<p>{{providers}} providers, {{monthly}} tokens a month.</p>
+<!-- title: Home | description: FreeAITokens combines the free allowances of {{providers}} AI providers on your own computer, so your AI tools keep working without a subscription. -->
+<section class="hero">
+  <p class="eyebrow">{{providers}} AI providers · one app · free</p>
+  <h1>Free AI, without the bill.</h1>
+  <p class="lead">It quietly combines the free allowances of {{providers}} AI providers, so your AI tools keep working without a subscription. Up to {{monthly}} free tokens a month.</p>
+  <a class="btn" href="/download" data-download>Download for your computer</a>
+  <p class="also" data-also>For Mac, Windows and Linux · free and open source</p>
+
+  <div class="tabs" role="tablist" aria-label="Ways to install">
+    <button role="tab" id="tab-dl" aria-controls="p-dl" aria-selected="false" tabindex="-1">Download</button>
+    <button role="tab" id="tab-term" aria-controls="p-term" aria-selected="true">Paste in Terminal</button>
+    <button role="tab" id="tab-ai" aria-controls="p-ai" aria-selected="false" tabindex="-1">Ask your AI</button>
+  </div>
+
+  <div class="panel" role="tabpanel" id="p-dl" aria-labelledby="tab-dl" hidden>
+    <p>Download the app, open it, and it appears in your menu bar (Mac) or system tray (Windows and Linux).</p>
+    <p class="small muted">The app is not code-signed yet, so the first time you open it your computer warns you. <a href="/download#first-open">How to open it anyway</a>.</p>
+  </div>
+
+  <div class="panel" role="tabpanel" id="p-term" aria-labelledby="tab-term">
+    <div data-for="mac linux">
+      <p>Open Terminal, paste this, press Return:</p>
+      <div class="cmd"><code>curl -fsSL https://freeaitokens.co/install | sh</code><button class="copy" data-copy="curl -fsSL https://freeaitokens.co/install | sh">Copy</button></div>
+    </div>
+    <div data-for="windows">
+      <p>On Windows, open PowerShell, paste this, press Enter:</p>
+      <div class="cmd"><code>irm https://freeaitokens.co/install.ps1 | iex</code><button class="copy" data-copy="irm https://freeaitokens.co/install.ps1 | iex">Copy</button></div>
+    </div>
+    <p class="small muted">It downloads the app from GitHub and installs it, nothing else. <a href="/install-script">What does this script do?</a></p>
+  </div>
+
+  <div class="panel" role="tabpanel" id="p-ai" aria-labelledby="tab-ai" hidden>
+    <p>Using an AI assistant that can run commands, like Claude, ChatGPT or Codex? Paste this to it:</p>
+    <div class="cmd"><code>Please set up FreeAITokens on my computer by following https://freeaitokens.co/setup.md</code><button class="copy" data-copy="Please set up FreeAITokens on my computer by following https://freeaitokens.co/setup.md">Copy</button></div>
+    <p class="small muted">It installs the app and connects your tools, and asks you to create the free accounts yourself. <a href="/ask-your-ai">More about this</a>.</p>
+  </div>
+</section>
+
+<section class="band">
+  <div class="inner">
+    <h2 class="center">How it works</h2>
+    <div class="grid3">
+      <div class="step"><b>1. Install it</b>It sits in your menu bar. {{keyless}} providers work straight away, with no account.</div>
+      <div class="step"><b>2. Add free keys</b>Each free account you add raises your total. The app walks you through each one.</div>
+      <div class="step"><b>3. Use your AI tools</b>When one provider runs out, it moves to the next. You don't notice.</div>
+    </div>
+  </div>
+</section>
+
+<section class="section center">
+  <h2>Works with the tools you already use</h2>
+  <ul class="chips">
+    <li>Claude Code</li><li>Codex</li><li>Gemini CLI</li><li>VS Code</li><li>Zed</li><li>JetBrains</li><li>Cline</li><li>OpenCode</li><li>Aider</li><li>Any app that takes a custom AI address</li>
+  </ul>
+  <p class="small"><a href="/setup">See setup for each tool</a></p>
+</section>
+
+<section class="card note">
+  <h3>The honest part</h3>
+  <p class="muted">Free allowances are for trying things, not for running a business. Use your own accounts, one per provider, and don't share access with anyone. FreeAITokens runs on your own computer, and your keys never leave it. Some providers may use what you send to improve their models; the app tells you which.</p>
+  <p class="small"><a href="/disclaimer">Read the full disclaimer</a></p>
+</section>
+
+<section class="section center">
+  <h2>Made by one person, free for everyone</h2>
+  <p class="muted">If it saves you money, a coffee keeps it going.</p>
+  <a class="btn yellow" href="/support">☕ Support FreeAITokens</a>
+</section>

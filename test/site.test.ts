@@ -86,3 +86,22 @@ test('install script refuses an unsupported system and changes nothing', () => {
   assert.match(r.stderr, /not supported/);
   assert.equal(spawnSync('sh', ['-n', SCRIPT]).status, 0);
 });
+
+test('every page has a title and description, links only to pages that exist, and writes the name FreeAITokens', async () => {
+  const { existsSync } = await import('node:fs');
+  const out = mkdtempSync(join(tmpdir(), 'site-'));
+  build(out);
+  const pages = readdirSync(out).filter((f) => f.endsWith('.html'));
+  for (const name of ['index', 'download', 'setup', 'ask-your-ai', 'docs', 'about', 'disclaimer', 'privacy', 'support', 'install-script', '404']) assert.ok(pages.includes(`${name}.html`), name);
+  for (const p of pages) {
+    const html = readFileSync(join(out, p), 'utf8');
+    assert.match(html, /<meta name="description" content="[^"]{20,}">/, p);
+    for (const [, href] of html.matchAll(/href="(\/[^"#]*)/g)) {
+      const path = href === '/' ? 'index.html' : href.slice(1);
+      assert.ok(existsSync(join(out, path)) || existsSync(join(out, `${path}.html`)), `${p} links to missing ${href}`);
+    }
+    const prose = html.replace(/<(code|pre|script|title)[\s\S]*?<\/\1>/g, '').replace(/="[^"]*"/g, '').replace(/freeaitokens\.co|timchosen\/freeaitokens|freeaitokens-app/g, '');
+    assert.doesNotMatch(prose, /freeaitokens/, `${p} writes the name in lowercase outside code`);
+  }
+  assert.ok(existsSync(join(out, 'setup.md')) && existsSync(join(out, 'install')) && existsSync(join(out, 'install.ps1')));
+});

@@ -1,0 +1,42 @@
+<!-- title: Download | description: Download the free FreeAITokens app for Mac, Windows or Linux, or install it with one line in Terminal. -->
+<div class="page">
+  <h1>Download</h1>
+  <p class="lead">The FreeAITokens app is free and open source. It runs on your own computer and shows up in your menu bar or system tray.</p>
+  <p><a class="btn" href="#all" data-download>Download for your computer</a></p>
+  <p class="also" data-also>For Mac, Windows and Linux · free and open source</p>
+
+  <h2 id="all">All downloads</h2>
+  <ul class="downloads">
+    <li id="mac"><span><b>Mac</b> · Apple silicon and Intel, macOS 12 or newer</span><span><a href="https://github.com/timchosen/freeaitokens/releases/latest/download/FreeAITokens-mac.dmg">.dmg</a> · <a href="https://github.com/timchosen/freeaitokens/releases/latest/download/FreeAITokens-mac.zip">.zip</a></span></li>
+    <li id="windows"><span><b>Windows</b> · Windows 10 or 11</span><span><a href="https://github.com/timchosen/freeaitokens/releases/latest/download/FreeAITokens-windows.exe">Installer (.exe)</a></span></li>
+    <li id="linux"><span><b>Linux</b> · AppImage or Debian/Ubuntu package</span><span><a href="https://github.com/timchosen/freeaitokens/releases/latest/download/FreeAITokens-linux-x86_64.AppImage">AppImage</a> · <a href="https://github.com/timchosen/freeaitokens/releases/latest/download/FreeAITokens-linux-amd64.deb">.deb</a> · <a href="https://github.com/timchosen/freeaitokens/releases/latest/download/FreeAITokens-linux-arm64.AppImage">ARM AppImage</a></span></li>
+  </ul>
+  <p class="small muted">Older versions and release notes are on <a href="https://github.com/timchosen/freeaitokens/releases">GitHub</a>.</p>
+
+  <h2>Or install with one line</h2>
+  <p>Mac or Linux: open Terminal, paste this, press Return.</p>
+  <div class="cmd"><code>curl -fsSL https://freeaitokens.co/install | sh</code><button class="copy" data-copy="curl -fsSL https://freeaitokens.co/install | sh">Copy</button></div>
+  <p>Windows: open PowerShell, paste this, press Enter.</p>
+  <div class="cmd"><code>irm https://freeaitokens.co/install.ps1 | iex</code><button class="copy" data-copy="irm https://freeaitokens.co/install.ps1 | iex">Copy</button></div>
+  <p class="small muted"><a href="/install-script">What these scripts do, line by line</a>.</p>
+
+  <h2 id="first-open">Opening it the first time</h2>
+  <p>The app is not code-signed yet (signing costs money every year). Your computer warns you about apps from developers it doesn't know. To open it anyway:</p>
+  <h3>Mac</h3>
+  <ol>
+    <li>Open the app. macOS says it can't check it; click <b>Done</b>.</li>
+    <li>Open <b>System Settings → Privacy &amp; Security</b>, scroll down, and click <b>Open Anyway</b> next to FreeAITokens.</li>
+    <li>Confirm with your password or Touch ID. You only do this once.</li>
+  </ol>
+  <p class="small muted">If you installed with the Terminal line, you skip this step.</p>
+  <h3>Windows</h3>
+  <ol>
+    <li>Run the installer. If a blue "Windows protected your PC" box appears, click <b>More info</b>.</li>
+    <li>Click <b>Run anyway</b>.</li>
+  </ol>
+  <h3>Linux</h3>
+  <p>Make the AppImage runnable (right-click → Properties → Allow executing, or <code>chmod +x</code>) and open it. Some systems also need <code>libfuse2</code>.</p>
+
+  <h2>Prefer the command line?</h2>
+  <p>Developers can skip the app and run <code>npx freeaitokens</code> with Node.js 20 or newer. See <a href="/docs#command-line">the docs</a>.</p>
+</div>
