@@ -178,13 +178,13 @@ export function guessKind(text) {
 export function sortedKind(reply) {
   const words = String(reply ?? '').trim().toLowerCase().split(/\s+/);
   const w = words[0].replace(/[^a-z]/g, '');
-  return words.length === 1 && ['chat', 'image', 'speech'].includes(w) ? w : null;
+  return ['chat', 'image', 'speech'].includes(w) ? w : null;
 }
 // The audio file type from its first bytes, never from its name.
 export function audioType(u8) {
   if (!u8 || u8.length < 12) return null;
   const at = (i, ...b) => b.every((x, j) => u8[i + j] === x);
-  if (at(0, 0x49, 0x44, 0x33) || (u8[0] === 0xff && (u8[1] & 0xe0) === 0xe0)) return 'mp3';
+  if (at(0, 0x49, 0x44, 0x33) || (u8[0] === 0xff && (u8[1] & 0xe0) === 0xe0 && (u8[1] & 0x06) === 0x02 && (u8[2] & 0xf0) !== 0xf0)) return 'mp3';
   if (at(0, 0x52, 0x49, 0x46, 0x46) && at(8, 0x57, 0x41, 0x56, 0x45)) return 'wav';
   if (at(0, 0x4f, 0x67, 0x67, 0x53)) return 'ogg';
   if (at(0, 0x66, 0x4c, 0x61, 0x43)) return 'flac';

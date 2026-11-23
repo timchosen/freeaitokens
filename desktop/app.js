@@ -146,6 +146,12 @@ function bubble(m) {
     box.innerHTML = renderMarkdown(m.content); // renderMarkdown escapes everything it does not create itself
     previewSvgs(box);
   } else box.textContent = m.content;
+  if (m.error && [t('no_speech_providers'), t('no_transcription_providers')].includes(m.content)) {
+    const add = el('button', 'copy', t('btn_add'));
+    add.type = 'button';
+    add.addEventListener('click', () => api.add());
+    box.append(' ', add);
+  }
   if (m.audio) box.append(player(m));
   if (m.meta) {
     const meta = el('div', 'meta');
@@ -255,22 +261,21 @@ async function send() {
   const text = $('prompt').value.trim();
   if (!text || $('send').disabled) return;
   if (!current) { current = { id: Date.now(), title: text.slice(0, 60), model: $('model').value, mode, messages: [], updated: Date.now() }; chats.unshift(current); }
-  const chat = current;
+  const chat = current, asking = mode, model = $('model').value; // read before waiting: the person may switch chats
   const asked = { role: 'user', content: text };
   chat.messages.push(asked);
   bubble(asked);
   $('prompt').value = '';
   $('send').disabled = busy = true;
-  const wait = bubble({ role: 'assistant', content: `_${t(mode === 'image' ? 'creating' : 'thinking')}_` });
+  const wait = bubble({ role: 'assistant', content: `_${t(asking === 'image' ? 'creating' : 'thinking')}_` });
   // Auto: a free model (or the word rules) decides between chat, a picture and speech.
-  const auto = mode === 'auto' ? (await api.sort(text)).kind : null;
-  const kind = auto ?? mode;
+  const auto = asking === 'auto' ? (await api.sort(text)).kind : null;
+  const kind = auto ?? asking;
   if (kind !== 'chat') { asked.kind = kind; wait.innerHTML = renderMarkdown(`_${t(kind === 'image' ? 'creating' : 'speaking')}_`); }
   // Picture and speech turns are not conversation: chat models only see the chat turns.
-  const history = chat.messages.filter((m) => !m.error && !m.image && !m.audio && m.kind !== 'image' && m.kind !== 'speech').map(({ role, content }) => ({ role, content }));
-  const model = $('model').value;
-  const r = kind === 'image' ? await api.image(text, mode === 'image' ? model : 'free')
-    : kind === 'speech' ? await api.speech(text, true)
+  const history = chat.messages.filter((m) => !m.error && !m.image && m.kind !== 'image' && m.kind !== 'speech').map(({ role, content }) => ({ role, content }));
+  const r = kind === 'image' ? await api.image(text, asking === 'image' ? model : 'free')
+    : kind === 'speech' ? await api.speech(text.slice(0, 4000), true)
     : await api.chat(history, model);
   wait.remove();
   busy = false;
@@ -280,10 +285,10 @@ async function send() {
   const meta = r.ok ? { provider: r.provider, model: r.model, ms: r.ms, ...(r.tokens ? { tokens: r.tokens } : {}), ...(auto && auto !== 'chat' ? { auto } : {}) } : null;
   chat.messages.push(!r.ok ? { role: 'assistant', content: r.reason, error: true }
     : r.image ? { role: 'assistant', content: '', image: r.image, prompt: text, meta }
-    : r.audio ? { role: 'assistant', content: r.text ?? '', audio: r.audio, meta }
+    : r.audio ? { role: 'assistant', kind: 'speech', content: r.text ?? '', audio: r.audio, meta }
     : { role: 'assistant', content: r.text, meta });
-  chat.model = $('model').value;
-  chat.mode = mode;
+  chat.model = model;
+  chat.mode = asking;
   chat.updated = Date.now();
   chats = [chat, ...chats.filter((c) => c !== chat)];
   save();
@@ -298,7 +303,9 @@ $('newChat').addEventListener('click', () => openChat(null));
 $('attach').addEventListener('click', async () => {
   if (busy) return;
   $('send').disabled = $('attach').disabled = busy = true;
+  const wait = bubble({ role: 'assistant', content: `_${t('transcribing')}_` });
   const r = await api.transcribe();
+  wait.remove();
   $('attach').disabled = busy = false;
   fillModels();
   if (r.canceled) return;

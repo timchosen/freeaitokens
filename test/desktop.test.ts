@@ -273,6 +273,7 @@ test('sortedKind takes the first word of the sorting answer, or nothing', () => 
   assert.equal(sortedKind(' SPEECH\n'), 'speech');
   assert.equal(sortedKind('chat'), 'chat');
   assert.equal(sortedKind('I think chat'), null);
+  assert.equal(sortedKind('Image - they want a picture'), 'image');
   assert.equal(sortedKind(''), null);
   assert.equal(sortedKind(undefined), null);
 });
@@ -287,6 +288,7 @@ test('audioType knows audio files by their first bytes', () => {
   assert.equal(audioType(u(0, 0, 0, 0x20, 0x66, 0x74, 0x79, 0x70)), 'm4a');
   assert.equal(audioType(u(0x1a, 0x45, 0xdf, 0xa3)), 'webm');
   assert.equal(audioType(u(0x89, 0x50, 0x4e, 0x47)), null);
+  assert.equal(audioType(u(0xff, 0xfe, 0x68, 0x00)), null); // UTF-16 text, not an MP3 frame
   assert.equal(audioType(new Uint8Array([0x49, 0x44])), null);
 });
 
