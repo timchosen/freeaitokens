@@ -433,3 +433,12 @@ test('webhook: refunding a yearly charge from before a renewal still revokes, th
   assert.ok((db.prepare('SELECT revoked FROM licenses').get() as any).revoked);
   globalThis.fetch = realFetch;
 });
+
+test('a purchase can be picked up by the app for an hour, not longer', async () => {
+  stubStripe();
+  const { env, db } = makeEnv();
+  await hook(env, 'checkout.session.completed', completed({ client_reference_id: await sha256hex(token) }), 'evt_hour');
+  const { expires } = db.prepare('SELECT expires FROM claims').get() as any;
+  assert.ok(expires <= Date.now() + 3_600_000 && expires > Date.now() + 3_500_000, `expires in ${(expires - Date.now()) / 60_000} min`);
+  globalThis.fetch = realFetch;
+});

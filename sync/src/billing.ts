@@ -93,7 +93,7 @@ async function completed(env: Env, s: any, now: number): Promise<void> {
       .bind(keyHash, plan, s.customer ?? null, ref, s.id, emailHash, until, now),
     ...(s.customer ? [env.SYNC_DB.prepare('INSERT INTO customers (customer, key_hash) VALUES (?, ?) ON CONFLICT DO NOTHING').bind(s.customer, keyHash)] : []),
     ...(s.client_reference_id && HEX64.test(s.client_reference_id)
-      ? [env.SYNC_DB.prepare('INSERT INTO claims (claim_hash, session, expires) VALUES (?, ?, ?) ON CONFLICT DO NOTHING').bind(s.client_reference_id, s.id, now + DAY)]
+      ? [env.SYNC_DB.prepare('INSERT INTO claims (claim_hash, session, expires) VALUES (?, ?, ?) ON CONFLICT DO NOTHING').bind(s.client_reference_id, s.id, now + 3_600_000)] // an hour: the app waits 30 minutes; a shorter window gives a claim link that is not the buyer's less time
       : []),
   ]) as { meta: { changes: number } }[];
   // Another checkout took this claim first; the buyer still gets the key by email ("send me my key").
