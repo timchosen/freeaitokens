@@ -12,12 +12,13 @@ export interface KeyStore {
 
 const SERVICE = 'freeaitokens';
 
-function keychainStore(): KeyStore {
+export function keychainStore(entry = (id: string) => new Entry(SERVICE, id)): KeyStore {
   return {
     backend: 'keychain',
-    get: (id) => new Entry(SERVICE, id).getPassword() ?? null,
-    set: (id, key) => new Entry(SERVICE, id).setPassword(key),
-    remove: (id) => { new Entry(SERVICE, id).deleteCredential(); },
+    // A locked, denied or broken keychain item reads as "no key", never as a crash.
+    get: (id) => { try { return entry(id).getPassword() ?? null; } catch { return null; } },
+    set: (id, key) => entry(id).setPassword(key),
+    remove: (id) => { entry(id).deleteCredential(); },
   };
 }
 

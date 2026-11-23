@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, statSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { openKeyStore } from '../src/node/keys.ts';
+import { openKeyStore, keychainStore } from '../src/node/keys.ts';
 import { stateDir } from '../src/node/state.ts';
 
 beforeEach(() => { process.env.FREEAITOKENS_HOME = mkdtempSync(join(tmpdir(), 'ft-')); });
@@ -53,4 +53,9 @@ test('the file fallback says plainly that keys are unencrypted', () => {
   process.stderr.write = ((s: any) => { out.push(String(s)); return true; }) as any;
   try { openKeyStore(true).set('groq', 'x'); } finally { process.stderr.write = ew; }
   assert.match(out.join(''), /unencrypted/);
+});
+
+test('a keychain read that fails counts as no key instead of throwing', () => {
+  const k = keychainStore(() => ({ getPassword() { throw new Error('Platform failure: UNIX[No such file or directory]'); } }) as any);
+  assert.equal(k.get('groq'), null);
 });
