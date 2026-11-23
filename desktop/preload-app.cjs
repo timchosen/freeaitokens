@@ -3,7 +3,10 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('freeaitokens', {
   status: () => ipcRenderer.invoke('app:status'),
-  chat: (messages) => ipcRenderer.invoke('app:chat', messages),
+  chat: (messages, model) => ipcRenderer.invoke('app:chat', messages, model),
+  login: (on) => ipcRenderer.invoke('app:login', on),
+  updates: () => ipcRenderer.invoke('app:updates'),
+  open: (url) => ipcRenderer.invoke('app:open', url),
   launch: (tool) => ipcRenderer.invoke('app:launch', tool),
   copy: (what) => ipcRenderer.invoke('app:copy', what),
   add: (id) => ipcRenderer.invoke('app:add', id),

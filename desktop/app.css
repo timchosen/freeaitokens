@@ -72,3 +72,38 @@ textarea { width: 100%; font: inherit; color: var(--ink); background: var(--card
 .badge.ready { background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); }
 .badge.keyless { background: var(--chip); color: var(--ink); }
 .badge.add { background: none; border: 1px solid var(--line); color: var(--muted); }
+
+/* Playground: saved chats on the left, the conversation on the right. */
+section.play:not([hidden]) { display: grid; grid-template-columns: 200px 1fr; gap: 24px; max-width: 1100px; }
+.history { display: flex; flex-direction: column; gap: 10px; position: sticky; top: 0; align-self: start; max-height: calc(100vh - 68px); }
+.history ul { list-style: none; margin: 0; padding: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+.history li { display: flex; align-items: center; border-radius: 8px; }
+.history li:hover { background: var(--chip); }
+.history li button { font: inherit; font-size: 13px; color: var(--muted); background: none; border: 0; padding: 7px 8px; cursor: pointer; text-align: start; }
+.history li button:first-child { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history li button.on { color: var(--ink); font-weight: 600; }
+.history .del { opacity: 0; font-size: 16px; }
+.history li:hover .del, .history .del:focus-visible { opacity: 1; }
+.convo { min-width: 0; }
+.convo-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.pick { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+select { font: inherit; font-size: 13px; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; max-width: 320px; }
+
+/* Answers rendered from Markdown */
+.msg.md { white-space: normal; }
+.msg.md > :first-child { margin-top: 0; }
+.msg.md > :last-child { margin-bottom: 0; }
+.msg.md p, .msg.md ul, .msg.md ol, .msg.md pre, .msg.md blockquote { margin: 0 0 .7em; }
+.msg.md ul, .msg.md ol { padding-inline-start: 1.4em; }
+.msg.md li { margin: .2em 0; }
+.msg.md h1, .msg.md h2, .msg.md h3, .msg.md h4, .msg.md h5, .msg.md h6 { font-family: var(--sans); font-weight: 700; font-size: 16px; margin: 1em 0 .4em; }
+.msg.md h1, .msg.md h2 { font-size: 18px; }
+.msg.md pre { background: var(--chip); border-radius: 8px; padding: 10px 12px; overflow-x: auto; }
+.msg.md pre code { background: none; padding: 0; white-space: pre; }
+.msg.md blockquote { border-inline-start: 3px solid var(--line); padding-inline-start: 10px; color: var(--muted); }
+.msg.md hr { border: 0; border-top: 1px solid var(--line); margin: 1em 0; }
+
+/* Settings rows */
+.row.set p { flex: 1; margin: 0; color: var(--muted); font-size: 14px; }
+.row.set span { width: 110px; color: var(--ink); font-weight: 600; font-size: 14px; }
+.row.set input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--coral); }

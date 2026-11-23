@@ -85,3 +85,29 @@ export function launchFile(tool, name, spec, platform) {
     `exec ${[spec.cmd, ...spec.args].map(q).join(' ')}`];
   return { ext: platform === 'darwin' ? '.command' : '.sh', text: lines.join('\n') + '\n' };
 }
+
+// Chat models the playground can pick from: keyless providers and ones with a key saved.
+export function modelOptions(catalogue, keys) {
+  return catalogue.filter((p) => p.keyless || keys.get(p.id))
+    .flatMap((p) => p.models.map((m) => ({ value: `${p.id}/${m.id}`, label: m.id, provider: p.name })));
+}
+
+// The catalogue with only the chosen model in it ('free' keeps everything); null if it does not exist.
+export function narrowTo(catalogue, choice) {
+  if (choice === 'free') return catalogue;
+  const i = typeof choice === 'string' ? choice.indexOf('/') : -1;
+  if (i < 1) return null;
+  const pid = choice.slice(0, i), mid = choice.slice(i + 1);
+  const p = catalogue.find((x) => x.id === pid);
+  const m = p?.models.find((x) => x.id === mid);
+  return m ? [{ ...p, models: [m] }] : null;
+}
+
+// True when a release tag like 'v0.3.3' is newer than this app's version.
+export function newerVersion(current, tag) {
+  const parse = (v) => /^v?(\d+)\.(\d+)\.(\d+)$/.exec(v)?.slice(1).map(Number);
+  const a = parse(current), b = parse(tag);
+  if (!a || !b) return false;
+  for (let i = 0; i < 3; i++) if (a[i] !== b[i]) return b[i] > a[i];
+  return false;
+}

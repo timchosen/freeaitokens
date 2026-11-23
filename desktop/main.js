@@ -11,7 +11,8 @@ import { openKeyStore } from 'freeaitokens/dist/node/keys.js';
 import { localToken, saveState, stateDir } from 'freeaitokens/dist/node/state.js';
 import { validateKey, keySteps, connectOpenRouter } from 'freeaitokens/dist/node/add.js';
 import { launchSpec, LAUNCH_TOOLS } from 'freeaitokens/dist/node/harness.js';
-import { allowedUrl, choices, menuTemplate, providerRows, cleanMessages, launchFile } from './logic.js';
+import { route, NoCapacityError } from 'freeaitokens/dist/core/orchestrator.js';
+import { allowedUrl, choices, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion } from './logic.js';
 import { needsAccount, joinAccount } from 'freeaitokens/dist/core/catalogue.js';
 
 const here = (f) => fileURLToPath(new URL(f, import.meta.url));
@@ -93,32 +94,47 @@ ipcMain.handle('app:status', () => ({
   port: srv.port, reused: srv.reused, endpoint: endpoint(),
   providers: providerRows(deps.catalogue, keys, deps.tracker),
   tools: Object.entries(LAUNCH_TOOLS).map(([id, name]) => ({ id, name, note: TOOL_NOTE[id] ?? '' })),
+  models: modelOptions(deps.catalogue, keys),
+  version: app.getVersion(),
+  startAtLogin: app.getLoginItemSettings().openAtLogin,
 }));
-ipcMain.handle('app:chat', async (_e, list) => {
+// Routed here rather than over HTTP, so the answer always says which provider and model gave it,
+// even when another copy of FreeAITokens holds the port.
+ipcMain.handle('app:chat', async (_e, list, choice = 'free') => {
   const messages = cleanMessages(list);
   if (!messages) return { ok: false, reason: 'That message could not be sent.' };
+  const catalogue = narrowTo(deps.catalogue, choice);
+  if (!catalogue || (choice !== 'free' && !modelOptions(catalogue, keys).length)) return { ok: false, reason: 'That model is not available. Pick another one.' };
   const start = Date.now();
   try {
-    const r = await fetch(`${endpoint()}/chat/completions`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', authorization: `Bearer ${localToken()}` },
-      body: JSON.stringify({ model: 'free', messages, max_tokens: 2048 }),
-      signal: AbortSignal.timeout(120_000),
-    });
-    const body = await r.json().catch(() => null);
-    if (!r.ok) return { ok: false, reason: body?.error?.message ?? `The local endpoint answered ${r.status}.` };
-    const [pid, ...rest] = (r.headers.get('x-freeaitokens-served-by') ?? '').split('/');
+    const { response, candidate } = await route({ messages, max_tokens: 4096 }, { ...deps, catalogue });
+    const text = await response.text();
+    if (response.status !== 200) return { ok: false, reason: `${candidate.provider.name} said no: ${text.slice(0, 300)}` };
+    const body = JSON.parse(text);
     return {
       ok: true, ms: Date.now() - start,
       text: String(body?.choices?.[0]?.message?.content ?? ''),
-      provider: deps.catalogue.find((p) => p.id === pid)?.name ?? (pid || 'unknown provider'),
-      model: rest.join('/') || String(body?.model ?? ''),
+      provider: candidate.provider.name, model: candidate.model.id,
       tokens: body?.usage?.total_tokens ?? 0,
     };
   } catch (e) {
-    return { ok: false, reason: e.name === 'TimeoutError' ? 'No answer after two minutes.' : e.message };
+    return { ok: false, reason: e instanceof NoCapacityError ? e.message : `Something went wrong: ${e.message}` };
+  } finally {
+    saveState(deps.tracker.state);
   }
 });
+ipcMain.handle('app:login', (_e, on) => { app.setLoginItemSettings({ openAtLogin: on === true }); refresh(); return app.getLoginItemSettings().openAtLogin; });
+ipcMain.handle('app:updates', async () => {
+  try {
+    const r = await fetch('https://api.github.com/repos/timchosen/freeaitokens/releases/latest', { headers: { accept: 'application/vnd.github+json' }, signal: AbortSignal.timeout(10_000) });
+    const j = await r.json();
+    return { ok: true, latest: String(j.tag_name ?? ''), newer: newerVersion(app.getVersion(), String(j.tag_name ?? '')) };
+  } catch (e) {
+    return { ok: false, reason: e.message };
+  }
+});
+// Links in answers and the download page open in the browser; only web addresses.
+ipcMain.handle('app:open', (_e, url) => { if (typeof url === 'string' && /^https?:\/\//.test(url)) void shell.openExternal(url); });
 ipcMain.handle('app:launch', async (_e, tool) => {
   if (!Object.hasOwn(LAUNCH_TOOLS, tool)) return { ok: false, reason: 'unknown tool' };
   try {

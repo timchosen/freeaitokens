@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 // @ts-ignore plain JS module
-import { allowedUrl, choices, menuLine, menuTemplate, providerRows, cleanMessages, launchFile } from '../desktop/logic.js';
+import { allowedUrl, choices, menuLine, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion } from '../desktop/logic.js';
 
 const cat = [
   { id: 'kilo', name: 'Kilo', keyless: true },
@@ -105,4 +105,43 @@ test('desktop build names every release file without a version', async () => {
   assert.equal(b.appImage.artifactName, 'FreeAITokens-linux-${arch}.${ext}');
   assert.equal(b.deb.artifactName, 'FreeAITokens-linux-${arch}.${ext}');
   assert.deepEqual(b.linux.target, [{ target: 'AppImage', arch: ['x64', 'arm64'] }, { target: 'deb', arch: ['x64', 'arm64'] }]);
+});
+
+test('modelOptions lists only chat models you can use now, and narrowTo keeps just the chosen one', () => {
+  const c = [
+    { id: 'kilo', name: 'Kilo', keyless: true, models: [{ id: 'k1' }] },
+    { id: 'groq', name: 'Groq', keyless: false, models: [{ id: 'g1' }, { id: 'g2' }] },
+    { id: 'cf', name: 'CF', keyless: false, models: [{ id: 'c1' }] },
+  ];
+  const keys = { get: (id: string) => (id === 'groq' ? 'k' : null) };
+  assert.deepEqual(modelOptions(c, keys).map((o: any) => o.value), ['kilo/k1', 'groq/g1', 'groq/g2']);
+  assert.equal(modelOptions(c, keys)[1].provider, 'Groq');
+  assert.equal(narrowTo(c, 'free'), c);
+  assert.deepEqual(narrowTo(c, 'groq/g2').map((p: any) => [p.id, p.models.map((m: any) => m.id)]), [['groq', ['g2']]]);
+  assert.equal(narrowTo(c, 'groq/nope'), null);
+  assert.equal(narrowTo(c, 'cf/c1').length, 1, 'narrowing does not check keys; modelOptions does');
+});
+
+test('newerVersion compares release tags', () => {
+  assert.equal(newerVersion('0.3.2', 'v0.3.3'), true);
+  assert.equal(newerVersion('0.3.2', 'v0.3.2'), false);
+  assert.equal(newerVersion('0.10.0', 'v0.9.9'), false);
+  assert.equal(newerVersion('0.3.2', 'garbage'), false);
+});
+
+test('markdown renders headings, bold, lists and code, and escapes everything else', async () => {
+  const { readFileSync } = await import('node:fs');
+  const vm = await import('node:vm');
+  const ctx: any = {};
+  vm.runInNewContext(readFileSync(new URL('../desktop/md.js', import.meta.url), 'utf8'), ctx);
+  const html = ctx.renderMarkdown('### Hi\n\n**bold** and `x<y`\n\n1. one\n2. two\n\n* a\n* b\n\n```js\nlet a = "<b>";\n```\n\n[site](https://example.com) [bad](javascript:alert(1)) <img src=x onerror=1>');
+  assert.match(html, /<h3>Hi<\/h3>/);
+  assert.match(html, /<strong>bold<\/strong>/);
+  assert.match(html, /<code>x&lt;y<\/code>/);
+  assert.match(html, /<ol><li>one<\/li><li>two<\/li><\/ol>/);
+  assert.match(html, /<ul><li>a<\/li><li>b<\/li><\/ul>/);
+  assert.match(html, /<pre><code>let a = &quot;&lt;b&gt;&quot;;<\/code><\/pre>/);
+  assert.match(html, /<a href="https:\/\/example\.com">site<\/a>/);
+  assert.doesNotMatch(html, /href="javascript/);
+  assert.doesNotMatch(html, /<img/);
 });
