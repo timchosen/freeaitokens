@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 // @ts-ignore plain JS module
-import { allowedUrl, choices, menuLine, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType } from '../desktop/logic.js';
+import { allowedUrl, choices, menuLine, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType, privateAddress } from '../desktop/logic.js';
 import { readFileSync as readText } from 'node:fs';
 import vm from 'node:vm';
 
@@ -247,4 +247,9 @@ test('the window may show data: images and nothing from the web', () => {
   const html = readText(new URL('../desktop/app.html', import.meta.url), 'utf8');
   assert.match(html, /img-src 'self' data:;/);
   assert.doesNotMatch(html, /img-src[^;]*https?:/);
+});
+
+test('privateAddress spots loopback, private, link-local and other local addresses', () => {
+  for (const ip of ['127.0.0.1', '10.1.2.3', '172.16.0.1', '172.31.255.255', '192.168.1.1', '169.254.169.254', '0.0.0.0', '100.64.0.1', '::1', '::', 'fe80::1', 'fd00::1', '::ffff:127.0.0.1', '::ffff:192.168.0.5']) assert.equal(privateAddress(ip), true, ip);
+  for (const ip of ['8.8.8.8', '172.32.0.1', '104.18.2.3', '2606:4700::1111', '::ffff:8.8.8.8']) assert.equal(privateAddress(ip), false, ip);
 });

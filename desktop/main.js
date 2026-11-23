@@ -3,6 +3,7 @@ import { app, Tray, Menu, BrowserWindow, ipcMain, clipboard, nativeImage, shell,
 import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
+import { lookup } from 'node:dns/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadCatalogue, makeDeps, parseArgs } from 'freeaitokens/dist/node/cli.js';
@@ -14,7 +15,7 @@ import { validateKey, keySteps, connectOpenRouter } from 'freeaitokens/dist/node
 import { launchSpec, LAUNCH_TOOLS } from 'freeaitokens/dist/node/harness.js';
 import { route, NoCapacityError } from 'freeaitokens/dist/core/orchestrator.js';
 import { routeMedia, NoProviderError } from 'freeaitokens/dist/core/media.js';
-import { allowedUrl, choices, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType } from './logic.js';
+import { allowedUrl, choices, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType, privateAddress } from './logic.js';
 import './t.js';
 import { needsAccount, joinAccount } from 'freeaitokens/dist/core/catalogue.js';
 
@@ -177,11 +178,20 @@ const IMAGE_FILE = /^[0-9a-f-]{36}\.(png|jpg|webp)$/;
 const MIME = { png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp' };
 const imagesDir = () => join(stateDir(), 'images');
 const dataUrl = (type, bytes) => `data:${MIME[type]};base64,${bytes.toString('base64')}`;
+// A provider's image link: https only, every redirect checked by hand, and never a local or private address.
 async function download(url) {
-  const r = await fetch(url, { signal: AbortSignal.timeout(60_000) });
-  if (!r.ok || Number(r.headers.get('content-length') ?? 0) > MAX_IMAGE) return null;
-  const bytes = Buffer.from(await r.arrayBuffer());
-  return bytes.length <= MAX_IMAGE ? bytes : null;
+  for (let hop = 0; hop < 5; hop++) {
+    const u = new URL(url);
+    if (u.protocol !== 'https:') return null;
+    const addrs = await lookup(u.hostname, { all: true }).catch(() => []);
+    if (!addrs.length || addrs.some((a) => privateAddress(a.address))) return null;
+    const r = await fetch(u, { signal: AbortSignal.timeout(60_000), redirect: 'manual' });
+    if (r.status >= 300 && r.status < 400 && r.headers.get('location')) { url = new URL(r.headers.get('location'), u).href; continue; }
+    if (!r.ok || Number(r.headers.get('content-length') ?? 0) > MAX_IMAGE) return null;
+    const bytes = Buffer.from(await r.arrayBuffer());
+    return bytes.length <= MAX_IMAGE ? bytes : null;
+  }
+  return null;
 }
 ipcMain.handle('app:image', async (_e, prompt, choice = 'free') => {
   if (typeof prompt !== 'string' || !prompt.trim() || prompt.length > 4000) return { ok: false, reason: t('err_send') };
