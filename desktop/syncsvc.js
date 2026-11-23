@@ -7,6 +7,14 @@ import { createHash, randomBytes } from 'node:crypto';
 export const KEY_RE = /^FAT-(?:[A-Z2-7]{5}-){4}[A-Z2-7]{5}$/;
 const LICENSE = 'sync:license', DATAKEY = 'sync:datakey';
 const CLAIM_FOR = 30 * 60_000;
+// Pages the app may open in the browser for paying: Stripe's checkout and billing pages.
+const PAY_HOSTS = new Set(['checkout.stripe.com', 'billing.stripe.com']);
+function payUrl(u) {
+  let url;
+  try { url = new URL(u); } catch { url = null; }
+  if (url?.protocol !== 'https:' || !PAY_HOSTS.has(url.hostname)) throw new Error('The sync server sent a link that is not a payment page.');
+  return url.href;
+}
 
 export function createSyncService({ base, keys, chats, stateFile, fetch, engine, providers, onStatus = () => {}, onPulled = () => {} }) {
   const read = () => { try { return JSON.parse(readFileSync(stateFile, 'utf8')); } catch { return {}; } };
@@ -44,7 +52,8 @@ export function createSyncService({ base, keys, chats, stateFile, fetch, engine,
       },
       removeChat: (id) => { quiet = true; try { chats.remove(id); } finally { quiet = false; } },
       keys: () => Object.fromEntries(providers().map((p) => [p, keys.get(p)])),
-      setKey: (p, k) => { if (k == null) keys.remove(p); else keys.set(p, k); },
+      // Only provider keys sync; a bundle can never reach other keychain entries such as sync:license.
+      setKey: (p, k) => { if (!providers().includes(p)) return; if (k == null) keys.remove(p); else keys.set(p, k); },
       state: () => {
         let snap = { keySnapshot: {}, keyBundle: {} };
         try { if (saved.snap) snap = engine.decryptItem(dk, 'local-snapshot', Buffer.from(saved.snap, 'base64')); } catch { /* start over: every key counts as new */ }
@@ -94,7 +103,7 @@ export function createSyncService({ base, keys, chats, stateFile, fetch, engine,
       const r = await fetch(`${base}/v1/checkout`, { method: 'POST', headers: { authorization: `Bearer ${license()}`, 'content-type': 'application/json' }, body: JSON.stringify({ plan }) });
       const j = await r.json().catch(() => ({}));
       if (!j.url) throw new Error(j.error ?? `The sync server answered ${r.status}.`);
-      return j.url;
+      return payUrl(j.url);
     }
     const token = randomBytes(32).toString('hex');
     write({ claim: { token, until: Date.now() + CLAIM_FOR }, claimed: undefined });
@@ -156,7 +165,7 @@ export function createSyncService({ base, keys, chats, stateFile, fetch, engine,
     const r = await fetch(`${base}/v1/billing`, { method: 'POST', headers: { authorization: `Bearer ${license()}` } });
     const j = await r.json().catch(() => ({}));
     if (!j.url) throw new Error(j.error ?? `The sync server answered ${r.status}.`);
-    return j.url;
+    return payUrl(j.url);
   }
 
   // Stops syncing here and forgets the sync key and data key. Chats and provider keys stay.

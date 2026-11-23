@@ -382,3 +382,32 @@ test('sync service: buy and claim a key, set up, a second computer pulls chats a
   assert.equal(B.chats.list().length, 1);
   assert.equal(B.svc.status().state, 'off');
 });
+
+test('sync service: synced keys touch only known providers, and only sync or Stripe pages are opened', async () => {
+  const engine = await import('../src/node/sync/engine.ts');
+  const keys = fakeKeys();
+  keys.set('sync:license', 'FAT-AAAAA-AAAAA-AAAAA-AAAAA-AAAAA');
+  keys.set('sync:datakey', Buffer.alloc(32, 1).toString('base64'));
+  const dir = mkdtempSync(pjoin(tmpdir(), 'fat-sync-'));
+  let reply: any = {};
+  const f = (async () => new Response(JSON.stringify(reply), { status: 200 })) as unknown as typeof fetch;
+  // An engine that brings back a bundle naming a sync secret and an unknown provider.
+  const fakeEngine = { ...engine, SyncEngine: class { o: any; constructor(o: any) { this.o = o; } async run() {
+    for (const [p, k] of [['sync:license', 'FAT-EVILX-EVILX-EVILX-EVILX-EVILX'], ['nope', 'x'], ['groq', 'gsk_ok']]) this.o.store.setKey(p, k);
+    return { ok: true, pulled: 1, pushed: 0 };
+  } } };
+  const svc = createSyncService({ base: 'https://sync.test', keys, chats: openChatStore(pjoin(dir, 'c.json')), stateFile: pjoin(dir, 's.json'), fetch: f, engine: fakeEngine, providers: () => ['groq'] });
+  await svc.syncNow();
+  assert.equal(keys.get('sync:license'), 'FAT-AAAAA-AAAAA-AAAAA-AAAAA-AAAAA');
+  assert.equal(keys.get('nope'), null);
+  assert.equal(keys.get('groq'), 'gsk_ok');
+  for (const url of ['file:///etc/passwd', 'http://checkout.stripe.com/x', 'https://evil.example/pay', 'javascript:alert(1)']) {
+    reply = { url };
+    await assert.rejects(svc.buy('year'), /not a payment page/, url);
+    await assert.rejects(svc.billingUrl(), /not a payment page/, url);
+  }
+  reply = { url: 'https://checkout.stripe.com/c/pay/cs_1' };
+  assert.equal(await svc.buy('life'), 'https://checkout.stripe.com/c/pay/cs_1');
+  reply = { url: 'https://billing.stripe.com/p/session/x' };
+  assert.equal(await svc.billingUrl(), 'https://billing.stripe.com/p/session/x');
+});
