@@ -200,6 +200,8 @@ test('engine: an undecryptable item is reported and never applied, the rest stil
   assert.deepEqual(live(B).find((c) => c.id === bad)!.title, 'v1', 'the damaged copy changed nothing here');
   assert.ok(live(B).some((c) => c.id === fine), 'everything else came in');
   assert.equal((await eb.run()).ok, true, 'not stuck');
+  await ea.run(); await eb.run();
+  for (const st of [A, B]) assert.deepEqual(live(st).find((c) => c.id === bad)!.messages.map((m) => m.id), ['m1', 'm2'], 'the good copies repair the damaged one');
 });
 
 test('engine: an undecryptable item on a first pull, an expired license or no network change nothing locally', async () => {

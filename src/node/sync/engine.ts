@@ -92,10 +92,11 @@ export class SyncEngine {
           // Deletes travel as encrypted tombstones; a bare server marker is not trusted. Write our copy back.
           if (it.deleted || !it.blob) { if (it.id === keysId) keysDirty = true; else if (work.has(it.id)) dirty.add(it.id); continue; }
           let v;
-          // A damaged or forged item is never applied; it is reported, and everything else still syncs.
+          // A damaged or forged item is never applied; it is reported, our copy is written over it, and everything else still syncs.
           try { v = decryptItem(dataKey, it.id, Buffer.from(it.blob, 'base64')); } catch (e) {
             if (!(e instanceof CorruptItemError)) throw e;
             damaged.push(it.id);
+            if (it.id === keysId) keysDirty = true; else if (work.has(it.id)) dirty.add(it.id);
             continue;
           }
           if (it.id === keysId && v.type === 'keys') {
