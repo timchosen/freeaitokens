@@ -7,7 +7,7 @@ import { join } from 'node:path';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
 const pagesDir = join(here, '../pages');
-const META = /^<!--\s*title:\s*([^|]*?)\s*\|\s*description:\s*([^|]*?)\s*-->\n/;
+const META = /^<!--\s*title:\s*([^|]*?)\s*\|\s*description:\s*([^|]*?)\s*-->\r?\n/;
 const all = (re, s) => [...s.matchAll(re)].map((m) => m[1]).sort();
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
