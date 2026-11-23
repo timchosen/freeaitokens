@@ -6,6 +6,8 @@ import { sseData, mapChatSse } from '../core/sse.js';
 import { BadRequest, type ChatRequest } from '../core/types.js';
 import { fromResponses, toResponses, toResponsesStream, responsesError } from '../core/responses.js';
 import { fromAnthropic, toAnthropic, toAnthropicStream, countTokens, anthropicError } from '../core/anthropic.js';
+import { fromOllamaChat, fromOllamaGenerate, toOllamaChat, toOllamaGenerate, toOllamaChatStream, toOllamaGenerateStream, ollamaError, ollamaShow, OLLAMA_TAGS } from '../core/ollama.js';
+import { fromGemini, toGemini, toGeminiStream, geminiCount, geminiError, GEMINI_MODEL } from '../core/gemini.js';
 import { localToken, saveState, loadState } from './state.js';
 import { LimitTracker } from '../core/limits.js';
 
@@ -18,11 +20,12 @@ const MARKER = { app: 'freeaitokens' };
 
 // A format adapter turns an inbound body into a chat request and a chat response back into its own shape.
 export interface Format {
-  toChat(body: unknown): ChatRequest;
+  toChat(body: unknown, path: string): ChatRequest;
   fromChat(json: unknown, requestedModel: string, body: unknown): unknown;
   fromChatStream(requestedModel: string, body: unknown): TransformStream<Uint8Array, Uint8Array>;
   error(status: number, message: string): unknown;
   direct?: (body: unknown) => unknown; // answered locally, without a provider
+  streamType?: string; // content type of a streamed answer, server-sent events unless set
 }
 
 const openaiError = (_s: number, message: string) => ({ error: { message, type: 'freeaitokens_error' } });
@@ -40,18 +43,38 @@ const openai: Format = {
 const anthropic: Format = { toChat: fromAnthropic, fromChat: toAnthropic, fromChatStream: toAnthropicStream, error: anthropicError };
 const anthropicCount: Format = { ...anthropic, direct: countTokens };
 const responses: Format = { toChat: fromResponses, fromChat: toResponses, fromChatStream: toResponsesStream, error: responsesError };
+const ollamaChat: Format = { toChat: fromOllamaChat, fromChat: toOllamaChat, fromChatStream: toOllamaChatStream, error: ollamaError, streamType: 'application/x-ndjson' };
+const ollamaGenerate: Format = { ...ollamaChat, toChat: fromOllamaGenerate, fromChat: toOllamaGenerate, fromChatStream: toOllamaGenerateStream };
+const gemini: Format = { toChat: fromGemini, fromChat: toGemini, fromChatStream: toGeminiStream, error: geminiError };
 
 export const FORMATS: Record<string, Format> = {
   '/v1/chat/completions': openai,
   '/v1/messages': anthropic,
   '/v1/messages/count_tokens': anthropicCount,
   '/v1/responses': responses,
+  '/v1beta/models/*:generateContent': gemini,
+  '/v1beta/models/*:streamGenerateContent': gemini,
+  '/v1beta/models/*:countTokens': { ...gemini, direct: geminiCount },
+  '/api/chat': ollamaChat,
+  '/api/generate': ollamaGenerate,
+  '/api/show': { ...ollamaChat, direct: ollamaShow },
 };
+
+// Answers to GET requests, by path; '*' stands for any model name.
+const GETS: Record<string, unknown> = {
+  '/v1/models': { object: 'list', data: [{ id: 'free', object: 'model', created: 0, owned_by: 'freeaitokens' }] },
+  '/v1beta/models': { models: [GEMINI_MODEL] },
+  '/v1beta/models/*': GEMINI_MODEL,
+  '/api/tags': OLLAMA_TAGS,
+  '/api/version': { version: '0.12.0' },
+};
+// Gemini puts the model in the path: /v1beta/models/<model>:<method>.
+const pattern = (path: string) => path.replace(/^\/v1beta\/models\/[^/:]+/, '/v1beta/models/*');
 
 class HttpError extends Error { constructor(readonly status: number, message: string) { super(message); } }
 
-function tokenOk(req: http.IncomingMessage, token: string): boolean {
-  const h = req.headers.authorization?.replace(/^Bearer\s+/i, '') ?? req.headers['x-api-key'];
+function tokenOk(req: http.IncomingMessage, query: URLSearchParams, token: string): boolean {
+  const h = req.headers.authorization?.replace(/^Bearer\s+/i, '') ?? req.headers['x-api-key'] ?? req.headers['x-goog-api-key'] ?? query.get('key');
   const got = Buffer.from(typeof h === 'string' ? h : '');
   const want = Buffer.from(token);
   return got.length === want.length && timingSafeEqual(got, want);
@@ -80,17 +103,16 @@ export function makeHandler(deps: RouteDeps, token: string, formats: Record<stri
       const nonce = new URLSearchParams(query).get('nonce');
       return send(res, 200, nonce ? { ...MARKER, proof: proofOf(token, nonce) } : MARKER);
     }
-    const fmt = formats[path];
-    const errOf = fmt ?? openai;
-    if (!tokenOk(req, token)) return send(res, 401, errOf.error(401, 'Missing or wrong local token. Run `freeaitokens` to see it.'));
-    if (req.method === 'GET' && path === '/v1/models') {
-      return send(res, 200, { object: 'list', data: [{ id: 'free', object: 'model', created: 0, owned_by: 'freeaitokens' }] });
-    }
+    const key = pattern(path);
+    const fmt = formats[key];
+    const errOf = fmt ?? (path.startsWith('/v1beta/') ? gemini : path.startsWith('/api/') ? ollamaChat : openai);
+    if (!tokenOk(req, new URLSearchParams(query), token)) return send(res, 401, errOf.error(401, 'Missing or wrong local token. Run `freeaitokens` to see it.'));
+    if (req.method === 'GET' && key in GETS) return send(res, 200, GETS[key]);
     if (req.method !== 'POST' || !fmt) return send(res, 404, errOf.error(404, `Unknown endpoint ${req.method} ${path}.`));
     try {
       const body: any = await readJson(req);
       if (fmt.direct) return send(res, 200, fmt.direct(body));
-      const chat = fmt.toChat(body);
+      const chat = fmt.toChat(body, path);
       const requested = typeof body?.model === 'string' ? body.model : 'free';
       const { response } = await route(chat, deps);
       if (response.status !== 200) {
@@ -98,7 +120,7 @@ export function makeHandler(deps: RouteDeps, token: string, formats: Record<stri
         return send(res, response.status, errOf.error(response.status, `Provider rejected the request: ${text.slice(0, 500)}`));
       }
       if (chat.stream) {
-        res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache' });
+        res.writeHead(200, { 'content-type': fmt.streamType ?? 'text/event-stream', 'cache-control': 'no-cache' });
         const out = response.body!.pipeThrough(fmt.fromChatStream(requested, body));
         Readable.fromWeb(out as any).pipe(res);
         res.on('close', () => out.cancel().catch(() => {}));
