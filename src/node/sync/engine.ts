@@ -74,7 +74,8 @@ export class SyncEngine {
           if ((versions[it.id] ?? 0) >= it.version) continue; // our own write, already in `work`
           versions[it.id] = it.version;
           pulled++;
-          if (it.deleted || !it.blob) { if (it.id !== keysId) { work.delete(it.id); dirty.delete(it.id); } continue; }
+          // Deletes travel as encrypted tombstones; a bare server marker is not trusted. Write our copy back.
+          if (it.deleted || !it.blob) { if (it.id === keysId) keysDirty = true; else if (work.has(it.id)) dirty.add(it.id); continue; }
           const v = decryptItem(dataKey, it.id, Buffer.from(it.blob, 'base64'));
           if (it.id === keysId && v.type === 'keys') {
             bundle = mergeKeys(bundle, v.keys);

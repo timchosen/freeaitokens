@@ -198,3 +198,15 @@ test('engine setup: wrong passphrase, second setup, passphrase change and recove
   assert.deepEqual(await joinExisting({ ...opts(s.f), passphrase: 'third pass' }), dataKey);
   await assert.rejects(resetWithRecovery({ ...opts(s.f), code: recoveryCode(Buffer.alloc(32, 7)), passphrase: 'x' }), /recovery code/);
 });
+
+test('engine: a server-side delete marker (not an encrypted tombstone) removes nothing and the chat is pushed again', async () => {
+  const { s, A, B, ea, eb } = await pair();
+  const id = randomUUID();
+  edit(A, chat({ id, updated: 1, messages: [msg('m1', 1)] }));
+  await ea.run(); await eb.run();
+  s.db.prepare("UPDATE items SET deleted = 1, obj = NULL, version = version + 1, seq = seq + 100 WHERE id = ?").run(id);
+  await eb.run();
+  assert.deepEqual(B.chats().map((c) => c.id), [id]);
+  const row = s.db.prepare('SELECT deleted FROM items WHERE id = ?').get(id) as any;
+  assert.equal(row.deleted, 0, 'B wrote its copy back');
+});
