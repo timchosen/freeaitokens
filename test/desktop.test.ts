@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 // @ts-ignore plain JS module
-import { allowedUrl, choices, menuLine, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType, privateAddress } from '../desktop/logic.js';
+import { allowedUrl, choices, menuLine, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType, privateAddress, guessKind, sortedKind, audioType, mediaOptions } from '../desktop/logic.js';
 import { readFileSync as readText } from 'node:fs';
 import vm from 'node:vm';
 
@@ -252,4 +252,51 @@ test('the window may show data: images and nothing from the web', () => {
 test('privateAddress spots loopback, private, link-local and other local addresses', () => {
   for (const ip of ['127.0.0.1', '10.1.2.3', '172.16.0.1', '172.31.255.255', '192.168.1.1', '169.254.169.254', '0.0.0.0', '100.64.0.1', '::1', '::', 'fe80::1', 'fd00::1', '::ffff:127.0.0.1', '::ffff:192.168.0.5', '198.18.0.1', '192.0.0.1', 'fec0::1', '2002:7f00:1::', '64:ff9b::7f00:1', '64:ff9b:1::1', '::7f00:1']) assert.equal(privateAddress(ip), true, ip);
   for (const ip of ['8.8.8.8', '172.32.0.1', '104.18.2.3', '2606:4700::1111', '::ffff:8.8.8.8']) assert.equal(privateAddress(ip), false, ip);
+});
+
+test('guessKind reads what a message asks for: a picture, speech, or chat', () => {
+  assert.equal(guessKind('draw a fox in the snow'), 'image');
+  assert.equal(guessKind('Make me a logo for a bakery'), 'image');
+  assert.equal(guessKind('a picture of a red car'), 'image');
+  assert.equal(guessKind('please say good morning'), 'speech');
+  assert.equal(guessKind('Read aloud: the quick brown fox'), 'speech');
+  assert.equal(guessKind('what is a fox'), 'chat');
+  assert.equal(guessKind('how do I draw conclusions from data'), 'chat');
+  assert.equal(guessKind('dibuja un zorro'), 'image');
+  assert.equal(guessKind('dessine un chat'), 'image');
+  assert.equal(guessKind('zeichne eine Katze'), 'image');
+  assert.equal(guessKind('di mana rumahmu?'), 'chat');
+});
+
+test('sortedKind takes the first word of the sorting answer, or nothing', () => {
+  assert.equal(sortedKind('Image.'), 'image');
+  assert.equal(sortedKind(' SPEECH\n'), 'speech');
+  assert.equal(sortedKind('chat'), 'chat');
+  assert.equal(sortedKind('I think chat'), null);
+  assert.equal(sortedKind(''), null);
+  assert.equal(sortedKind(undefined), null);
+});
+
+test('audioType knows audio files by their first bytes', () => {
+  const u = (...b) => new Uint8Array([...b, ...new Array(16).fill(0)]);
+  assert.equal(audioType(u(0x49, 0x44, 0x33)), 'mp3');
+  assert.equal(audioType(u(0xff, 0xfb, 0x90)), 'mp3');
+  assert.equal(audioType(u(0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x41, 0x56, 0x45)), 'wav');
+  assert.equal(audioType(u(0x4f, 0x67, 0x67, 0x53)), 'ogg');
+  assert.equal(audioType(u(0x66, 0x4c, 0x61, 0x43)), 'flac');
+  assert.equal(audioType(u(0, 0, 0, 0x20, 0x66, 0x74, 0x79, 0x70)), 'm4a');
+  assert.equal(audioType(u(0x1a, 0x45, 0xdf, 0xa3)), 'webm');
+  assert.equal(audioType(u(0x89, 0x50, 0x4e, 0x47)), null);
+  assert.equal(audioType(new Uint8Array([0x49, 0x44])), null);
+});
+
+test('mediaOptions lists only models of one kind that you can use now', () => {
+  const c = [
+    { id: 'a', name: 'A', keyless: true, media: [{ id: 'voice', kind: 'speech' }, { id: 'pic', kind: 'image' }] },
+    { id: 'b', name: 'B', keyless: false, media: [{ id: 'voice2', kind: 'speech' }] },
+    { id: 'c', name: 'C', keyless: false, media: [{ id: 'voice3', kind: 'speech' }] },
+  ];
+  const keys = { get: (id) => (id === 'b' ? 'k' : undefined) };
+  assert.deepEqual(mediaOptions(c, keys, 'speech').map((o) => o.value), ['a/voice', 'b/voice2']);
+  assert.deepEqual(imageOptions(c, keys).map((o) => o.value), ['a/pic']);
 });
