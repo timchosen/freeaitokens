@@ -168,20 +168,6 @@
     "keyPattern": "^nvapi-[A-Za-z0-9_-]{20,}$",
     "models": [
       {
-        "id": "moonshotai/kimi-k3.1-pro",
-        "context": 1048576,
-        "tools": true,
-        "images": true,
-        "quality": 0.85
-      },
-      {
-        "id": "z-ai/glm-5.3-flash",
-        "context": 1048576,
-        "tools": true,
-        "images": true,
-        "quality": 0.75
-      },
-      {
         "id": "mistralai/mistral-large-4-1t-a52b",
         "context": 1048576,
         "tools": true,
@@ -194,6 +180,20 @@
         "tools": true,
         "images": false,
         "quality": 0.7
+      },
+      {
+        "id": "moonshotai/kimi-k3.1-pro",
+        "context": 1048576,
+        "tools": true,
+        "images": true,
+        "quality": 0.85
+      },
+      {
+        "id": "z-ai/glm-5.3-flash",
+        "context": 1048576,
+        "tools": true,
+        "images": true,
+        "quality": 0.75
       }
     ]
   },
