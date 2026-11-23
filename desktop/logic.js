@@ -148,9 +148,49 @@ export function usageSummary(usage, days, catalogue, now = Date.now()) {
 }
 
 // Image models the playground can use: keyless providers and ones with a key saved.
-export function imageOptions(catalogue, keys) {
+export function mediaOptions(catalogue, keys, kind) {
   return catalogue.filter((p) => p.keyless || keys.get(p.id))
-    .flatMap((p) => (p.media ?? []).filter((m) => m.kind === 'image').map((m) => ({ value: `${p.id}/${m.id}`, label: m.id, provider: p.name })));
+    .flatMap((p) => (p.media ?? []).filter((m) => m.kind === kind).map((m) => ({ value: `${p.id}/${m.id}`, label: m.id, provider: p.name })));
+}
+export const imageOptions = (catalogue, keys) => mediaOptions(catalogue, keys, 'image');
+
+// Word rules for Auto mode, used when no chat model can sort the message. They only match a request
+// at the start ("draw a fox", not "draw conclusions") or a picture noun with "of"/"make me a".
+const POLITE = String.raw`^(?:please\s+|can you\s+|could you\s+)*`;
+const IMAGE_RULES = [
+  new RegExp(POLITE + String.raw`(?:draw|sketch|paint|illustrate|dibuja|pinta|dessine|peins|zeichne|male|desenhe|desenha|gambarkan|ارسم)\s+(?!conclusions?\b|attention\b|a line under\b)`, 'iu'),
+  /\b(?:make|create|generate|design|render)\s+(?:me\s+)?(?:an?\s+|the\s+|some\s+)?(?:\w+\s+)?(?:image|picture|photo|logo|illustration|drawing|icon|poster|wallpaper)s?\b/iu,
+  /\b(?:image|picture|photo|illustration|drawing|painting|sketch)\s+of\b/iu,
+  /\b(?:crea|genera|haz)\s+una?\s+(?:imagen|foto|ilustración|logo)|\b(?:crée|génère|fais)\s+une?\s+(?:image|photo|illustration|logo)|\b(?:erstelle|generiere)\s+ein(?:e|en)?\s+(?:bild|foto|logo)|\b(?:crie|gere|faça)\s+uma?\s+(?:imagem|foto|ilustração|logo)|\bbuat(?:kan)?\s+gambar/iu,
+  /描いて|画像を(?:作|生成)|画一[张幅个只]|生成(?:一张)?图片|画个|तस्वीर बनाओ|चित्र बनाओ|صورة ل/u,
+];
+const SPEECH_RULES = [
+  new RegExp(POLITE + String.raw`(?:say|speak|pronounce|read\s+(?:this\s+|it\s+)?(?:aloud|out)|dis|sag|diga|ucapkan|bacakan)\b`, 'iu'),
+  /\b(?:read\s+(?:this\s+|it\s+)?(?:aloud|out loud)|out loud|text to speech)\b|en voz alta|à voix haute|vorlesen|lies vor|em voz alta|読み上げ|朗读|读出来|बोलकर|पढ़कर सुनाओ|بصوت عال/iu,
+];
+export function guessKind(text) {
+  const s = String(text ?? '').trim();
+  if (IMAGE_RULES.some((r) => r.test(s))) return 'image';
+  if (SPEECH_RULES.some((r) => r.test(s))) return 'speech';
+  return 'chat';
+}
+// The sorting model's answer: its first word, if that is one of the three kinds.
+export function sortedKind(reply) {
+  const words = String(reply ?? '').trim().toLowerCase().split(/\s+/);
+  const w = words[0].replace(/[^a-z]/g, '');
+  return ['chat', 'image', 'speech'].includes(w) ? w : null;
+}
+// The audio file type from its first bytes, never from its name.
+export function audioType(u8) {
+  if (!u8 || u8.length < 12) return null;
+  const at = (i, ...b) => b.every((x, j) => u8[i + j] === x);
+  if (at(0, 0x49, 0x44, 0x33) || (u8[0] === 0xff && (u8[1] & 0xe0) === 0xe0 && (u8[1] & 0x06) === 0x02 && (u8[2] & 0xf0) !== 0xf0)) return 'mp3';
+  if (at(0, 0x52, 0x49, 0x46, 0x46) && at(8, 0x57, 0x41, 0x56, 0x45)) return 'wav';
+  if (at(0, 0x4f, 0x67, 0x67, 0x53)) return 'ogg';
+  if (at(0, 0x66, 0x4c, 0x61, 0x43)) return 'flac';
+  if (at(4, 0x66, 0x74, 0x79, 0x70)) return 'm4a';
+  if (at(0, 0x1a, 0x45, 0xdf, 0xa3)) return 'webm';
+  return null;
 }
 
 // The picture in an OpenAI-style images answer: base64, or a web address to fetch.
@@ -188,4 +228,19 @@ export function privateAddress(ip) {
   if (type === 4) return V4.check(ip, 'ipv4');
   if (type === 6) return /^::ffff:/i.test(ip) || V6.check(ip, 'ipv6');
   return true;
+}
+
+// Raw 16-bit PCM speech (content type audio/pcm or audio/L16) wrapped in a WAV header so it can be
+// played and saved; anything else comes back unchanged.
+export function pcmToWav(bytes, contentType) {
+  const m = /^audio\/(?:pcm|l16)\b(.*)$/i.exec(contentType ?? '');
+  if (!m) return bytes;
+  const rate = Number(/rate=(\d+)/i.exec(m[1])?.[1] ?? 24000), channels = Number(/channels=(\d+)/i.exec(m[1])?.[1] ?? 1);
+  const out = new Uint8Array(44 + bytes.length), v = new DataView(out.buffer);
+  const text = (i, s) => { for (let j = 0; j < s.length; j++) out[i + j] = s.charCodeAt(j); };
+  text(0, 'RIFF'); v.setUint32(4, 36 + bytes.length, true); text(8, 'WAVE'); text(12, 'fmt ');
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, channels, true); v.setUint32(24, rate, true);
+  v.setUint32(28, rate * channels * 2, true); v.setUint16(32, channels * 2, true); v.setUint16(34, 16, true);
+  text(36, 'data'); v.setUint32(40, bytes.length, true); out.set(bytes, 44);
+  return out;
 }

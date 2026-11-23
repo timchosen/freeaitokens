@@ -228,6 +228,24 @@ td a { overflow-wrap: anywhere; }
   .phone:nth-child(2) { margin-top: 0; }
 }
 
+/* Showcase: the desktop app in a window frame, and real terminal sessions. */
+.showcase { max-width: 1040px; margin: 0 auto; padding: 8px 16px 56px; text-align: center; }
+.showcase .lead { max-width: 640px; margin: 0 auto 28px; }
+.window { margin: 0; border-radius: 14px; overflow: hidden; border: 1px solid var(--border); background: var(--card); box-shadow: 0 1px 2px rgba(43, 37, 32, .06), 0 24px 60px -24px rgba(43, 37, 32, .35); }
+.window-bar { display: flex; gap: 7px; padding: 11px 14px; background: var(--sand); border-bottom: 1px solid var(--border); }
+.window-bar i { width: 11px; height: 11px; border-radius: 50%; background: var(--border); }
+.window img { display: block; width: 100%; height: auto; }
+.terms { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 18px; max-width: 1000px; margin: 0 auto 36px; text-align: start; }
+.term { margin: 0; display: flex; flex-direction: column; border-radius: 14px; overflow: hidden; background: #1E1A17; color: #EDE4D8; box-shadow: 0 18px 44px -22px rgba(43, 37, 32, .55); }
+.term .window-bar { background: #2A2420; border-bottom: 1px solid #3A322C; align-items: center; }
+.term .window-bar i { background: #4A4039; }
+.term .window-bar span { margin-inline-start: 8px; font: 13px var(--sans); color: #B9AC9F; }
+.term pre { flex: 1; margin: 0; background: none; border-radius: 0; padding: 16px 18px; font-size: 13px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; color: inherit; }
+.term .p { color: #8FB8A0; } .term .you { color: #F3ECE3; font-weight: 600; } .term .dim { color: #9C8F83; }
+.term .add { color: #8CCB9E; } .term .tl { color: #E9A27F; }
+.term figcaption { padding: 10px 18px 14px; font: 13px var(--sans); color: #B9AC9F; border-top: 1px solid #3A322C; }
+.term figcaption b { color: #F3ECE3; font-weight: 600; }
+
 /* Sync page */
 .price { font-size: 18px; margin: 0 0 8px; }
 .offer { font-size: 13px; font-weight: 600; margin: 0 0 4px; }

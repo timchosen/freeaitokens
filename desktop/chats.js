@@ -6,6 +6,8 @@ import { randomUUID } from 'node:crypto';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const IMAGE_FILE = /^[0-9a-f-]{36}\.(png|jpg|webp)$/;
+const AUDIO_FILE = /^[0-9a-f-]{36}\.(mp3|wav|ogg|flac|m4a|webm)$/;
+const KINDS = new Set(['image', 'speech', 'file']);
 const str = (v, max) => typeof v === 'string' && v.length <= max;
 const time = (v) => Number.isFinite(v) && v >= 0;
 
@@ -18,14 +20,15 @@ export function cleanChat(c) {
   for (const m of c.messages) {
     if (!m || !UUID.test(m.id) || !time(m.at) || (m.role !== 'user' && m.role !== 'assistant') || !str(m.content, 100_000)) return null;
     if ((m.image != null && !(str(m.image, 60) && IMAGE_FILE.test(m.image))) || (m.prompt != null && !str(m.prompt, 100_000))) return null;
+    if (m.audio != null && !(str(m.audio, 60) && AUDIO_FILE.test(m.audio))) return null;
     if (m.meta != null && (typeof m.meta !== 'object' || JSON.stringify(m.meta).length > 2000)) return null;
     messages.push({
       id: m.id, at: m.at, role: m.role, content: m.content,
-      ...(m.error ? { error: true } : {}), ...(m.kind === 'image' ? { kind: 'image' } : {}),
-      ...(m.image ? { image: m.image } : {}), ...(m.prompt != null ? { prompt: m.prompt } : {}), ...(m.meta ? { meta: m.meta } : {}),
+      ...(m.error ? { error: true } : {}), ...(KINDS.has(m.kind) ? { kind: m.kind } : {}),
+      ...(m.image ? { image: m.image } : {}), ...(m.audio ? { audio: m.audio } : {}), ...(m.prompt != null ? { prompt: m.prompt } : {}), ...(m.meta ? { meta: m.meta } : {}),
     });
   }
-  return { id: c.id, title: c.title, model: c.model, ...(c.mode === 'image' || c.mode === 'chat' ? { mode: c.mode } : {}), updated: c.updated, messages };
+  return { id: c.id, title: c.title, model: c.model, ...(['auto', 'chat', 'image'].includes(c.mode) ? { mode: c.mode } : {}), updated: c.updated, messages };
 }
 
 // The chats the app used to keep in window storage, with ids and times added. Anything malformed is dropped.

@@ -1,7 +1,7 @@
 // freeaitokens tray app: runs the same local endpoint as the CLI, from the menu bar / system tray.
-import { app, Tray, Menu, BrowserWindow, ipcMain, clipboard, nativeImage, shell, dialog } from 'electron';
+import { app, Tray, Menu, BrowserWindow, ipcMain, clipboard, ClipboardItem, nativeImage, nativeTheme, shell, dialog } from 'electron';
 import { spawn } from 'node:child_process';
-import { mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { lookup as dnsLookup } from 'node:dns';
 import { get as httpsGet } from 'node:https';
@@ -17,7 +17,7 @@ import { validateKey, keySteps, connectOpenRouter } from 'freeaitokens/dist/node
 import { launchSpec, LAUNCH_TOOLS } from 'freeaitokens/dist/node/harness.js';
 import { route, NoCapacityError } from 'freeaitokens/dist/core/orchestrator.js';
 import { routeMedia, NoProviderError } from 'freeaitokens/dist/core/media.js';
-import { allowedUrl, choices, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType, privateAddress } from './logic.js';
+import { allowedUrl, choices, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType, privateAddress, mediaOptions, guessKind, sortedKind, audioType, pcmToWav } from './logic.js';
 import './t.js';
 import { openChatStore, cleanChat, migrateChats } from './chats.js';
 import { createSyncService } from './syncsvc.js';
@@ -34,6 +34,9 @@ const endpoint = () => `http://127.0.0.1:${srv.port}/v1`;
 const LOCALES = JSON.parse(readFileSync(here('./i18n/locales.json'), 'utf8'));
 const settingsFile = () => join(stateDir(), 'desktop.json');
 const readSettings = () => { try { return JSON.parse(readFileSync(settingsFile(), 'utf8')); } catch { return {}; } };
+// Light, dark, or follow the computer: the windows' colours follow nativeTheme.
+const THEMES = ['system', 'light', 'dark'];
+const applyTheme = () => { const th = readSettings().theme; nativeTheme.themeSource = THEMES.includes(th) ? th : 'system'; };
 let locale, strings, t;
 function loadLang() {
   const code = pickLang(readSettings().lang, app.getPreferredSystemLanguages(), LOCALES.map((l) => l.code));
@@ -119,8 +122,11 @@ ipcMain.handle('app:status', () => ({
   tools: Object.entries(LAUNCH_TOOLS).map(([id, name]) => ({ id, name, note: strings[`note_${id}`] ?? '' })),
   models: modelOptions(deps.catalogue, keys),
   images: imageOptions(deps.catalogue, keys),
+  speech: mediaOptions(deps.catalogue, keys, 'speech').length > 0,
+  transcription: mediaOptions(deps.catalogue, keys, 'transcription').length > 0,
   version: app.getVersion(),
   startAtLogin: app.getLoginItemSettings().openAtLogin,
+  theme: nativeTheme.themeSource,
 }));
 // Routed here rather than over HTTP, so the answer always says which provider and model gave it,
 // even when another copy of FreeAITokens holds the port.
@@ -253,7 +259,12 @@ ipcMain.handle('app:imageData', (_e, image) => {
 });
 // The window sends a PNG it drew from the picture: the clipboard cannot take WebP files.
 const pngData = (s) => typeof s === 'string' && s.length < MAX_IMAGE * 1.4 && /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(s);
-ipcMain.handle('app:copyImage', (_e, png) => { if (pngData(png)) clipboard.writeImage(nativeImage.createFromDataURL(png)); });
+ipcMain.handle('app:copyImage', async (_e, png) => {
+  if (!pngData(png)) return false;
+  const blob = new Blob([Buffer.from(png.slice(png.indexOf(',') + 1), 'base64')], { type: 'image/png' });
+  await clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+  return true;
+});
 // Save a playground image, or a PNG the window drew from an SVG preview, where the person picks.
 ipcMain.handle('app:saveImage', async (_e, what) => {
   let bytes, ext;
@@ -271,8 +282,117 @@ ipcMain.handle('app:saveImage', async (_e, what) => {
   return true;
 });
 ipcMain.handle('app:dropImages', (_e, list) => {
-  if (list === 'all') return rmSync(imagesDir(), { recursive: true, force: true });
-  for (const image of Array.isArray(list) ? list : []) if (typeof image === 'string' && IMAGE_FILE.test(image)) rmSync(join(imagesDir(), image), { force: true });
+  if (list === 'all') { rmSync(imagesDir(), { recursive: true, force: true }); rmSync(audioDir(), { recursive: true, force: true }); return; }
+  for (const f of Array.isArray(list) ? list : []) {
+    if (typeof f !== 'string') continue;
+    if (IMAGE_FILE.test(f)) rmSync(join(imagesDir(), f), { force: true });
+    else if (AUDIO_FILE.test(f)) rmSync(join(audioDir(), f), { force: true });
+  }
+});
+
+// Auto mode: a free chat model sorts the message; when it cannot (no model, out of requests, too slow,
+// an answer that is not one word), the word rules in logic.js decide.
+const SORT_PROMPT = 'Sort the user\'s message. Reply with exactly one word: image if they want a picture made, speech if they want audio (words said, read or spoken out loud), chat for anything else.';
+ipcMain.handle('app:sort', async (_e, text) => {
+  if (typeof text !== 'string' || !text.trim()) return { kind: 'chat', by: 'rules' };
+  const rules = { kind: guessKind(text), by: 'rules' };
+  let timer;
+  try {
+    const ask = (async () => {
+      const { response } = await route({ messages: [{ role: 'system', content: SORT_PROMPT }, { role: 'user', content: text.slice(0, 2000) }], max_tokens: 512, temperature: 0 /* thinking models spend tokens before answering */ }, deps);
+      if (response.status !== 200) return null;
+      return sortedKind((await response.json())?.choices?.[0]?.message?.content);
+    })();
+    const kind = await Promise.race([ask, new Promise((r) => { timer = setTimeout(() => r(null), 5000); })]);
+    return kind ? { kind, by: 'model' } : rules;
+  } catch {
+    return rules;
+  } finally {
+    clearTimeout(timer);
+    saveState(deps.tracker.state);
+  }
+});
+
+// Speech made in the playground is kept like images: a file with a random id in the state folder.
+const MAX_AUDIO = 25 * 1024 * 1024;
+const AUDIO_FILE = /^[0-9a-f-]{36}\.(mp3|wav|ogg|flac|m4a|webm)$/;
+const AUDIO_MIME = { mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg', flac: 'audio/flac', m4a: 'audio/mp4', webm: 'audio/webm' };
+const audioDir = () => join(stateDir(), 'audio');
+const audioUrl = (type, bytes) => `data:${AUDIO_MIME[type]};base64,${bytes.toString('base64')}`;
+// A request like "read a short poem about rain" first has a chat model write the words to speak;
+// if that fails, the request itself is spoken.
+const SAY_PROMPT = 'Write only the exact words that should be spoken aloud for this request: no notes, no markdown, no quotes around them.';
+async function wordsToSay(request) {
+  try {
+    const { response } = await route({ messages: [{ role: 'system', content: SAY_PROMPT }, { role: 'user', content: request }], max_tokens: 2048 }, deps);
+    if (response.status !== 200) return request;
+    const words = String((await response.json())?.choices?.[0]?.message?.content ?? '').trim();
+    return words && words.length <= 4000 ? words : request;
+  } catch { return request; }
+}
+ipcMain.handle('app:speech', async (_e, text, write = false) => {
+  if (typeof text !== 'string' || !text.trim() || text.length > 4000) return { ok: false, reason: t('err_send') };
+  if (!mediaOptions(deps.catalogue, keys, 'speech').length) return { ok: false, reason: t('no_speech_providers') };
+  const start = Date.now();
+  try {
+    const words = write === true ? await wordsToSay(text.trim()) : text.trim();
+    const { response, candidate } = await routeMedia('speech', { json: { input: words } }, deps);
+    if (response.status !== 200) return { ok: false, reason: t('err_said_no', { name: candidate.provider.name, text: (await response.text()).slice(0, 300) }) };
+    const bytes = Buffer.from(pcmToWav(new Uint8Array(await response.arrayBuffer()), response.headers.get('content-type')));
+    const type = bytes.length <= MAX_AUDIO ? audioType(bytes) : null;
+    if (!type) return { ok: false, reason: t('err_speech') };
+    const audio = `${randomUUID()}.${type}`;
+    mkdirSync(audioDir(), { recursive: true, mode: 0o700 });
+    writeFileSync(join(audioDir(), audio), bytes, { mode: 0o600 });
+    return { ok: true, audio, src: audioUrl(type, bytes), text: write === true ? words : '', ms: Date.now() - start, provider: candidate.provider.name, model: candidate.model.id };
+  } catch (e) {
+    return { ok: false, reason: e instanceof NoProviderError ? t('no_speech_providers') : t('err_generic', { reason: e.message }) };
+  } finally {
+    saveState(deps.tracker.state);
+  }
+});
+ipcMain.handle('app:audioData', (_e, audio) => {
+  if (typeof audio !== 'string' || !AUDIO_FILE.test(audio)) return null;
+  try { return audioUrl(audio.split('.')[1], readFileSync(join(audioDir(), audio))); } catch { return null; }
+});
+ipcMain.handle('app:saveAudio', async (_e, audio) => {
+  if (typeof audio !== 'string' || !AUDIO_FILE.test(audio)) return false;
+  let bytes;
+  try { bytes = readFileSync(join(audioDir(), audio)); } catch { return false; }
+  const r = await dialog.showSaveDialog(mainWindow, { defaultPath: join(app.getPath('downloads'), `freeaitokens-speech.${audio.split('.')[1]}`) });
+  if (r.canceled || !r.filePath) return false;
+  writeFileSync(r.filePath, bytes);
+  return true;
+});
+// Transcription: the person picks an audio file here, in the main process; the window never sends a path.
+// The file goes to the router on this computer and is not kept.
+ipcMain.handle('app:transcribe', async () => {
+  if (!mediaOptions(deps.catalogue, keys, 'transcription').length) return { ok: false, reason: t('no_transcription_providers') };
+  const pick = await dialog.showOpenDialog(mainWindow, { properties: ['openFile'], filters: [{ name: t('attach_audio'), extensions: Object.keys(AUDIO_MIME) }] });
+  if (pick.canceled || !pick.filePaths[0]) return { ok: false, canceled: true };
+  const path = pick.filePaths[0], name = path.split(/[\\/]/).pop();
+  let bytes;
+  try {
+    if (statSync(path).size > MAX_AUDIO) return { ok: false, reason: t('audio_too_big'), name };
+    bytes = readFileSync(path);
+  } catch (e) { return { ok: false, reason: t('err_generic', { reason: e.message }), name }; }
+  const type = audioType(bytes);
+  if (!type) return { ok: false, reason: t('err_audio'), name };
+  const start = Date.now();
+  try {
+    const form = new FormData();
+    form.append('file', new Blob([bytes], { type: AUDIO_MIME[type] }), `audio.${type}`);
+    const { response, candidate } = await routeMedia('transcription', { form }, deps);
+    const raw = await response.text();
+    if (response.status !== 200) return { ok: false, reason: t('err_said_no', { name: candidate.provider.name, text: raw.slice(0, 300) }), name };
+    let text = raw;
+    try { text = String(JSON.parse(raw)?.text ?? ''); } catch { /* plain text answer */ }
+    return { ok: true, text: text.trim(), name, ms: Date.now() - start, provider: candidate.provider.name, model: candidate.model.id };
+  } catch (e) {
+    return { ok: false, reason: e instanceof NoProviderError ? t('no_transcription_providers') : t('err_generic', { reason: e.message }), name };
+  } finally {
+    saveState(deps.tracker.state);
+  }
 });
 
 // Saved chats live in the state folder (not window storage) so sync can reach them.
@@ -324,6 +444,13 @@ ipcMain.handle('strings', () => ({
   lang: locale.lang, dir: locale.dir, strings,
   languages: LOCALES.map(({ code, name }) => ({ code, name })), chosen: readSettings().lang ?? 'system',
 }));
+ipcMain.handle('app:theme', (_e, theme) => {
+  if (!THEMES.includes(theme)) return nativeTheme.themeSource;
+  mkdirSync(stateDir(), { recursive: true });
+  writeFileSync(settingsFile(), JSON.stringify({ ...readSettings(), theme }));
+  applyTheme();
+  return theme;
+});
 ipcMain.handle('app:lang', (_e, code) => {
   if (code !== 'system' && !LOCALES.some((l) => l.code === code)) return;
   mkdirSync(stateDir(), { recursive: true });
@@ -361,6 +488,7 @@ app.on('before-quit', async () => { sync?.stop(); if (deps) saveState(deps.track
 app.whenReady().then(async () => {
   app.dock?.hide();
   loadLang();
+  applyTheme();
   keys = openKeyStore();
   deps = makeDeps(currentCatalogue(loadCatalogue()), keys, parseArgs([]));
   void updateCatalogue().then((c) => { if (c) { deps.catalogue = c; refresh(); } });
