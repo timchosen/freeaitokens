@@ -1,5 +1,6 @@
 // FreeAITokens sync server: stores encrypted blobs it cannot read, sells sync through Stripe.
 import { authLicense, json } from './auth.ts';
+import { items } from './items.ts';
 
 // Minimal shapes of the Cloudflare bindings this Worker uses.
 interface Stmt { bind(...a: unknown[]): Stmt; first<T = Record<string, any>>(col?: string): Promise<T | null>; all<T = Record<string, any>>(): Promise<{ results: T[] }>; run(): Promise<{ meta: { changes: number } }> }
@@ -20,7 +21,7 @@ async function route(req: Request, env: Env, now: number): Promise<Response> {
     const c = await env.SYNC_DB.prepare('SELECT (SELECT COUNT(*) FROM items WHERE key_hash = ?1 AND deleted = 0) AS items, COALESCE((SELECT bytes FROM counters WHERE key_hash = ?1), 0) AS bytes').bind(a.lic.key_hash).first<{ items: number; bytes: number }>();
     return json({ items: c!.items, bytes: c!.bytes, plan: a.lic.plan, paid_until: a.lic.paid_until });
   }
-  return json({ error: 'not found' }, 404);
+  return (await items(req, env, a.lic, pathname, now)) ?? json({ error: 'not found' }, 404);
 }
 
 export default {
