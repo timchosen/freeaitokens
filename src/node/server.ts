@@ -170,18 +170,20 @@ export function makeHandler(deps: RouteDeps, token: string, formats: Record<stri
       if (fmt.direct) return send(res, 200, fmt.direct(body));
       const chat = fmt.toChat(body, path);
       const requested = typeof body?.model === 'string' ? body.model : 'free';
-      const { response } = await route(chat, deps);
+      const { response, candidate } = await route(chat, deps);
+      // Ids only (header-safe); the app's playground shows who answered.
+      const servedBy = { 'x-freeaitokens-served-by': `${candidate.provider.id}/${candidate.model.id}`.replace(/[^\x20-\x7e]/g, "") };
       if (response.status !== 200) {
         const text = await response.text();
         return send(res, response.status, errOf.error(response.status, `Provider rejected the request: ${text.slice(0, 500)}`));
       }
       if (chat.stream) {
-        res.writeHead(200, { 'content-type': fmt.streamType ?? 'text/event-stream', 'cache-control': 'no-cache' });
+        res.writeHead(200, { 'content-type': fmt.streamType ?? 'text/event-stream', 'cache-control': 'no-cache', ...servedBy });
         const out = response.body!.pipeThrough(fmt.fromChatStream(requested, body));
         Readable.fromWeb(out as any).pipe(res);
         res.on('close', () => out.cancel().catch(() => {}));
       } else {
-        send(res, 200, fmt.fromChat(await response.json(), requested, body));
+        send(res, 200, fmt.fromChat(await response.json(), requested, body), servedBy);
       }
     } catch (e) {
       if (e instanceof NoCapacityError) {

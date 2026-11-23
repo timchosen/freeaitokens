@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'">
+<title>FreeAITokens</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<aside class="side">
+  <div class="brand"><img src="icons/logo.svg" alt="" width="28" height="28">FreeAITokens</div>
+  <nav role="tablist" aria-label="Sections" aria-orientation="vertical">
+    <button role="tab" id="t-home" aria-controls="home" aria-selected="true">Home</button>
+    <button role="tab" id="t-play" aria-controls="play" aria-selected="false" tabindex="-1">Playground</button>
+    <button role="tab" id="t-tools" aria-controls="tools" aria-selected="false" tabindex="-1">Tools</button>
+    <button role="tab" id="t-prov" aria-controls="prov" aria-selected="false" tabindex="-1">Providers</button>
+  </nav>
+  <p class="running" id="running"></p>
+</aside>
+
+<main>
+  <section role="tabpanel" id="home" aria-labelledby="t-home">
+    <h1>Free AI, running on your computer</h1>
+    <p class="lead">Your AI tools can use free models from many providers through one local address. FreeAITokens picks a model for each request and moves on when one runs out.</p>
+    <div class="stats">
+      <div class="stat"><b id="s-ready">–</b><span>providers ready</span></div>
+      <div class="stat"><b id="s-left">–</b><span>requests left today</span></div>
+      <div class="stat"><b id="s-add">–</b><span>more you can add free</span></div>
+    </div>
+    <div class="actions">
+      <button class="btn" data-go="t-play">Try the playground</button>
+      <button class="btn quiet" data-go="t-tools">Open Claude Code and more</button>
+      <button class="btn quiet" id="addTop">Add a free provider</button>
+    </div>
+    <h2>Use it in any app</h2>
+    <div class="row"><span>Address</span><code id="endpoint"></code><button class="copy" data-copy="endpoint">Copy</button></div>
+    <div class="row"><span>API key</span><code>Your local token</code><button class="copy" data-copy="token">Copy</button></div>
+    <div class="row"><span>Model</span><code>free</code></div>
+  </section>
+
+  <section role="tabpanel" id="play" aria-labelledby="t-play" hidden>
+    <h1>Playground</h1>
+    <p class="lead">Ask anything. You'll see the answer, which provider and model gave it, and how long it took.</p>
+    <div class="chat" id="chat" aria-live="polite"></div>
+    <form id="ask">
+      <label for="prompt" class="sr">Your message</label>
+      <textarea id="prompt" rows="3" placeholder="Write a message… (⌘/Ctrl + Enter to send)"></textarea>
+      <div class="actions"><button class="btn" id="send" type="submit">Send</button><button class="btn quiet" id="clear" type="button">New chat</button></div>
+    </form>
+  </section>
+
+  <section role="tabpanel" id="tools" aria-labelledby="t-tools" hidden>
+    <h1>Tools</h1>
+    <p class="lead">Open a coding tool in a new terminal window, already set up to use free models. Your tool's own settings stay as they are.</p>
+    <div class="grid" id="toolGrid"></div>
+    <p class="status" id="toolStatus" role="status"></p>
+    <h2>Other apps</h2>
+    <p>Zed, JetBrains, VS Code, Cline, Continue and any app that takes an OpenAI-compatible address: paste the address and key from <a href="#" data-go="t-home">Home</a>, and use the model <code>free</code>.</p>
+  </section>
+
+  <section role="tabpanel" id="prov" aria-labelledby="t-prov" hidden>
+    <h1>Providers</h1>
+    <p class="lead">Each provider you add gives you more free use. Keys stay in your computer's keychain.</p>
+    <div class="actions"><button class="btn" id="addProv">Add a free provider</button></div>
+    <div class="list" id="provList"></div>
+  </section>
+</main>
+<script src="app.js"></script>
+</body>
+</html>

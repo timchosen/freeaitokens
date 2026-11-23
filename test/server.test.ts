@@ -105,3 +105,13 @@ test('does not reuse a program that only fakes the health marker', async (t) => 
   const port = (fake.address() as any).port;
   await assert.rejects(startServer(makeDeps(), port), (e: Error) => e.message.includes(String(port)));
 });
+
+test('a chat answer says which provider and model served it', async () => {
+  setUpstream(() => chatJson('hello'));
+  const r = await post('/v1/chat/completions', { messages: [{ role: 'user', content: 'x' }] });
+  assert.match(r.headers.get('x-freeaitokens-served-by') ?? '', /^[a-z0-9-]+\/.+/);
+  setUpstream(() => chatSse([{ model: 'real', choices: [{ delta: { content: 'hi' } }] }]));
+  const s = await post('/v1/chat/completions', { stream: true, messages: [{ role: 'user', content: 'x' }] });
+  assert.match(s.headers.get('x-freeaitokens-served-by') ?? '', /^[a-z0-9-]+\/.+/);
+  await s.text();
+});

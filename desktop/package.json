@@ -27,6 +27,10 @@
       "logic.js",
       "preload.cjs",
       "add.html",
+      "app.html",
+      "app.js",
+      "app.css",
+      "preload-app.cjs",
       "icons/**"
     ],
     "icon": "icons/icon.png",

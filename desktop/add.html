@@ -63,6 +63,8 @@
     list = await window.freeaitokens.providers();
     $('prov').replaceChildren(...list.map((p) => Object.assign(document.createElement('option'), { value: p.id, textContent: p.name })));
     if (!list.length) { document.body.querySelector('#keyFlow').hidden = true; status('Every provider already has a key.', 'ok'); return; }
+    const want = new URLSearchParams(location.search).get('p');
+    if (list.some((p) => p.id === want)) $('prov').value = want;
     show();
   }
   async function run(button, work) {

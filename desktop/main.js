@@ -1,44 +1,67 @@
 // freeaitokens tray app: runs the same local endpoint as the CLI, from the menu bar / system tray.
 import { app, Tray, Menu, BrowserWindow, ipcMain, clipboard, nativeImage, shell } from 'electron';
+import { spawn } from 'node:child_process';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadCatalogue, makeDeps, parseArgs } from 'freeaitokens/dist/node/cli.js';
 import { startServer, DEFAULT_PORT } from 'freeaitokens/dist/node/server.js';
 import { currentCatalogue, updateCatalogue } from 'freeaitokens/dist/node/remote.js';
 import { openKeyStore } from 'freeaitokens/dist/node/keys.js';
-import { localToken, saveState } from 'freeaitokens/dist/node/state.js';
-import { runList, validateKey, keySteps, connectOpenRouter } from 'freeaitokens/dist/node/add.js';
-import { allowedUrl, choices, menuTemplate } from './logic.js';
+import { localToken, saveState, stateDir } from 'freeaitokens/dist/node/state.js';
+import { validateKey, keySteps, connectOpenRouter } from 'freeaitokens/dist/node/add.js';
+import { launchSpec, LAUNCH_TOOLS } from 'freeaitokens/dist/node/harness.js';
+import { allowedUrl, choices, menuTemplate, providerRows, cleanMessages, launchFile } from './logic.js';
 import { needsAccount, joinAccount } from 'freeaitokens/dist/core/catalogue.js';
 
 const here = (f) => fileURLToPath(new URL(f, import.meta.url));
 if (!app.requestSingleInstanceLock()) app.quit();
 
-let tray, srv, deps, keys, addWindow;
+let tray, srv, deps, keys, addWindow, mainWindow;
+const endpoint = () => `http://127.0.0.1:${srv.port}/v1`;
 
 function refresh() {
-  const lines = runList(deps.catalogue, keys, deps.tracker).split('\n');
   tray.setContextMenu(Menu.buildFromTemplate(menuTemplate(
-    { port: srv.port, reused: srv.reused, lines, startAtLogin: app.getLoginItemSettings().openAtLogin },
+    { port: srv.port, reused: srv.reused, startAtLogin: app.getLoginItemSettings().openAtLogin },
     {
-      copyEndpoint: () => clipboard.writeText(`http://127.0.0.1:${srv.port}/v1`),
+      open: openMain,
+      copyEndpoint: () => clipboard.writeText(endpoint()),
       copyToken: () => clipboard.writeText(localToken()),
-      add: openAdd,
+      add: () => openAdd(),
       toggleLogin: (item) => app.setLoginItemSettings({ openAtLogin: item.checked }),
       quit: () => app.quit(),
     },
   )));
 }
 
-function openAdd() {
+function lockDown(win) {
+  // Windows show only our own pages: no navigation, no new windows.
+  win.webContents.on('will-navigate', (e) => e.preventDefault());
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+}
+
+function openMain() {
+  if (!srv) return;
+  if (mainWindow) return mainWindow.show(), mainWindow.focus();
+  mainWindow = new BrowserWindow({
+    width: 980, height: 700, minWidth: 720, minHeight: 520, title: 'FreeAITokens', autoHideMenuBar: true,
+    icon: here('./icons/icon.png'),
+    webPreferences: { preload: here('./preload-app.cjs'), contextIsolation: true, sandbox: true, nodeIntegration: false },
+  });
+  lockDown(mainWindow);
+  mainWindow.loadFile(here('./app.html'));
+  void app.dock?.show();
+  mainWindow.on('closed', () => { mainWindow = null; if (!addWindow) app.dock?.hide(); });
+}
+
+function openAdd(id) {
   if (addWindow) return addWindow.focus();
   addWindow = new BrowserWindow({
     width: 520, height: 600, title: 'Add a free provider', autoHideMenuBar: true,
     webPreferences: { preload: here('./preload.cjs'), contextIsolation: true, sandbox: true, nodeIntegration: false },
   });
-  // The window shows only our own page: no navigation, no new windows.
-  addWindow.webContents.on('will-navigate', (e) => e.preventDefault());
-  addWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
-  addWindow.loadFile(here('./add.html'));
+  lockDown(addWindow);
+  addWindow.loadFile(here('./add.html'), typeof id === 'string' && /^[a-z0-9-]+$/.test(id) ? { query: { p: id } } : {});
   addWindow.on('closed', () => { addWindow = null; refresh(); });
 }
 
@@ -64,8 +87,76 @@ ipcMain.handle('connect', async (_e, id) => {
   }
 });
 
+// The main window's calls. Everything it sends is checked here: it is a web page.
+const TOOL_NOTE = { claude: 'Anthropic\'s coding agent', codex: 'OpenAI\'s coding agent', gemini: 'Google\'s coding agent', goose: 'Block\'s open agent', qwen: 'Qwen\'s coding agent', kilo: 'Open-source coding agent', aider: 'Pair programming in your terminal' };
+ipcMain.handle('app:status', () => ({
+  port: srv.port, reused: srv.reused, endpoint: endpoint(),
+  providers: providerRows(deps.catalogue, keys, deps.tracker),
+  tools: Object.entries(LAUNCH_TOOLS).map(([id, name]) => ({ id, name, note: TOOL_NOTE[id] ?? '' })),
+}));
+ipcMain.handle('app:chat', async (_e, list) => {
+  const messages = cleanMessages(list);
+  if (!messages) return { ok: false, reason: 'That message could not be sent.' };
+  const start = Date.now();
+  try {
+    const r = await fetch(`${endpoint()}/chat/completions`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${localToken()}` },
+      body: JSON.stringify({ model: 'free', messages, max_tokens: 2048 }),
+      signal: AbortSignal.timeout(120_000),
+    });
+    const body = await r.json().catch(() => null);
+    if (!r.ok) return { ok: false, reason: body?.error?.message ?? `The local endpoint answered ${r.status}.` };
+    const [pid, ...rest] = (r.headers.get('x-freeaitokens-served-by') ?? '').split('/');
+    return {
+      ok: true, ms: Date.now() - start,
+      text: String(body?.choices?.[0]?.message?.content ?? ''),
+      provider: deps.catalogue.find((p) => p.id === pid)?.name ?? (pid || 'unknown provider'),
+      model: rest.join('/') || String(body?.model ?? ''),
+      tokens: body?.usage?.total_tokens ?? 0,
+    };
+  } catch (e) {
+    return { ok: false, reason: e.name === 'TimeoutError' ? 'No answer after two minutes.' : e.message };
+  }
+});
+ipcMain.handle('app:launch', async (_e, tool) => {
+  if (!Object.hasOwn(LAUNCH_TOOLS, tool)) return { ok: false, reason: 'unknown tool' };
+  try {
+    const dir = stateDir();
+    const spec = launchSpec(tool, srv.port, localToken(), [], dir);
+    for (const [f, text] of Object.entries(spec.files ?? {})) { mkdirSync(dirname(f), { recursive: true }); writeFileSync(f, text); }
+    const { ext, text } = launchFile(tool, LAUNCH_TOOLS[tool], spec, process.platform);
+    const file = join(dir, `open-${tool}${ext}`);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(file, text, { mode: 0o700 });
+    await openTerminal(file);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, reason: e.message };
+  }
+});
+ipcMain.handle('app:copy', (_e, what) => { if (what === 'endpoint') clipboard.writeText(endpoint()); else if (what === 'token') clipboard.writeText(localToken()); });
+ipcMain.handle('app:add', (_e, id) => openAdd(id));
+
+function run(cmd, args, opts = {}) {
+  return new Promise((ok, fail) => {
+    const p = spawn(cmd, args, { detached: true, stdio: 'ignore', ...opts });
+    p.once('error', fail);
+    p.once('spawn', () => { p.unref(); ok(); });
+  });
+}
+async function openTerminal(file) {
+  if (process.platform === 'darwin') return run('open', ['-a', 'Terminal', file]);
+  if (process.platform === 'win32') return run('cmd.exe', ['/c', 'start', '""', 'cmd', '/k', `"${file}"`], { windowsVerbatimArguments: true });
+  for (const [cmd, ...pre] of [['x-terminal-emulator', '-e'], ['gnome-terminal', '--'], ['konsole', '-e'], ['xfce4-terminal', '-e'], ['xterm', '-e']]) {
+    try { return await run(cmd, [...pre, file]); } catch { /* try the next terminal */ }
+  }
+  throw new Error('no terminal app found');
+}
+
 app.on('window-all-closed', () => {}); // closing the add window must not quit the tray app
-app.on('second-instance', () => openAdd());
+app.on('second-instance', () => openMain());
+app.on('activate', () => openMain());
 // A second copy quits before it has loaded anything, so there may be nothing to save.
 app.on('before-quit', async () => { if (deps) saveState(deps.tracker.state); await srv?.close(); });
 
@@ -84,6 +175,6 @@ app.whenReady().then(async () => {
     return;
   }
   refresh();
-  setInterval(refresh, 60_000); // keeps "left today" current
-  if (!deps.catalogue.some((p) => !p.keyless && keys.get(p.id))) openAdd();
+  if (process.platform !== 'darwin') tray.on('click', openMain);
+  if (!app.getLoginItemSettings().wasOpenedAtLogin) openMain();
 });

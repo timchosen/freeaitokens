@@ -17,16 +17,71 @@ export function choices(catalogue, keys, stepsOf) {
 // runList pads columns for a terminal; a menu wants one readable line.
 export const menuLine = (line) => line.trim().replace(/\s{2,}/g, ' · ');
 
-export function menuTemplate({ port, reused, lines, startAtLogin }, on) {
+export function menuTemplate({ port, reused, startAtLogin }, on) {
   return [
+    { label: 'Open FreeAITokens', click: on.open },
+    { type: 'separator' },
     { label: reused ? `Using the endpoint already running on port ${port}` : `Running on http://127.0.0.1:${port}/v1`, enabled: false },
     { label: 'Copy endpoint', click: on.copyEndpoint },
     { label: 'Copy local token', click: on.copyToken },
-    { type: 'separator' },
-    { label: 'Providers', submenu: lines.map((l) => ({ label: menuLine(l), enabled: false })) },
     { label: 'Add a provider…', click: on.add },
     { type: 'separator' },
     { label: 'Start at login', type: 'checkbox', checked: startAtLogin, click: on.toggleLogin },
     { label: 'Quit freeaitokens', click: on.quit },
   ];
+}
+
+// One row per provider for the window: ready (key added), keyless, or add (no key yet), and requests left today.
+export function providerRows(catalogue, keys, tracker) {
+  const today = Math.floor(tracker.now() / 86_400_000) * 86_400_000;
+  return catalogue.map((p) => {
+    const status = p.keyless ? 'keyless' : keys.get(p.id) ? 'ready' : 'add';
+    let left = 0;
+    for (const m of p.models) {
+      const rpd = m.limits?.rpd ?? p.limits?.rpd;
+      if (!rpd) continue;
+      const w = tracker.state.windows[`${p.id}/${m.id}`];
+      left += Math.max(0, rpd - (w && w.day[0] === today ? w.day[1] : 0));
+    }
+    return { id: p.id, name: p.name, status, left: status === 'add' ? 0 : left, models: p.models.length + (p.media?.length ?? 0), note: p.termsNote ?? '', media: [...new Set((p.media ?? []).map((m) => m.kind))] };
+  });
+}
+
+// The playground's messages come from a web page: plain user/assistant text only, with sane sizes.
+export function cleanMessages(list) {
+  if (!Array.isArray(list) || !list.length || list.length > 200) return null;
+  const out = [];
+  for (const m of list) {
+    if (!m || (m.role !== 'user' && m.role !== 'assistant') || typeof m.content !== 'string' || m.content.length > 100_000) return null;
+    out.push({ role: m.role, content: m.content });
+  }
+  return out;
+}
+
+const INSTALL = {
+  claude: 'npm install -g @anthropic-ai/claude-code',
+  codex: 'npm install -g @openai/codex',
+  gemini: 'npm install -g @google/gemini-cli',
+  qwen: 'npm install -g @qwen-code/qwen-code',
+};
+
+// A script that opens the tool in a terminal with FreeAITokens' settings (.command on Mac, .cmd on Windows, .sh on Linux).
+export function launchFile(tool, name, spec, platform) {
+  for (const k of Object.keys(spec.env)) if (!/^[A-Z_][A-Z0-9_]*$/.test(k)) throw new Error(`bad variable name ${k}`);
+  const hint = INSTALL[tool] ? `Install it with: ${INSTALL[tool]}` : `Install ${name} from its website, then try again.`;
+  if (platform === 'win32') {
+    const bad = /[&|<>^%!\r\n]/;
+    for (const v of [spec.cmd, ...spec.args, ...Object.values(spec.env)]) if (bad.test(v)) throw new Error(`unsupported character in ${JSON.stringify(v)}`);
+    const q = (v) => `"${v.replace(/"/g, '\\"')}"`;
+    const lines = ['@echo off', `title ${name} with FreeAITokens`, ...Object.entries(spec.env).map(([k, v]) => `set "${k}=${v}"`),
+      `where ${spec.cmd} >nul 2>nul || (echo ${name} is not installed. ${hint} & pause & exit /b 1)`,
+      [spec.cmd, ...spec.args.map(q)].join(' ')];
+    return { ext: '.cmd', text: lines.join('\r\n') + '\r\n' };
+  }
+  const q = (v) => `'${String(v).replace(/'/g, `'\\''`)}'`;
+  const lines = ['#!/bin/sh', `# Opens ${name} using FreeAITokens. Made by the FreeAITokens app.`, 'cd "$HOME"',
+    ...Object.entries(spec.env).map(([k, v]) => `export ${k}=${q(v)}`),
+    `if ! command -v ${q(spec.cmd)} >/dev/null 2>&1; then echo ${q(`${name} is not installed. ${hint}`)}; exit 1; fi`,
+    `exec ${[spec.cmd, ...spec.args].map(q).join(' ')}`];
+  return { ext: platform === 'darwin' ? '.command' : '.sh', text: lines.join('\n') + '\n' };
 }

@@ -12,6 +12,8 @@ jobs:
       matrix:
         os: [macos-latest, windows-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
+    env:
+      MAC_CERT: ${{ secrets.MAC_CERT_P12_BASE64 }} # read by the signing step's condition
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -25,19 +27,24 @@ jobs:
         run: npm install --no-save --force @napi-rs/keyring-darwin-x64@2.1.2 @napi-rs/keyring-darwin-arm64@2.1.2
         working-directory: desktop
       # With an Apple Developer ID in the repo secrets, the Mac app is signed and notarized, so macOS
-      # opens it with no warning. Without them it stays ad-hoc signed, as before.
+      # opens it with no warning. Without them nothing is set and it stays ad-hoc signed, as before.
       - if: runner.os == 'macOS' && env.MAC_CERT != ''
-        run: node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json'));delete p.build.mac.identity;Object.assign(p.build.mac,{hardenedRuntime:true,notarize:true});fs.writeFileSync('package.json',JSON.stringify(p,null,2))"
+        run: |
+          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json'));delete p.build.mac.identity;Object.assign(p.build.mac,{hardenedRuntime:true,notarize:true});fs.writeFileSync('package.json',JSON.stringify(p,null,2))"
+          {
+            echo "CSC_LINK=$MAC_CERT"
+            echo "CSC_KEY_PASSWORD=$MAC_CERT_PASSWORD"
+            echo "APPLE_ID=$APPLE_ID"
+            echo "APPLE_APP_SPECIFIC_PASSWORD=$APPLE_APP_SPECIFIC_PASSWORD"
+            echo "APPLE_TEAM_ID=$APPLE_TEAM_ID"
+          } >> "$GITHUB_ENV"
         working-directory: desktop
         env:
-          MAC_CERT: ${{ secrets.MAC_CERT_P12_BASE64 }}
+          MAC_CERT_PASSWORD: ${{ secrets.MAC_CERT_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       - run: npx electron-builder --publish always
         working-directory: desktop
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Mac only, so Windows never tries to sign with the Apple certificate.
-          CSC_LINK: ${{ runner.os == 'macOS' && secrets.MAC_CERT_P12_BASE64 || '' }}
-          CSC_KEY_PASSWORD: ${{ runner.os == 'macOS' && secrets.MAC_CERT_PASSWORD || '' }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
