@@ -20,7 +20,7 @@ code { font-family: var(--mono); font-size: 13px; background: var(--chip); paddi
 :focus-visible { outline: 2px solid var(--coral); outline-offset: 2px; border-radius: 6px; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
-.side { width: 210px; flex: none; background: var(--side); border-right: 1px solid var(--line); padding: 20px 12px; display: flex; flex-direction: column; gap: 18px; }
+.side { width: 210px; flex: none; background: var(--side); border-inline-end: 1px solid var(--line); padding: 20px 12px; display: flex; flex-direction: column; gap: 18px; }
 .brand { display: flex; align-items: center; gap: 10px; font-family: var(--serif); font-size: 19px; padding: 0 8px; }
 .side nav { display: flex; flex-direction: column; gap: 2px; }
 .side [role="tab"] { font: inherit; text-align: start; color: var(--muted); background: none; border: 0; border-radius: 10px; padding: 9px 12px; cursor: pointer; }

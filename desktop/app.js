@@ -2,7 +2,23 @@
 const api = window.freeaitokens;
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => Object.assign(document.createElement(tag), cls ? { className: cls } : {}, text != null ? { textContent: text } : {});
-const num = (n) => n.toLocaleString();
+let t = (k) => k, tag;
+const num = (n) => n.toLocaleString(tag);
+
+// Strings come from the main process in the chosen language; tagged elements are filled here.
+async function applyStrings() {
+  const s = await api.strings();
+  t = makeTranslator(s.strings, s.lang);
+  tag = s.lang;
+  document.documentElement.lang = s.lang;
+  document.documentElement.dir = s.dir;
+  for (const e of document.querySelectorAll('[data-i18n]')) e.textContent = t(e.dataset.i18n);
+  for (const e of document.querySelectorAll('[data-i18n-html]')) e.innerHTML = t(e.dataset.i18nHtml); // our own packaged strings
+  for (const e of document.querySelectorAll('[data-i18n-label]')) e.setAttribute('aria-label', t(e.dataset.i18nLabel));
+  for (const e of document.querySelectorAll('[data-i18n-placeholder]')) e.placeholder = t(e.dataset.i18nPlaceholder);
+  $('lang').replaceChildren(Object.assign(el('option', '', t('lang_system')), { value: 'system' }), ...s.languages.map((l) => Object.assign(el('option', '', l.name), { value: l.code })));
+  $('lang').value = s.chosen;
+}
 
 // Tabs, with arrow keys like the site.
 const tabs = [...document.querySelectorAll('[role="tab"]')];
@@ -31,13 +47,14 @@ document.addEventListener('click', (e) => {
 });
 
 // Status: endpoint, counts, providers, tools.
-const STATUS = { ready: 'Ready', keyless: 'No key needed', add: 'Not added' };
+let version = '';
 async function refresh() {
   const s = await api.status();
-  $('running').textContent = s.reused ? `Using FreeAITokens on port ${s.port}` : `Running on port ${s.port}`;
+  $('running').textContent = t(s.reused ? 'running_reused' : 'running', { port: String(s.port) });
   $('endpoint').textContent = s.endpoint;
   $('endpoint2').textContent = s.endpoint;
-  $('version').textContent = s.version;
+  if (!version) $('updText').textContent = t('set_version', { v: s.version });
+  version = s.version;
   $('login').checked = s.startAtLogin;
   fillModels(s.models);
   const usable = s.providers.filter((p) => p.status !== 'add');
@@ -47,27 +64,27 @@ async function refresh() {
   $('provList').replaceChildren(...s.providers.map((p) => {
     const row = el('div', 'prov');
     const name = el('div', 'name');
-    name.append(el('b', '', p.name), el('small', '', [`${p.models} model${p.models === 1 ? '' : 's'}`, p.status !== 'add' && p.left ? `${num(p.left)} requests left today` : '', p.media.length ? `also ${p.media.join(', ')}` : ''].filter(Boolean).join(' · ')));
-    row.append(name, el('span', `badge ${p.status}`, STATUS[p.status]));
+    name.append(el('b', '', p.name), el('small', '', [t('prov_models', { n: p.models }), p.status !== 'add' && p.left ? t('prov_left', { n: p.left }) : '', p.media.length ? t('prov_also', { kinds: new Intl.ListFormat(tag).format(p.media.map((k) => t(`kind_${k}`))) }) : ''].filter(Boolean).join(' · ')));
+    row.append(name, el('span', `badge ${p.status}`, t(`status_${p.status}`)));
     if (p.status === 'add') {
-      const b = el('button', 'btn quiet', 'Add');
+      const b = el('button', 'btn quiet', t('add'));
       b.addEventListener('click', () => api.add(p.id));
       row.append(b);
     }
     return row;
   }));
   if (!$('toolGrid').children.length) {
-    $('toolGrid').replaceChildren(...s.tools.map((t) => {
+    $('toolGrid').replaceChildren(...s.tools.map((tool) => {
       const card = el('div', 'tool');
-      const b = el('button', 'btn', 'Open in Terminal');
+      const b = el('button', 'btn', t('open_terminal'));
       b.addEventListener('click', async () => {
         b.disabled = true;
-        const r = await api.launch(t.id);
+        const r = await api.launch(tool.id);
         b.disabled = false;
         $('toolStatus').className = r.ok ? 'status' : 'status bad';
-        $('toolStatus').textContent = r.ok ? `Opening ${t.name} in a new terminal window.` : `Could not open ${t.name}: ${r.reason}`;
+        $('toolStatus').textContent = r.ok ? t('tool_opening', { name: tool.name }) : t('tool_failed', { name: tool.name, reason: r.reason });
       });
-      card.append(el('b', '', t.name), el('small', '', t.note), b);
+      card.append(el('b', '', tool.name), el('small', '', tool.note), b);
       return card;
     }));
   }
@@ -76,8 +93,8 @@ async function refresh() {
 for (const b of document.querySelectorAll('[data-copy]')) {
   b.addEventListener('click', async () => {
     await api.copy(b.dataset.copy);
-    b.textContent = 'Copied';
-    setTimeout(() => { b.textContent = 'Copy'; }, 1500);
+    b.textContent = t('copied');
+    setTimeout(() => { b.textContent = t('copy'); }, 1500);
   });
 }
 $('addTop').addEventListener('click', () => api.add());
@@ -99,7 +116,7 @@ function listChats() {
     b.addEventListener('click', () => openChat(c));
     const x = el('button', 'del', '×');
     x.type = 'button';
-    x.setAttribute('aria-label', `Delete chat: ${c.title}`);
+    x.setAttribute('aria-label', t('delete_chat', { title: c.title }));
     x.addEventListener('click', () => { chats = chats.filter((y) => y !== c); save(); if (current === c) openChat(null); else listChats(); });
     li.append(b, x);
     return li;
@@ -113,8 +130,8 @@ function bubble(m) {
   } else box.textContent = m.content;
   if (m.meta) {
     const meta = el('div', 'meta');
-    meta.append(el('span', 'chip who', m.meta.provider), el('span', 'chip', m.meta.model), el('span', 'chip', `${(m.meta.ms / 1000).toFixed(1)} s`));
-    if (m.meta.tokens) meta.append(el('span', 'chip', `${num(m.meta.tokens)} tokens`));
+    meta.append(el('span', 'chip who', m.meta.provider), el('span', 'chip', m.meta.model), el('span', 'chip', t('seconds', { n: (m.meta.ms / 1000).toFixed(1) })));
+    if (m.meta.tokens) meta.append(el('span', 'chip', t('tokens', { n: m.meta.tokens })));
     box.append(meta);
   }
   $('empty').hidden = true;
@@ -143,7 +160,7 @@ async function send() {
   bubble(chat.messages.at(-1));
   $('prompt').value = '';
   $('send').disabled = true;
-  const wait = bubble({ role: 'assistant', content: '_Thinking…_' });
+  const wait = bubble({ role: 'assistant', content: `_${t('thinking')}_` });
   const history = chat.messages.filter((m) => !m.error).map(({ role, content }) => ({ role, content }));
   const r = await api.chat(history, $('model').value);
   wait.remove();
@@ -168,7 +185,7 @@ function fillModels(models) {
   const keep = sel.value || 'free';
   const groups = new Map();
   for (const m of models) { if (!groups.has(m.provider)) groups.set(m.provider, el('optgroup')); groups.get(m.provider).label = m.provider; groups.get(m.provider).append(Object.assign(el('option', '', m.label), { value: m.value })); }
-  sel.replaceChildren(Object.assign(el('option', '', 'Auto: best free model'), { value: 'free' }), ...groups.values());
+  sel.replaceChildren(Object.assign(el('option', '', t('auto_model')), { value: 'free' }), ...groups.values());
   sel.value = [...sel.options].some((o) => o.value === keep) ? keep : 'free';
 }
 
@@ -176,24 +193,24 @@ function fillModels(models) {
 let usageDays = 7;
 const NS = 'http://www.w3.org/2000/svg';
 const svg = (tag, attrs, text) => { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); if (text != null) e.textContent = text; return e; };
-const compact = (n) => n.toLocaleString(undefined, { notation: 'compact', maximumFractionDigits: 1 });
-const dayLabel = (d) => new Date(`${d}T00:00:00Z`).toLocaleDateString(undefined, { day: 'numeric', month: 'short', timeZone: 'UTC' });
+const compact = (n) => n.toLocaleString(tag, { notation: 'compact', maximumFractionDigits: 1 });
+const dayLabel = (d) => new Date(`${d}T00:00:00Z`).toLocaleDateString(tag, { day: 'numeric', month: 'short', timeZone: 'UTC' });
 async function showUsage() {
   const u = await api.usage(usageDays);
   $('u-req').textContent = num(u.totals.requests);
-  $('u-rate').textContent = u.totals.successRate == null ? '–' : `${Math.round(u.totals.successRate * 100)}%`;
+  $('u-rate').textContent = u.totals.successRate == null ? '–' : (u.totals.successRate).toLocaleString(tag, { style: 'percent' });
   $('u-tok').textContent = compact(u.totals.tokens);
-  $('u-ms').textContent = u.totals.avgMs ? `${(u.totals.avgMs / 1000).toFixed(1)} s` : '–';
+  $('u-ms').textContent = u.totals.avgMs ? t('seconds', { n: (u.totals.avgMs / 1000).toFixed(1) }) : '–';
   const W = 760, H = 200, pad = 24, n = u.days.length;
   const max = Math.max(1, ...u.days.map((d) => d.ok + d.fail));
   const bw = (W - pad * 2) / n;
-  const chart = svg('svg', { viewBox: `0 0 ${W} ${H + 24}`, role: 'img', 'aria-label': `Requests per day: ${u.totals.requests} in total` });
+  const chart = svg('svg', { viewBox: `0 0 ${W} ${H + 24}`, role: 'img', 'aria-label': t('chart_label', { n: u.totals.requests }) });
   chart.append(svg('line', { x1: pad, x2: W - pad, y1: H, y2: H, class: 'axis' }), svg('text', { x: 0, y: 12, class: 'tick' }, compact(max)));
   u.days.forEach((d, i) => {
     const x = pad + i * bw + bw * 0.15, w = Math.max(1, bw * 0.7);
     const hOk = (d.ok / max) * (H - 20), hFail = (d.fail / max) * (H - 20);
     const g = svg('g', {});
-    g.append(svg('title', {}, `${dayLabel(d.date)}: ${d.ok} succeeded, ${d.fail} failed`));
+    g.append(svg('title', {}, t('day_tip', { day: dayLabel(d.date), ok: d.ok, fail: d.fail })));
     if (d.ok) g.append(svg('rect', { x, y: H - hOk, width: w, height: hOk, rx: 2, class: 'ok' }));
     if (d.fail) g.append(svg('rect', { x, y: H - hOk - hFail, width: w, height: hFail, rx: 2, class: 'fail' }));
     if (!d.ok && !d.fail) g.append(svg('rect', { x, y: H - 2, width: w, height: 2, class: 'none' }));
@@ -201,19 +218,19 @@ async function showUsage() {
     if (i === 0 || i === n - 1 || (n > 7 && i === Math.floor(n / 2))) chart.append(svg('text', { x: x + w / 2, y: H + 18, class: 'tick', 'text-anchor': n === 1 ? 'middle' : i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle' }, dayLabel(d.date)));
   });
   const legend = el('div', 'legend');
-  legend.append(el('span', 'k ok', 'Succeeded'), el('span', 'k fail', 'Failed'));
+  legend.append(el('span', 'k ok', t('succeeded')), el('span', 'k fail', t('failed')));
   $('u-chart').replaceChildren(chart, legend);
   $('u-prov').replaceChildren(...(u.providers.length ? u.providers.map((p) => {
     const row = el('div', 'prov');
     const name = el('div', 'name');
-    name.append(el('b', '', p.name), el('small', '', `${num(p.ok)} succeeded · ${num(p.fail)} failed · ${compact(p.tokens)} tokens`));
+    name.append(el('b', '', p.name), el('small', '', t('prov_usage', { ok: p.ok, fail: p.fail, tokens: compact(p.tokens) })));
     const share = el('div', 'bar');
     const fill = el('i');
     fill.style.width = `${Math.round((p.ok + p.fail) / Math.max(1, u.totals.requests) * 100)}%`;
     share.append(fill);
     row.append(name, share);
     return row;
-  }) : [el('p', 'lead', 'No requests in this range yet.')]));
+  }) : [el('p', 'lead', t('no_requests'))]));
 }
 for (const b of document.querySelectorAll('[data-days]')) {
   b.addEventListener('click', () => {
@@ -229,22 +246,25 @@ $('checkUpd').addEventListener('click', async () => {
   $('checkUpd').disabled = true;
   const r = await api.updates();
   $('checkUpd').disabled = false;
-  if (!r.ok) { $('updText').textContent = `Could not check: ${r.reason}`; return; }
-  if (!r.newer) { $('updText').textContent = `Version ${$('version').textContent} is the latest.`; return; }
-  $('updText').textContent = `${r.latest} is out. `;
-  const a = el('a', '', 'Download it');
+  if (!r.ok) { $('updText').textContent = t('upd_failed', { reason: r.reason }); return; }
+  if (!r.newer) { $('updText').textContent = t('upd_latest', { v: version }); return; }
+  $('updText').textContent = `${t('upd_out', { v: r.latest })} `;
+  const a = el('a', '', t('upd_download'));
   a.href = 'https://freeaitokens.co/download';
   a.addEventListener('click', (e) => { e.preventDefault(); api.open(a.href); });
   $('updText').append(a);
 });
 $('clearChats').addEventListener('click', () => {
-  if (!confirm('Delete all saved chats? This cannot be undone.')) return;
+  if (!confirm(t('confirm_delete'))) return;
   chats = [];
   save();
   openChat(null);
 });
-listChats();
+$('lang').addEventListener('change', () => api.lang($('lang').value)); // the main process reloads this window
 
-refresh();
-setInterval(() => { if (document.hidden) return; refresh(); if (!$('usage').hidden) showUsage(); }, 15_000);
-window.addEventListener('focus', refresh);
+applyStrings().then(() => {
+  listChats();
+  refresh();
+  setInterval(() => { if (document.hidden) return; refresh(); if (!$('usage').hidden) showUsage(); }, 15_000);
+  window.addEventListener('focus', refresh);
+});

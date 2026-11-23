@@ -21,30 +21,40 @@
 </style>
 </head>
 <body>
-<h1>Add a free provider</h1>
-<p class="note">Use your own account, one per provider. Keys are tested, then stored in your system keychain.</p>
-<label for="prov">Provider</label>
+<h1 data-i18n="add_title">Add a free provider</h1>
+<p class="note" data-i18n="add_lead">Use your own account, one per provider. Keys are tested, then stored in your system keychain.</p>
+<label for="prov" data-i18n="add_provider">Provider</label>
 <select id="prov"></select>
 <p class="note" id="note"></p>
 <div id="keyFlow">
   <pre id="steps"></pre>
-  <button class="secondary" id="openPage">Open the key page</button>
+  <button class="secondary" id="openPage" data-i18n="add_open">Open the key page</button>
   <div id="accountRow" hidden>
-    <label for="account">Paste your Account ID</label>
+    <label for="account" data-i18n="add_account">Paste your Account ID</label>
     <input id="account" autocomplete="off" spellcheck="false">
   </div>
-  <label for="key">Paste your key</label>
+  <label for="key" data-i18n="add_key">Paste your key</label>
   <input id="key" type="password" autocomplete="off" spellcheck="false">
-  <button id="save">Check and save</button>
+  <button id="save" data-i18n="add_save">Check and save</button>
 </div>
 <div id="connectFlow" hidden>
-  <p>Sign in to OpenRouter in your browser and approve the connection. No key to copy.</p>
-  <button id="connect">Connect OpenRouter</button>
+  <p data-i18n="add_connect_text">Sign in to OpenRouter in your browser and approve the connection. No key to copy.</p>
+  <button id="connect" data-i18n="add_connect">Connect OpenRouter</button>
 </div>
 <div id="status" role="status"></div>
+<script src="t.js"></script>
 <script>
   const $ = (id) => document.getElementById(id);
   let list = [];
+  let t = (k) => k;
+  async function applyStrings() {
+    const s = await window.freeaitokens.strings();
+    t = makeTranslator(s.strings, s.lang);
+    document.documentElement.lang = s.lang;
+    document.documentElement.dir = s.dir;
+    document.title = t('add_title');
+    for (const e of document.querySelectorAll('[data-i18n]')) e.textContent = t(e.dataset.i18n);
+  }
   const current = () => list.find((p) => p.id === $('prov').value);
   const status = (text, cls = '') => { $('status').textContent = text; $('status').className = cls; };
   function show() {
@@ -62,24 +72,24 @@
   async function load() {
     list = await window.freeaitokens.providers();
     $('prov').replaceChildren(...list.map((p) => Object.assign(document.createElement('option'), { value: p.id, textContent: p.name })));
-    if (!list.length) { document.body.querySelector('#keyFlow').hidden = true; status('Every provider already has a key.', 'ok'); return; }
+    if (!list.length) { document.body.querySelector('#keyFlow').hidden = true; status(t('add_all_done'), 'ok'); return; }
     const want = new URLSearchParams(location.search).get('p');
     if (list.some((p) => p.id === want)) $('prov').value = want;
     show();
   }
   async function run(button, work) {
     button.disabled = true;
-    status('Checking…');
+    status(t('checking'));
     const r = await work();
     button.disabled = false;
-    if (r.ok) { status(`Added ${current().name}.`, 'ok'); await load(); } else status(`That did not work: ${r.reason}.`, 'bad');
+    if (r.ok) { status(t('add_added', { name: current().name }), 'ok'); await load(); } else status(t('add_failed', { reason: r.reason }), 'bad');
   }
   $('prov').addEventListener('change', show);
   $('openPage').addEventListener('click', () => { const p = current(); if (p?.open) window.freeaitokens.open(p.open); });
   $('save').addEventListener('click', () => run($('save'), () => window.freeaitokens.save(current().id, $('key').value, $('account').value)));
   $('key').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('save').click(); });
   $('connect').addEventListener('click', () => run($('connect'), () => window.freeaitokens.connect(current().id)));
-  load();
+  applyStrings().then(load);
 </script>
 </body>
 </html>

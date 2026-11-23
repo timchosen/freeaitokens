@@ -1,7 +1,7 @@
 // freeaitokens tray app: runs the same local endpoint as the CLI, from the menu bar / system tray.
 import { app, Tray, Menu, BrowserWindow, ipcMain, clipboard, nativeImage, shell } from 'electron';
 import { spawn } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadCatalogue, makeDeps, parseArgs } from 'freeaitokens/dist/node/cli.js';
@@ -12,7 +12,8 @@ import { localToken, saveState, loadState, stateDir } from 'freeaitokens/dist/no
 import { validateKey, keySteps, connectOpenRouter } from 'freeaitokens/dist/node/add.js';
 import { launchSpec, LAUNCH_TOOLS } from 'freeaitokens/dist/node/harness.js';
 import { route, NoCapacityError } from 'freeaitokens/dist/core/orchestrator.js';
-import { allowedUrl, choices, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary } from './logic.js';
+import { allowedUrl, choices, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang } from './logic.js';
+import './t.js';
 import { needsAccount, joinAccount } from 'freeaitokens/dist/core/catalogue.js';
 
 const here = (f) => fileURLToPath(new URL(f, import.meta.url));
@@ -20,6 +21,19 @@ if (!app.requestSingleInstanceLock()) app.quit();
 
 let tray, srv, deps, keys, addWindow, mainWindow;
 const endpoint = () => `http://127.0.0.1:${srv.port}/v1`;
+
+// Language: the one picked in Settings (saved next to the app's state), else the computer's.
+const LOCALES = JSON.parse(readFileSync(here('./i18n/locales.json'), 'utf8'));
+const settingsFile = () => join(stateDir(), 'desktop.json');
+const readSettings = () => { try { return JSON.parse(readFileSync(settingsFile(), 'utf8')); } catch { return {}; } };
+let locale, strings, t;
+function loadLang() {
+  const code = pickLang(readSettings().lang, app.getPreferredSystemLanguages(), LOCALES.map((l) => l.code));
+  const read = (c) => JSON.parse(readFileSync(here(`./i18n/${c}.json`), 'utf8'));
+  locale = LOCALES.find((l) => l.code === code);
+  strings = { ...read('en'), ...(code === 'en' ? {} : read(code)) };
+  t = globalThis.makeTranslator(strings, locale.lang);
+}
 
 function refresh() {
   tray.setContextMenu(Menu.buildFromTemplate(menuTemplate(
@@ -32,6 +46,7 @@ function refresh() {
       toggleLogin: (item) => app.setLoginItemSettings({ openAtLogin: item.checked }),
       quit: () => app.quit(),
     },
+    t,
   )));
 }
 
@@ -58,7 +73,7 @@ function openMain() {
 function openAdd(id) {
   if (addWindow) return addWindow.focus();
   addWindow = new BrowserWindow({
-    width: 520, height: 600, title: 'Add a free provider', autoHideMenuBar: true,
+    width: 520, height: 600, title: t('add_title'), autoHideMenuBar: true,
     webPreferences: { preload: here('./preload.cjs'), contextIsolation: true, sandbox: true, nodeIntegration: false },
   });
   lockDown(addWindow);
@@ -70,9 +85,9 @@ ipcMain.handle('providers', () => choices(deps.catalogue, keys, keySteps));
 ipcMain.handle('open', (_e, url) => { if (allowedUrl(deps.catalogue, url)) void shell.openExternal(url); });
 ipcMain.handle('save', async (_e, id, key, account) => {
   const prov = deps.catalogue.find((p) => p.id === id && !p.keyless);
-  if (!prov || typeof key !== 'string' || !key.trim()) return { ok: false, reason: 'nothing to save' };
+  if (!prov || typeof key !== 'string' || !key.trim()) return { ok: false, reason: t('err_nothing') };
   const stored = needsAccount(prov) ? joinAccount(typeof account === 'string' ? account : '', key) : key.trim();
-  if (!stored) return { ok: false, reason: 'the Account ID is missing or not valid' };
+  if (!stored) return { ok: false, reason: t('err_account') };
   const v = await validateKey(prov, stored, fetch);
   if (v.ok) keys.set(prov.id, stored);
   return v;
@@ -89,11 +104,10 @@ ipcMain.handle('connect', async (_e, id) => {
 });
 
 // The main window's calls. Everything it sends is checked here: it is a web page.
-const TOOL_NOTE = { claude: 'Anthropic\'s coding agent', codex: 'OpenAI\'s coding agent', gemini: 'Google\'s coding agent', goose: 'Block\'s open agent', qwen: 'Qwen\'s coding agent', kilo: 'Open-source coding agent', aider: 'Pair programming in your terminal' };
 ipcMain.handle('app:status', () => ({
   port: srv.port, reused: srv.reused, endpoint: endpoint(),
   providers: providerRows(deps.catalogue, keys, deps.tracker),
-  tools: Object.entries(LAUNCH_TOOLS).map(([id, name]) => ({ id, name, note: TOOL_NOTE[id] ?? '' })),
+  tools: Object.entries(LAUNCH_TOOLS).map(([id, name]) => ({ id, name, note: strings[`note_${id}`] ?? '' })),
   models: modelOptions(deps.catalogue, keys),
   version: app.getVersion(),
   startAtLogin: app.getLoginItemSettings().openAtLogin,
@@ -102,14 +116,14 @@ ipcMain.handle('app:status', () => ({
 // even when another copy of FreeAITokens holds the port.
 ipcMain.handle('app:chat', async (_e, list, choice = 'free') => {
   const messages = cleanMessages(list);
-  if (!messages) return { ok: false, reason: 'That message could not be sent.' };
+  if (!messages) return { ok: false, reason: t('err_send') };
   const catalogue = narrowTo(deps.catalogue, choice);
-  if (!catalogue || (choice !== 'free' && !modelOptions(catalogue, keys).length)) return { ok: false, reason: 'That model is not available. Pick another one.' };
+  if (!catalogue || (choice !== 'free' && !modelOptions(catalogue, keys).length)) return { ok: false, reason: t('err_model') };
   const start = Date.now();
   try {
     const { response, candidate } = await route({ messages, max_tokens: 4096 }, { ...deps, catalogue });
     const text = await response.text();
-    if (response.status !== 200) return { ok: false, reason: `${candidate.provider.name} said no: ${text.slice(0, 300)}` };
+    if (response.status !== 200) return { ok: false, reason: t('err_said_no', { name: candidate.provider.name, text: text.slice(0, 300) }) };
     const body = JSON.parse(text);
     return {
       ok: true, ms: Date.now() - start,
@@ -118,7 +132,7 @@ ipcMain.handle('app:chat', async (_e, list, choice = 'free') => {
       tokens: body?.usage?.total_tokens ?? 0,
     };
   } catch (e) {
-    return { ok: false, reason: e instanceof NoCapacityError ? e.message : `Something went wrong: ${e.message}` };
+    return { ok: false, reason: e instanceof NoCapacityError ? e.message : t('err_generic', { reason: e.message }) };
   } finally {
     saveState(deps.tracker.state);
   }
@@ -153,6 +167,20 @@ ipcMain.handle('app:launch', async (_e, tool) => {
     return { ok: false, reason: e.message };
   }
 });
+// Both windows ask for their strings; Settings changes the language and reloads them.
+ipcMain.handle('strings', () => ({
+  lang: locale.lang, dir: locale.dir, strings,
+  languages: LOCALES.map(({ code, name }) => ({ code, name })), chosen: readSettings().lang ?? 'system',
+}));
+ipcMain.handle('app:lang', (_e, code) => {
+  if (code !== 'system' && !LOCALES.some((l) => l.code === code)) return;
+  mkdirSync(stateDir(), { recursive: true });
+  writeFileSync(settingsFile(), JSON.stringify({ ...readSettings(), lang: code }));
+  loadLang();
+  refresh();
+  addWindow?.setTitle(t('add_title'));
+  for (const w of [mainWindow, addWindow]) w?.webContents.reload();
+});
 ipcMain.handle('app:copy', (_e, what) => { if (what === 'endpoint') clipboard.writeText(endpoint()); else if (what === 'token') clipboard.writeText(localToken()); });
 ipcMain.handle('app:add', (_e, id) => openAdd(id));
 
@@ -180,6 +208,7 @@ app.on('before-quit', async () => { if (deps) saveState(deps.tracker.state); awa
 
 app.whenReady().then(async () => {
   app.dock?.hide();
+  loadLang();
   keys = openKeyStore();
   deps = makeDeps(currentCatalogue(loadCatalogue()), keys, parseArgs([]));
   void updateCatalogue().then((c) => { if (c) { deps.catalogue = c; refresh(); } });
@@ -189,7 +218,7 @@ app.whenReady().then(async () => {
   try {
     srv = await startServer(deps, DEFAULT_PORT);
   } catch (e) {
-    tray.setContextMenu(Menu.buildFromTemplate([{ label: e.message, enabled: false }, { label: 'Quit', click: () => app.quit() }]));
+    tray.setContextMenu(Menu.buildFromTemplate([{ label: e.message, enabled: false }, { label: t('quit'), click: () => app.quit() }]));
     return;
   }
   refresh();

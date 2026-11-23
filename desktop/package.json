@@ -1,7 +1,7 @@
 {
   "name": "freeaitokens-desktop",
   "productName": "freeaitokens",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "private": true,
   "description": "freeaitokens in your menu bar: free AI from many providers on one local endpoint.",
   "type": "module",
@@ -32,6 +32,8 @@
       "md.js",
       "app.css",
       "preload-app.cjs",
+      "t.js",
+      "i18n/*.json",
       "icons/**"
     ],
     "icon": "icons/icon.png",

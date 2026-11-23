@@ -17,18 +17,28 @@ export function choices(catalogue, keys, stepsOf) {
 // runList pads columns for a terminal; a menu wants one readable line.
 export const menuLine = (line) => line.trim().replace(/\s{2,}/g, ' · ');
 
-export function menuTemplate({ port, reused, startAtLogin }, on) {
+export function menuTemplate({ port, reused, startAtLogin }, on, t) {
   return [
-    { label: 'Open FreeAITokens', click: on.open },
+    { label: t('menu_open'), click: on.open },
     { type: 'separator' },
-    { label: reused ? `Using the endpoint already running on port ${port}` : `Running on http://127.0.0.1:${port}/v1`, enabled: false },
-    { label: 'Copy endpoint', click: on.copyEndpoint },
-    { label: 'Copy local token', click: on.copyToken },
-    { label: 'Add a provider…', click: on.add },
+    { label: reused ? t('menu_reused', { port: String(port) }) : t('menu_running', { url: `http://127.0.0.1:${port}/v1` }), enabled: false },
+    { label: t('menu_copy_endpoint'), click: on.copyEndpoint },
+    { label: t('menu_copy_token'), click: on.copyToken },
+    { label: t('menu_add'), click: on.add },
     { type: 'separator' },
-    { label: 'Start at login', type: 'checkbox', checked: startAtLogin, click: on.toggleLogin },
-    { label: 'Quit freeaitokens', click: on.quit },
+    { label: t('set_login'), type: 'checkbox', checked: startAtLogin, click: on.toggleLogin },
+    { label: t('menu_quit'), click: on.quit },
   ];
+}
+
+// The app's language: the saved choice, else the first system language with a translation, else English.
+export function pickLang(saved, preferred, codes) {
+  if (codes.includes(saved)) return saved;
+  for (const l of preferred ?? []) {
+    const base = String(l).toLowerCase().split(/[-_]/)[0];
+    if (codes.includes(base)) return base;
+  }
+  return 'en';
 }
 
 // One row per provider for the window: ready (key added), keyless, or add (no key yet), and requests left today.

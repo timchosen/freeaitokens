@@ -1,7 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 // @ts-ignore plain JS module
-import { allowedUrl, choices, menuLine, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary } from '../desktop/logic.js';
+import { allowedUrl, choices, menuLine, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang } from '../desktop/logic.js';
+import { readFileSync as readText } from 'node:fs';
+import vm from 'node:vm';
+
+// The translator in desktop/t.js is a plain script shared by the windows and the main process.
+function loadT() { const ctx: any = { Intl }; vm.runInNewContext(readText(new URL('../desktop/t.js', import.meta.url), 'utf8'), ctx); return ctx.makeTranslator; }
+const desktopEn = JSON.parse(readText(new URL('../desktop/i18n/en.json', import.meta.url), 'utf8'));
 
 const cat = [
   { id: 'kilo', name: 'Kilo', keyless: true },
@@ -34,7 +40,7 @@ test('choices lists keyed providers without a key, with steps, and OpenRouter as
 test('menu opens the window first, shows the endpoint, and has no grayed-out provider lines', () => {
   assert.equal(menuLine('Groq               key added      x 9 left today'), 'Groq · key added · x 9 left today');
   const open = () => {};
-  const t = menuTemplate({ port: 4949, reused: false, startAtLogin: true }, { open });
+  const t = menuTemplate({ port: 4949, reused: false, startAtLogin: true }, { open }, loadT()(desktopEn, 'en'));
   assert.equal(t[0].label, 'Open FreeAITokens');
   assert.equal(t[0].click, open);
   assert.ok(t.some((i: any) => /127\.0\.0\.1:4949/.test(i.label ?? '')));
@@ -160,4 +166,42 @@ test('usageSummary fills every day in the range and totals it, busiest provider 
   assert.deepEqual(s.totals, { requests: 5, ok: 4, fail: 1, tokens: 350, avgMs: 500, successRate: 0.8 });
   assert.deepEqual(s.providers.map((p: any) => [p.name, p.ok, p.fail]), [['Groq', 3, 1], ['kilo', 1, 0]]);
   assert.equal(usageSummary({}, 7, cat, Date.UTC(2026, 10, 23)).totals.successRate, null);
+});
+
+test('pickLang uses the saved choice, else the first system language there is a translation for, else English', () => {
+  const codes = ['en', 'pt', 'zh', 'ar'];
+  assert.equal(pickLang('ar', ['pt-BR'], codes), 'ar');
+  assert.equal(pickLang('system', ['de-DE', 'pt-BR', 'en-US'], codes), 'pt');
+  assert.equal(pickLang(undefined, ['zh-Hans-CN'], codes), 'zh');
+  assert.equal(pickLang('xx', ['de'], codes), 'en');
+  assert.equal(pickLang(null, undefined, codes), 'en');
+});
+
+test('translator fills placeholders, formats numbers and picks plural forms', () => {
+  const make = loadT();
+  const en = make({ hi: 'Hi {name}', n_one: '{n} model', n_other: '{n} models' }, 'en');
+  assert.equal(en('hi', { name: 'Ana' }), 'Hi Ana');
+  assert.equal(en('n', { n: 1 }), '1 model');
+  assert.equal(en('n', { n: 1200 }), '1,200 models');
+  assert.equal(en('missing'), 'missing');
+  const ar = make({ n_one: 'one', n_two: 'two', n_other: 'other' }, 'ar');
+  assert.equal(ar('n', { n: 2 }), 'two');
+  assert.equal(ar('n', { n: 5 }), 'other', 'a missing plural form falls back to _other');
+});
+
+test('every desktop string the windows and tray use is in en.json', () => {
+  const src = ['app.html', 'add.html', 'app.js', 'main.js'].map((f) => readText(new URL(`../desktop/${f}`, import.meta.url), 'utf8')).join('\n');
+  const used = new Set([...src.matchAll(/data-i18n(?:-[a-z]+)?="(\w+)"/g), ...src.matchAll(/\bt\('(\w+)'/g)].map((m) => m[1]));
+  assert.ok(used.size > 50, `found only ${used.size} strings`);
+  for (const k of used) assert.ok(k in desktopEn || `${k}_other` in desktopEn, `${k} is not in desktop/i18n/en.json`);
+});
+
+test('the desktop app has every site language, and each translation matches English', async () => {
+  // @ts-ignore plain JS module
+  const { checkDesktopLocale } = await import('../desktop/i18n/check.mjs');
+  const site = readText(new URL('../site/i18n/locales.json', import.meta.url), 'utf8');
+  assert.equal(readText(new URL('../desktop/i18n/locales.json', import.meta.url), 'utf8'), site);
+  for (const { code } of JSON.parse(site)) assert.deepEqual(checkDesktopLocale(code), [], code);
+  const files = JSON.parse(readText(new URL('../desktop/package.json', import.meta.url), 'utf8')).build.files;
+  assert.ok(files.includes('i18n/*.json') && files.includes('t.js'));
 });
