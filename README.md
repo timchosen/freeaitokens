@@ -1,16 +1,20 @@
 # freeaitokens
 
-Free AI models for the coding tools you already use. One command starts a local endpoint backed by providers' free tiers, picks the best available model for every request, and moves to another one when a provider hits its limit.
+Up to about **7 billion free AI tokens a month**. AI providers each give a small free allowance; freeaitokens adds 26 of them together behind one local endpoint, picks the best model available for every request, and moves to another one when a provider hits its limit. Use it from your own scripts and apps, chat clients, editors or coding agents.
 
 ```bash
 npx freeaitokens
 ```
 
-That works straight away, with no account, on providers that need no key. Then add a free key or two so longer coding sessions don't run out:
+That works straight away, with no account, on providers that need no key. Each free key you add raises the total:
 
 ```bash
 npx freeaitokens add
 ```
+
+Prefer an app? The [desktop app](#desktop-app) runs the same endpoint from your menu bar or system tray.
+
+The 7 billion figure adds up the free limits providers publish, counting 2,000 tokens a request where only a request limit is published. Most of it comes from a few large allowances (Cerebras alone is most of it), and you get it only with a key for each provider. Several providers publish no limit and count as zero.
 
 ## Use it with your tools
 
@@ -18,18 +22,22 @@ npx freeaitokens add
 |---|---|
 | Claude Code | `npx freeaitokens claude` (any Claude Code arguments work after it) |
 | Codex | `npx freeaitokens codex` |
+| Gemini CLI | `npx freeaitokens gemini` |
 | OpenCode | `npx freeaitokens setup opencode`, then pick the model `freeaitokens/free` |
-| Cline, Aider, Continue | `npx freeaitokens setup cline` prints the three values to paste |
+| Kilo Code CLI, Qwen Code, Goose, Aider | `npx freeaitokens kilo` / `qwen` / `goose` / `aider` |
+| Zed, JetBrains AI, VS Code (Copilot custom endpoint) | `npx freeaitokens setup zed` / `jetbrains` / `vscode` prints what to paste |
+| Continue, Cline, Crush, Roo Code | `npx freeaitokens setup cline` (or the tool's name) prints the values |
 | Anything OpenAI-compatible | Base URL `http://127.0.0.1:4949/v1`, model `free`, key from the startup banner |
+| Anthropic, Gemini or Ollama clients | Base URL `http://127.0.0.1:4949`, the same key |
 
-The launchers only affect that one session. Run `claude` or `codex` normally and they use your own account as before. `setup opencode` adds a provider next to your existing ones and keeps a backup; `--undo` restores it.
+The launchers only affect that one session and write nothing to your tool's config. Run the tool normally and it uses your own account as before. `setup opencode` adds a provider next to your existing ones and keeps a backup; `--undo` restores it.
 
 ## What it does
 
 - **Picks a model per request.** It only considers models that can handle the request: enough context for the conversation so far, tool calling when the tool needs it, images when there are images. Among those it prefers better models that have been fast and reliable for you, and it stays on the same model through a conversation unless another is clearly better.
 - **Fails over.** On a rate limit, server error or timeout it tries the next model before your tool sees anything. If everything is busy and capacity returns within 30 seconds, it waits; otherwise it tells you when capacity returns.
 - **Tracks free limits** per provider, model and key, by the minute and by the day, and corrects itself from the limits providers report.
-- **Speaks three formats**: OpenAI chat completions, Anthropic Messages (Claude Code) and OpenAI Responses (Codex).
+- **Speaks five formats**: OpenAI chat completions, Anthropic Messages (Claude Code), OpenAI Responses (Codex), Gemini (Gemini CLI) and Ollama (`/api/chat`, for local-model clients that can send a key).
 
 ## Providers
 
@@ -44,6 +52,7 @@ The launchers only affect that one session. Run `claude` or `codex` normally and
 | Typhoon | Free key | A research showcase: usage data is collected to improve the models. |
 | NVIDIA NIM | Free key | A trial for prototyping and testing, not production use. |
 | Z.ai (GLM) | Free key | Only the Flash models are free. |
+| OVH AI Endpoints | No | About 2 requests a minute per IP for each model. |
 
 Resellers. Their models are rated below most of the providers above, so they are mostly a fallback. `freeaitokens add` shows each one's caveats before you sign up.
 
@@ -58,6 +67,13 @@ Resellers. Their models are rated below most of the providers above, so they are
 | BazaarLink | Free key | Small daily allowance. Some requests are kept in full. |
 | Logfare | Free key + Discord | 5,000 requests a day. Logs everything, used for evals unless you opt out. |
 | CheapLLM | Free key | Free during beta, then very small hourly limits. |
+| BlockRun | Free key | About 300 requests an hour per IP. |
+| Electron Hub | Free key | `:free` models only. Providers behind them may train on prompts. |
+| Septor Labs | Free key | 50 requests a day. Routes to third-party aggregators that may keep prompts. |
+| Routeway | Free key | Operator not named; requests are scanned before routing. |
+| api.airforce | Free key | 1 request a minute. Logs IPs and usage. |
+| AI Horde | Free key | Volunteer-run and slow, no tool calls; volunteers can see prompts. |
+| LLM7 | Free key | Small operator; free limits and data handling not published. |
 
 The provider list updates itself. A small service checks every provider every 6 hours, drops models that have gone and adds new free ones, then publishes a signed list. freeaitokens checks for it at most every 6 hours, only accepts it if the signature is valid and every provider's address, key page and sign-up steps match this repository, and otherwise keeps the list it has. Set `FREEAITOKENS_CATALOGUE=bundled` to use only the list built into the package.
 
@@ -66,6 +82,12 @@ Some sign-up links may be referral links. `freeaitokens add` always marks them "
 `freeaitokens add` opens each provider's key page, shows the steps, and can pick the key up from your clipboard when you copy it (only during that step, and only if you agree). Keys are tested before they are saved, and stored in your system keychain. Where there is no keychain (some Linux servers, Termux), they go in a file only you can read, and it says so.
 
 `freeaitokens list` shows what you have and what is left today. `freeaitokens remove <provider>` deletes a key.
+
+## Desktop app
+
+The tray app in [`desktop/`](desktop) runs the same endpoint without a terminal. Its menu shows the endpoint, copies it and the local token, lists each provider with what is left today, opens a window to add keys, and can start at login. Builds for macOS, Windows and Linux are attached to [GitHub releases](https://github.com/timchosen/freeaitokens/releases). They are not code-signed yet, so macOS and Windows warn the first time you open them.
+
+On macOS the app is a different program from the `freeaitokens` command, so the first time it reads keys the command saved, macOS asks once per key whether to allow it. Choose Always Allow.
 
 ## Paid keys
 
@@ -85,7 +107,7 @@ The endpoint listens on `127.0.0.1` only and needs the local token from the star
 
 - **Cursor**: it sends custom-endpoint traffic through its own servers, which cannot reach a local address.
 - **The ChatGPT app**: it cannot use a custom endpoint.
-- Images, audio and embeddings endpoints; a dashboard; a desktop app.
+- Images, audio and embeddings endpoints; editor autocomplete (`/v1/completions`); a dashboard.
 - Codex's connected-app (MCP) tools and web search are not passed to free models: they add more context than free models accept.
 
 ## Development

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { launchSpec, setupFile, undoSetup } from '../src/node/harness.ts';
+import { launchSpec, setupFile, undoSetup, manualSetup } from '../src/node/harness.ts';
 
 const TOKEN = 'ft-' + '0'.repeat(32);
 const tmp = () => join(mkdtempSync(join(tmpdir(), 'ft-h-')), 'opencode.json');
@@ -84,4 +84,46 @@ test('running setup twice does not overwrite the original backup', () => {
 
 test('undo without a backup says so', () => {
   assert.throws(() => undoSetup('opencode', tmp()), /Nothing to undo/);
+});
+
+test('gemini spec points Gemini CLI at the root with the token and a settings file that picks API-key auth', () => {
+  const s = launchSpec('gemini', 4949, TOKEN, ['-p', 'hi'], '/state');
+  assert.equal(s.cmd, 'gemini');
+  assert.deepEqual(s.args, ['-p', 'hi']);
+  assert.equal(s.env.GOOGLE_GEMINI_BASE_URL, 'http://127.0.0.1:4949');
+  assert.equal(s.env.GEMINI_API_KEY, TOKEN);
+  assert.equal(s.env.GEMINI_MODEL, 'free');
+  const file = s.env.GEMINI_CLI_SYSTEM_SETTINGS_PATH;
+  assert.equal(file, join('/state', 'gemini-system-settings.json'));
+  assert.equal(JSON.parse(s.files![file]).security.auth.selectedType, 'gemini-api-key');
+});
+
+test('goose, qwen, aider and kilo launchers keep the token in env, never in args', () => {
+  const goose = launchSpec('goose', 4949, TOKEN, []);
+  assert.deepEqual([goose.cmd, goose.args[0]], ['goose', 'session']);
+  assert.equal(goose.env.OPENAI_HOST, 'http://127.0.0.1:4949');
+  assert.equal(goose.env.OPENAI_BASE_PATH, 'v1/chat/completions');
+  assert.equal(goose.env.GOOSE_PROVIDER, 'openai');
+  const qwen = launchSpec('qwen', 4949, TOKEN, ['x']);
+  assert.deepEqual(qwen.args, ['--auth-type', 'openai', '--openai-base-url', 'http://127.0.0.1:4949/v1', '-m', 'free', 'x']);
+  const aider = launchSpec('aider', 4949, TOKEN, []);
+  assert.equal(aider.env.OPENAI_API_BASE, 'http://127.0.0.1:4949/v1');
+  assert.ok(aider.args.includes('openai/free'));
+  {
+    const s = launchSpec('kilo', 4949, TOKEN, []);
+    const conf = JSON.parse(s.env.KILO_CONFIG_CONTENT);
+    assert.equal(conf.model, 'freeaitokens/free');
+    assert.equal(conf.provider.freeaitokens.options.baseURL, 'http://127.0.0.1:4949/v1');
+    assert.equal(conf.provider.freeaitokens.options.apiKey, '{env:FREEAITOKENS_TOKEN}');
+    assert.equal(s.env.FREEAITOKENS_TOKEN, TOKEN);
+  }
+  for (const s of [goose, qwen, aider]) { assert.ok(!s.args.join(' ').includes(TOKEN)); assert.ok(Object.values(s.env).includes(TOKEN)); }
+});
+
+test('manual setup gives Zed, JetBrains and VS Code their own steps, and explains Cursor', () => {
+  assert.match(manualSetup('zed', 4949, TOKEN), /openai_compatible[\s\S]*http:\/\/127\.0\.0\.1:4949\/v1/);
+  assert.match(manualSetup('jetbrains', 4949, TOKEN), /Providers & API keys/);
+  assert.match(manualSetup('vscode', 4949, TOKEN), /Custom Endpoint/);
+  assert.match(manualSetup('cursor', 4949, TOKEN), /Cursor's servers/);
+  assert.match(manualSetup('cline', 4949, TOKEN), new RegExp(TOKEN));
 });
