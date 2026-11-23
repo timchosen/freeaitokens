@@ -1,7 +1,8 @@
 // freeaitokens tray app: runs the same local endpoint as the CLI, from the menu bar / system tray.
-import { app, Tray, Menu, BrowserWindow, ipcMain, clipboard, nativeImage, shell } from 'electron';
+import { app, Tray, Menu, BrowserWindow, ipcMain, clipboard, nativeImage, shell, dialog } from 'electron';
 import { spawn } from 'node:child_process';
-import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadCatalogue, makeDeps, parseArgs } from 'freeaitokens/dist/node/cli.js';
@@ -12,7 +13,8 @@ import { localToken, saveState, loadState, stateDir } from 'freeaitokens/dist/no
 import { validateKey, keySteps, connectOpenRouter } from 'freeaitokens/dist/node/add.js';
 import { launchSpec, LAUNCH_TOOLS } from 'freeaitokens/dist/node/harness.js';
 import { route, NoCapacityError } from 'freeaitokens/dist/core/orchestrator.js';
-import { allowedUrl, choices, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang } from './logic.js';
+import { routeMedia, NoProviderError } from 'freeaitokens/dist/core/media.js';
+import { allowedUrl, choices, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType } from './logic.js';
 import './t.js';
 import { needsAccount, joinAccount } from 'freeaitokens/dist/core/catalogue.js';
 
@@ -109,6 +111,7 @@ ipcMain.handle('app:status', () => ({
   providers: providerRows(deps.catalogue, keys, deps.tracker),
   tools: Object.entries(LAUNCH_TOOLS).map(([id, name]) => ({ id, name, note: strings[`note_${id}`] ?? '' })),
   models: modelOptions(deps.catalogue, keys),
+  images: imageOptions(deps.catalogue, keys),
   version: app.getVersion(),
   startAtLogin: app.getLoginItemSettings().openAtLogin,
 }));
@@ -167,6 +170,72 @@ ipcMain.handle('app:launch', async (_e, tool) => {
     return { ok: false, reason: e.message };
   }
 });
+// Playground images: made through the same router as the image API, kept as files in the state folder.
+// The window only ever names a file by its random id; bytes are checked to be PNG, JPEG or WebP.
+const MAX_IMAGE = 15 * 1024 * 1024;
+const IMAGE_FILE = /^[0-9a-f-]{36}\.(png|jpg|webp)$/;
+const MIME = { png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp' };
+const imagesDir = () => join(stateDir(), 'images');
+const dataUrl = (type, bytes) => `data:${MIME[type]};base64,${bytes.toString('base64')}`;
+async function download(url) {
+  const r = await fetch(url, { signal: AbortSignal.timeout(60_000) });
+  if (!r.ok || Number(r.headers.get('content-length') ?? 0) > MAX_IMAGE) return null;
+  const bytes = Buffer.from(await r.arrayBuffer());
+  return bytes.length <= MAX_IMAGE ? bytes : null;
+}
+ipcMain.handle('app:image', async (_e, prompt, choice = 'free') => {
+  if (typeof prompt !== 'string' || !prompt.trim() || prompt.length > 4000) return { ok: false, reason: t('err_send') };
+  const options = imageOptions(deps.catalogue, keys);
+  if (!options.length) return { ok: false, reason: t('no_image_providers') };
+  if (choice !== 'free' && !options.some((o) => o.value === choice)) return { ok: false, reason: t('err_model') };
+  const start = Date.now();
+  try {
+    const body = { json: { prompt: prompt.trim(), n: 1, response_format: 'b64_json', ...(choice === 'free' ? {} : { model: choice }) } };
+    const { response, candidate } = await routeMedia('image', body, deps);
+    const text = await response.text();
+    if (response.status !== 200) return { ok: false, reason: t('err_said_no', { name: candidate.provider.name, text: text.slice(0, 300) }) };
+    const found = imageFrom(JSON.parse(text));
+    const bytes = found?.b64 ? Buffer.from(found.b64, 'base64') : found?.url ? await download(found.url) : null;
+    const type = bytes && bytes.length <= MAX_IMAGE ? imageType(bytes) : null;
+    if (!type) return { ok: false, reason: t('err_image') };
+    const image = `${randomUUID()}.${type}`;
+    mkdirSync(imagesDir(), { recursive: true, mode: 0o700 });
+    writeFileSync(join(imagesDir(), image), bytes, { mode: 0o600 });
+    return { ok: true, image, src: dataUrl(type, bytes), ms: Date.now() - start, provider: candidate.provider.name, model: candidate.model.id };
+  } catch (e) {
+    return { ok: false, reason: e instanceof NoProviderError ? t('no_image_providers') : t('err_generic', { reason: e.message }) };
+  } finally {
+    saveState(deps.tracker.state);
+  }
+});
+ipcMain.handle('app:imageData', (_e, image) => {
+  if (typeof image !== 'string' || !IMAGE_FILE.test(image)) return null;
+  try { return dataUrl(image.split('.')[1], readFileSync(join(imagesDir(), image))); } catch { return null; }
+});
+// The window sends a PNG it drew from the picture: the clipboard cannot take WebP files.
+const pngData = (s) => typeof s === 'string' && s.length < MAX_IMAGE * 1.4 && /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(s);
+ipcMain.handle('app:copyImage', (_e, png) => { if (pngData(png)) clipboard.writeImage(nativeImage.createFromDataURL(png)); });
+// Save a playground image, or a PNG the window drew from an SVG preview, where the person picks.
+ipcMain.handle('app:saveImage', async (_e, what) => {
+  let bytes, ext;
+  if (typeof what?.image === 'string' && IMAGE_FILE.test(what.image)) {
+    ext = what.image.split('.')[1];
+    try { bytes = readFileSync(join(imagesDir(), what.image)); } catch { return false; }
+  } else if (pngData(what?.png)) {
+    ext = 'png';
+    bytes = Buffer.from(what.png.slice(22), 'base64');
+    if (imageType(bytes) !== 'png') return false;
+  } else return false;
+  const r = await dialog.showSaveDialog(mainWindow, { defaultPath: join(app.getPath('downloads'), `freeaitokens-image.${ext}`) });
+  if (r.canceled || !r.filePath) return false;
+  writeFileSync(r.filePath, bytes);
+  return true;
+});
+ipcMain.handle('app:dropImages', (_e, list) => {
+  if (list === 'all') return rmSync(imagesDir(), { recursive: true, force: true });
+  for (const image of Array.isArray(list) ? list : []) if (typeof image === 'string' && IMAGE_FILE.test(image)) rmSync(join(imagesDir(), image), { force: true });
+});
+
 // Both windows ask for their strings; Settings changes the language and reloads them.
 ipcMain.handle('strings', () => ({
   lang: locale.lang, dir: locale.dir, strings,

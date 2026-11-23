@@ -131,5 +131,20 @@
   "add_all_done": "हर प्रोवाइडर के पास पहले से key है।",
   "checking": "जाँच हो रही है…",
   "add_added": "{name} जोड़ा गया।",
-  "add_failed": "यह नहीं हो पाया: {reason}।"
+  "add_failed": "यह नहीं हो पाया: {reason}।",
+  "mode_label": "मोड",
+  "mode_chat": "चैट",
+  "mode_image": "तस्वीर",
+  "auto_image": "ऑटो: सबसे अच्छा मुफ़्त इमेज मॉडल",
+  "image_placeholder": "जो तस्वीर चाहिए उसका वर्णन करें… (बनाने के लिए ⌘/Ctrl + Enter)",
+  "create": "बनाएँ",
+  "creating": "तस्वीर बन रही है…",
+  "image_alt": "इससे बनी तस्वीर: {prompt}",
+  "image_gone": "इस तस्वीर की फ़ाइल अब इस कंप्यूटर पर नहीं है।",
+  "save": "सेव करें",
+  "copy_image": "तस्वीर कॉपी करें",
+  "svg_preview": "नीचे दिए SVG कोड का पूर्वावलोकन",
+  "save_png": "PNG के रूप में सेव करें",
+  "no_image_providers": "तस्वीरें बनाने के लिए Cloudflare या OpenRouter जोड़ें। दोनों मुफ़्त हैं।",
+  "err_image": "कोई तस्वीर वापस नहीं आई। फिर कोशिश करें या कोई दूसरा मॉडल चुनें।"
 }

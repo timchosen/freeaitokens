@@ -131,5 +131,20 @@
   "add_all_done": "Todos os provedores já têm uma chave.",
   "checking": "Verificando…",
   "add_added": "{name} adicionado.",
-  "add_failed": "Isso não funcionou: {reason}."
+  "add_failed": "Isso não funcionou: {reason}.",
+  "mode_label": "Modo",
+  "mode_chat": "Chat",
+  "mode_image": "Imagem",
+  "auto_image": "Auto: o melhor modelo de imagem grátis",
+  "image_placeholder": "Descreva a imagem que você quer… (⌘/Ctrl + Enter para criar)",
+  "create": "Criar",
+  "creating": "Criando a imagem…",
+  "image_alt": "Imagem criada a partir de: {prompt}",
+  "image_gone": "O arquivo desta imagem não está mais neste computador.",
+  "save": "Salvar",
+  "copy_image": "Copiar imagem",
+  "svg_preview": "Prévia do código SVG abaixo",
+  "save_png": "Salvar como PNG",
+  "no_image_providers": "Para criar imagens, adicione Cloudflare ou OpenRouter. Ambos são grátis.",
+  "err_image": "Nenhuma imagem voltou. Tente de novo ou escolha outro modelo."
 }

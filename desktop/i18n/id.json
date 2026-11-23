@@ -131,5 +131,20 @@
   "add_all_done": "Semua penyedia sudah punya kunci.",
   "checking": "Memeriksa…",
   "add_added": "{name} ditambahkan.",
-  "add_failed": "Gagal: {reason}."
+  "add_failed": "Gagal: {reason}.",
+  "mode_label": "Mode",
+  "mode_chat": "Chat",
+  "mode_image": "Gambar",
+  "auto_image": "Otomatis: model gambar gratis terbaik",
+  "image_placeholder": "Jelaskan gambar yang kamu mau… (⌘/Ctrl + Enter untuk membuat)",
+  "create": "Buat",
+  "creating": "Membuat gambar…",
+  "image_alt": "Gambar dibuat dari: {prompt}",
+  "image_gone": "File gambar ini sudah tidak ada di komputer ini.",
+  "save": "Simpan",
+  "copy_image": "Salin gambar",
+  "svg_preview": "Pratinjau kode SVG di bawah",
+  "save_png": "Simpan sebagai PNG",
+  "no_image_providers": "Untuk membuat gambar, tambahkan Cloudflare atau OpenRouter. Keduanya gratis.",
+  "err_image": "Tidak ada gambar yang kembali. Coba lagi atau pilih model lain."
 }

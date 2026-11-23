@@ -152,5 +152,20 @@
   "add_all_done": "لكل مزوِّد مفتاح بالفعل.",
   "checking": "جارٍ التحقق…",
   "add_added": "تمت إضافة {name}.",
-  "add_failed": "لم تنجح العملية: {reason}."
+  "add_failed": "لم تنجح العملية: {reason}.",
+  "mode_label": "الوضع",
+  "mode_chat": "دردشة",
+  "mode_image": "صورة",
+  "auto_image": "تلقائي: أفضل نموذج صور مجاني",
+  "image_placeholder": "صف الصورة التي تريدها… (⌘/Ctrl + Enter للإنشاء)",
+  "create": "إنشاء",
+  "creating": "جارٍ إنشاء الصورة…",
+  "image_alt": "صورة مُنشأة من: {prompt}",
+  "image_gone": "ملف هذه الصورة لم يعد موجودًا على هذا الكمبيوتر.",
+  "save": "حفظ",
+  "copy_image": "نسخ الصورة",
+  "svg_preview": "معاينة لرمز SVG أدناه",
+  "save_png": "حفظ بصيغة PNG",
+  "no_image_providers": "لإنشاء الصور، أضف Cloudflare أو OpenRouter. كلاهما مجاني.",
+  "err_image": "لم تصل أي صورة. حاول مرة أخرى أو اختر نموذجًا آخر."
 }

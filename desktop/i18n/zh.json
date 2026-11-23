@@ -140,5 +140,20 @@
   "add_all_done": "每家服务商都已有密钥。",
   "checking": "检查中…",
   "add_added": "已添加 {name}。",
-  "add_failed": "没有成功：{reason}。"
+  "add_failed": "没有成功：{reason}。",
+  "mode_label": "模式",
+  "mode_chat": "聊天",
+  "mode_image": "图片",
+  "auto_image": "自动：最佳免费图片模型",
+  "image_placeholder": "描述你想要的图片…（⌘/Ctrl + Enter 创建）",
+  "create": "创建",
+  "creating": "正在创建图片…",
+  "image_alt": "根据以下描述生成的图片：{prompt}",
+  "image_gone": "这张图片的文件已不在这台电脑上。",
+  "save": "保存",
+  "copy_image": "复制图片",
+  "svg_preview": "下方 SVG 代码的预览",
+  "save_png": "保存为 PNG",
+  "no_image_providers": "要创建图片，请添加 Cloudflare 或 OpenRouter。两者都免费。",
+  "err_image": "没有返回图片。请重试或换一个模型。"
 }

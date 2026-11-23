@@ -140,5 +140,20 @@
   "add_all_done": "すべてのプロバイダーにキーが設定済みです。",
   "checking": "確認中…",
   "add_added": "{name}を追加しました。",
-  "add_failed": "うまくいきませんでした: {reason}。"
+  "add_failed": "うまくいきませんでした: {reason}。",
+  "mode_label": "モード",
+  "mode_chat": "チャット",
+  "mode_image": "画像",
+  "auto_image": "自動: 最適な無料の画像モデル",
+  "image_placeholder": "作りたい画像を説明してください…（⌘/Ctrl + Enterで作成）",
+  "create": "作成",
+  "creating": "画像を作成中…",
+  "image_alt": "次の内容から作成した画像: {prompt}",
+  "image_gone": "この画像のファイルは、このパソコンにはもうありません。",
+  "save": "保存",
+  "copy_image": "画像をコピー",
+  "svg_preview": "下のSVGコードのプレビュー",
+  "save_png": "PNGとして保存",
+  "no_image_providers": "画像を作成するには、CloudflareかOpenRouterを追加してください。どちらも無料です。",
+  "err_image": "画像が返ってきませんでした。もう一度試すか、別のモデルを選んでください。"
 }

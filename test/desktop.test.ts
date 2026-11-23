@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 // @ts-ignore plain JS module
-import { allowedUrl, choices, menuLine, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang } from '../desktop/logic.js';
+import { allowedUrl, choices, menuLine, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType } from '../desktop/logic.js';
 import { readFileSync as readText } from 'node:fs';
 import vm from 'node:vm';
 
@@ -204,4 +204,47 @@ test('the desktop app has every site language, and each translation matches Engl
   for (const { code } of JSON.parse(site)) assert.deepEqual(checkDesktopLocale(code), [], code);
   const files = JSON.parse(readText(new URL('../desktop/package.json', import.meta.url), 'utf8')).build.files;
   assert.ok(files.includes('i18n/*.json') && files.includes('t.js'));
+});
+
+test('imageOptions lists image models the person can use', () => {
+  const c = [
+    { id: 'kilo', name: 'Kilo', keyless: true, models: [], media: [{ id: 'k-img', kind: 'image' }] },
+    { id: 'cf', name: 'Cloudflare', keyless: false, models: [], media: [{ id: '@cf/flux', kind: 'image' }, { id: 'whisper', kind: 'transcription' }] },
+    { id: 'or', name: 'OpenRouter', keyless: false, models: [], media: [{ id: 'recraft', kind: 'image' }] },
+  ];
+  const keys = new Map([['cf', 'x']]);
+  assert.deepEqual(imageOptions(c, keys), [
+    { value: 'kilo/k-img', label: 'k-img', provider: 'Kilo' },
+    { value: 'cf/@cf/flux', label: '@cf/flux', provider: 'Cloudflare' },
+  ]);
+});
+
+test('imageFrom takes base64 or a web address from an images answer, nothing else', () => {
+  assert.deepEqual(imageFrom({ data: [{ b64_json: 'iVBOR' }] }), { b64: 'iVBOR' });
+  assert.deepEqual(imageFrom({ data: [{ url: 'https://cdn.example/a.png' }] }), { url: 'https://cdn.example/a.png' });
+  assert.equal(imageFrom({ data: [{ url: 'file:///etc/passwd' }] }), null);
+  assert.equal(imageFrom({ data: [] }), null);
+  assert.equal(imageFrom(null), null);
+});
+
+test('imageType knows PNG, JPEG and WebP by their first bytes', () => {
+  assert.equal(imageType(new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a])), 'png');
+  assert.equal(imageType(new Uint8Array([0xff, 0xd8, 0xff, 0xe0])), 'jpg');
+  assert.equal(imageType(new TextEncoder().encode('RIFF\0\0\0\0WEBPVP8 ')), 'webp');
+  assert.equal(imageType(new TextEncoder().encode('<svg onload=alert(1)>')), null);
+});
+
+test('SVG code blocks get a safe picture preview; other code does not', () => {
+  const ctx: any = {};
+  vm.runInNewContext(readText(new URL('../desktop/md.js', import.meta.url), 'utf8'), ctx);
+  const src = ctx.svgPreview('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10"/></svg>\n');
+  assert.match(src, /^data:image\/svg\+xml;charset=utf-8,%3Csvg/);
+  assert.equal(ctx.svgPreview('let a = "<svg>";'), null);
+  assert.equal(ctx.svgPreview('<svg><rect/>'), null, 'needs a closing tag');
+});
+
+test('the window may show data: images and nothing from the web', () => {
+  const html = readText(new URL('../desktop/app.html', import.meta.url), 'utf8');
+  assert.match(html, /img-src 'self' data:;/);
+  assert.doesNotMatch(html, /img-src[^;]*https?:/);
 });

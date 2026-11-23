@@ -8,7 +8,6 @@
   "tab_settings": "Settings",
   "running": "Running on port {port}",
   "running_reused": "Using FreeAITokens on port {port}",
-
   "home_title": "Free AI, running on your computer",
   "home_lead": "Your AI tools can use free models from many providers through one local address. FreeAITokens picks a model for each request and moves on when one runs out.",
   "stat_ready": "providers ready",
@@ -24,7 +23,6 @@
   "row_model": "Model",
   "copy": "Copy",
   "copied": "Copied",
-
   "new_chat": "New chat",
   "saved_chats": "Saved chats",
   "play_title": "Playground",
@@ -39,7 +37,6 @@
   "seconds": "{n} s",
   "tokens_one": "{n} token",
   "tokens_other": "{n} tokens",
-
   "tools_title": "Tools",
   "tools_lead": "Open a coding tool in a new terminal window, already set up to use free models. Your tool's own settings stay as they are.",
   "other_apps": "Other apps",
@@ -54,7 +51,6 @@
   "note_qwen": "Qwen's coding agent",
   "note_kilo": "Open-source coding agent",
   "note_aider": "Pair programming in your terminal",
-
   "prov_title": "Providers",
   "prov_lead": "Each provider you add gives you more free use. Keys stay in your computer's keychain.",
   "status_ready": "Ready",
@@ -72,7 +68,6 @@
   "kind_image": "images",
   "kind_video": "video",
   "kind_embedding": "embeddings",
-
   "usage_title": "Usage",
   "range_label": "Time range",
   "range_1": "24h",
@@ -92,7 +87,6 @@
   "failed": "Failed",
   "prov_usage": "{ok} succeeded · {fail} failed · {tokens} tokens",
   "no_requests": "No requests in this range yet.",
-
   "settings_title": "Settings",
   "set_lang": "Language",
   "set_lang_text": "The language FreeAITokens uses.",
@@ -111,14 +105,12 @@
   "delete_chats": "Delete all chats",
   "confirm_delete": "Delete all saved chats? This cannot be undone.",
   "set_key_text": "The local token your apps use.",
-
   "err_send": "That message could not be sent.",
   "err_model": "That model is not available. Pick another one.",
   "err_said_no": "{name} said no: {text}",
   "err_generic": "Something went wrong: {reason}",
   "err_nothing": "nothing to save",
   "err_account": "the Account ID is missing or not valid",
-
   "menu_open": "Open FreeAITokens",
   "menu_reused": "Using the endpoint already running on port {port}",
   "menu_running": "Running on {url}",
@@ -127,7 +119,6 @@
   "menu_add": "Add a provider…",
   "menu_quit": "Quit FreeAITokens",
   "quit": "Quit",
-
   "add_title": "Add a free provider",
   "add_lead": "Use your own account, one per provider. Keys are tested, then stored in your system keychain.",
   "add_provider": "Provider",
@@ -140,5 +131,20 @@
   "add_all_done": "Every provider already has a key.",
   "checking": "Checking…",
   "add_added": "Added {name}.",
-  "add_failed": "That did not work: {reason}."
+  "add_failed": "That did not work: {reason}.",
+  "mode_label": "Mode",
+  "mode_chat": "Chat",
+  "mode_image": "Image",
+  "auto_image": "Auto: best free image model",
+  "image_placeholder": "Describe the picture you want… (⌘/Ctrl + Enter to create)",
+  "create": "Create",
+  "creating": "Creating the image…",
+  "image_alt": "Image made from: {prompt}",
+  "image_gone": "This image's file is no longer on this computer.",
+  "save": "Save",
+  "copy_image": "Copy image",
+  "svg_preview": "Preview of the SVG code below",
+  "save_png": "Save as PNG",
+  "no_image_providers": "To create images, add Cloudflare or OpenRouter. Both are free.",
+  "err_image": "No picture came back. Try again or pick another model."
 }

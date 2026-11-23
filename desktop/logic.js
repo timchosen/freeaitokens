@@ -145,3 +145,26 @@ export function usageSummary(usage, days, catalogue, now = Date.now()) {
   totals.successRate = totals.requests ? totals.ok / totals.requests : null;
   return { days: list, totals, providers: [...prov.values()].sort((a, b) => b.ok + b.fail - (a.ok + a.fail)) };
 }
+
+// Image models the playground can use: keyless providers and ones with a key saved.
+export function imageOptions(catalogue, keys) {
+  return catalogue.filter((p) => p.keyless || keys.get(p.id))
+    .flatMap((p) => (p.media ?? []).filter((m) => m.kind === 'image').map((m) => ({ value: `${p.id}/${m.id}`, label: m.id, provider: p.name })));
+}
+
+// The picture in an OpenAI-style images answer: base64, or a web address to fetch.
+export function imageFrom(body) {
+  const d = body?.data?.[0];
+  if (typeof d?.b64_json === 'string' && d.b64_json) return { b64: d.b64_json };
+  if (typeof d?.url === 'string' && /^https:\/\//.test(d.url)) return { url: d.url };
+  return null;
+}
+
+// The file type from the first bytes, never from what the provider says it sent.
+export function imageType(u8) {
+  const at = (i, ...b) => b.every((x, j) => u8[i + j] === x);
+  if (at(0, 0x89, 0x50, 0x4e, 0x47)) return 'png';
+  if (at(0, 0xff, 0xd8, 0xff)) return 'jpg';
+  if (at(0, 0x52, 0x49, 0x46, 0x46) && at(8, 0x57, 0x45, 0x42, 0x50)) return 'webp';
+  return null;
+}

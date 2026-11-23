@@ -56,7 +56,8 @@ async function refresh() {
   if (!version) $('updText').textContent = t('set_version', { v: s.version });
   version = s.version;
   $('login').checked = s.startAtLogin;
-  fillModels(s.models);
+  lists = { chat: s.models, image: s.images };
+  fillModels();
   const usable = s.providers.filter((p) => p.status !== 'add');
   $('s-ready').textContent = num(usable.length);
   $('s-left').textContent = num(usable.reduce((n, p) => n + p.left, 0));
@@ -117,16 +118,21 @@ function listChats() {
     const x = el('button', 'del', '×');
     x.type = 'button';
     x.setAttribute('aria-label', t('delete_chat', { title: c.title }));
-    x.addEventListener('click', () => { chats = chats.filter((y) => y !== c); save(); if (current === c) openChat(null); else listChats(); });
+    x.addEventListener('click', () => {
+      api.dropImages(c.messages.filter((m) => m.image).map((m) => m.image));
+      chats = chats.filter((y) => y !== c); save(); if (current === c) openChat(null); else listChats();
+    });
     li.append(b, x);
     return li;
   }));
 }
 function bubble(m) {
   const box = el('div', `msg ${m.role === 'user' ? 'user' : m.error ? 'err' : 'ai'}`);
-  if (m.role === 'assistant' && !m.error) {
+  if (m.image) box.append(picture(m));
+  else if (m.role === 'assistant' && !m.error) {
     box.classList.add('md');
     box.innerHTML = renderMarkdown(m.content); // renderMarkdown escapes everything it does not create itself
+    previewSvgs(box);
   } else box.textContent = m.content;
   if (m.meta) {
     const meta = el('div', 'meta');
@@ -139,11 +145,52 @@ function bubble(m) {
   box.scrollIntoView({ block: 'end', behavior: 'smooth' });
   return box;
 }
+// A made image: shown from the file the main process saved, with Save and Copy.
+const srcs = new Map(); // image id → data URL, so a fresh image shows without reading it back
+function picture(m) {
+  const fig = el('figure', 'pic');
+  const img = Object.assign(el('img'), { alt: t('image_alt', { prompt: m.prompt ?? '' }) });
+  if (srcs.has(m.image)) img.src = srcs.get(m.image);
+  else api.imageData(m.image).then((src) => { if (src) img.src = src; else fig.replaceChildren(el('p', 'status', t('image_gone'))); });
+  const save = el('button', 'copy', t('save'));
+  save.type = 'button';
+  save.addEventListener('click', () => api.saveImage({ image: m.image }));
+  const copy = el('button', 'copy', t('copy_image'));
+  copy.type = 'button';
+  copy.addEventListener('click', async () => { await api.copyImage(asPng(img)); copy.textContent = t('copied'); setTimeout(() => { copy.textContent = t('copy_image'); }, 1500); });
+  const bar = el('div', 'actions');
+  bar.append(save, copy);
+  fig.append(img, bar);
+  return fig;
+}
+// A shown picture redrawn as PNG, for the clipboard and for saving SVG previews.
+function asPng(img, width = img.naturalWidth || 1600) {
+  const h = Math.round(width * ((img.naturalHeight / img.naturalWidth) || 9 / 16));
+  const c = Object.assign(document.createElement('canvas'), { width, height: h });
+  c.getContext('2d').drawImage(img, 0, 0, width, h);
+  return c.toDataURL('image/png');
+}
+// SVG code in an answer gets a picture above it, and a button to save it as a PNG.
+function previewSvgs(box) {
+  for (const pre of box.querySelectorAll('pre')) {
+    const src = svgPreview(pre.textContent);
+    if (!src) continue;
+    const fig = el('figure', 'pic');
+    const img = Object.assign(el('img'), { src, alt: t('svg_preview') });
+    const save = el('button', 'copy', t('save_png'));
+    save.type = 'button';
+    save.addEventListener('click', () => api.saveImage({ png: asPng(img, 1600) }));
+    const bar = el('div', 'actions');
+    bar.append(save);
+    fig.append(img, bar);
+    pre.before(fig);
+  }
+}
 function openChat(c) {
   current = c;
   $('chat').replaceChildren($('empty'));
   $('empty').hidden = false;
-  if (c) { for (const m of c.messages) bubble(m); if ([...$('model').options].some((o) => o.value === c.model)) $('model').value = c.model; }
+  if (c) { setMode(c.mode ?? 'chat'); for (const m of c.messages) bubble(m); if ([...$('model').options].some((o) => o.value === c.model)) $('model').value = chosen[mode] = c.model; }
   listChats();
   $('prompt').focus();
 }
@@ -154,21 +201,26 @@ $('chat').addEventListener('click', (e) => {
 async function send() {
   const text = $('prompt').value.trim();
   if (!text || $('send').disabled) return;
-  if (!current) { current = { id: Date.now(), title: text.slice(0, 60), model: $('model').value, messages: [], updated: Date.now() }; chats.unshift(current); }
+  if (!current) { current = { id: Date.now(), title: text.slice(0, 60), model: $('model').value, mode, messages: [], updated: Date.now() }; chats.unshift(current); }
   const chat = current;
-  chat.messages.push({ role: 'user', content: text });
+  const making = mode === 'image';
+  chat.messages.push({ role: 'user', content: text, ...(making ? { kind: 'image' } : {}) });
   bubble(chat.messages.at(-1));
   $('prompt').value = '';
-  $('send').disabled = true;
-  const wait = bubble({ role: 'assistant', content: `_${t('thinking')}_` });
-  const history = chat.messages.filter((m) => !m.error).map(({ role, content }) => ({ role, content }));
-  const r = await api.chat(history, $('model').value);
+  $('send').disabled = busy = true;
+  const wait = bubble({ role: 'assistant', content: `_${t(making ? 'creating' : 'thinking')}_` });
+  // Image turns are not conversation: chat models only see the chat turns.
+  const history = chat.messages.filter((m) => !m.error && !m.image && m.kind !== 'image').map(({ role, content }) => ({ role, content }));
+  const r = making ? await api.image(text, $('model').value) : await api.chat(history, $('model').value);
   wait.remove();
-  $('send').disabled = false;
-  chat.messages.push(r.ok
-    ? { role: 'assistant', content: r.text, meta: { provider: r.provider, model: r.model, ms: r.ms, tokens: r.tokens } }
-    : { role: 'assistant', content: r.reason, error: true });
+  busy = false;
+  fillModels();
+  if (r.ok && r.image) srcs.set(r.image, r.src);
+  chat.messages.push(!r.ok ? { role: 'assistant', content: r.reason, error: true }
+    : r.image ? { role: 'assistant', content: '', image: r.image, prompt: text, meta: { provider: r.provider, model: r.model, ms: r.ms } }
+    : { role: 'assistant', content: r.text, meta: { provider: r.provider, model: r.model, ms: r.ms, tokens: r.tokens } });
   chat.model = $('model').value;
+  chat.mode = mode;
   chat.updated = Date.now();
   chats = [chat, ...chats.filter((c) => c !== chat)];
   save();
@@ -180,12 +232,28 @@ $('ask').addEventListener('submit', (e) => { e.preventDefault(); send(); });
 $('prompt').addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); send(); } });
 $('newChat').addEventListener('click', () => openChat(null));
 
-function fillModels(models) {
+// Chat or Image: which models the picker lists, and what the box and button say.
+let mode = 'chat', lists = { chat: [], image: [] }, busy = false;
+const chosen = { chat: 'free', image: 'free' };
+function setMode(m) {
+  mode = m;
+  for (const b of document.querySelectorAll('[data-mode]')) b.setAttribute('aria-pressed', String(b.dataset.mode === m));
+  $('prompt').placeholder = t(m === 'image' ? 'image_placeholder' : 'prompt_placeholder');
+  $('send').textContent = t(m === 'image' ? 'create' : 'send');
+  fillModels();
+}
+for (const b of document.querySelectorAll('[data-mode]')) b.addEventListener('click', () => { setMode(b.dataset.mode); $('prompt').focus(); });
+$('model').addEventListener('change', () => { chosen[mode] = $('model').value; });
+$('addImg').addEventListener('click', () => api.add('cloudflare'));
+function fillModels() {
   const sel = $('model');
-  const keep = sel.value || 'free';
+  const models = lists[mode];
+  const keep = chosen[mode];
+  $('imgNote').hidden = !(mode === 'image' && !models.length);
+  $('send').disabled = busy || (mode === 'image' && !models.length);
   const groups = new Map();
   for (const m of models) { if (!groups.has(m.provider)) groups.set(m.provider, el('optgroup')); groups.get(m.provider).label = m.provider; groups.get(m.provider).append(Object.assign(el('option', '', m.label), { value: m.value })); }
-  sel.replaceChildren(Object.assign(el('option', '', t('auto_model')), { value: 'free' }), ...groups.values());
+  sel.replaceChildren(Object.assign(el('option', '', t(mode === 'image' ? 'auto_image' : 'auto_model')), { value: 'free' }), ...groups.values());
   sel.value = [...sel.options].some((o) => o.value === keep) ? keep : 'free';
 }
 
@@ -257,6 +325,7 @@ $('checkUpd').addEventListener('click', async () => {
 $('clearChats').addEventListener('click', () => {
   if (!confirm(t('confirm_delete'))) return;
   chats = [];
+  api.dropImages('all');
   save();
   openChat(null);
 });

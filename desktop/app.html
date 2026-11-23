@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:;">
 <title>FreeAITokens</title>
 <link rel="stylesheet" href="app.css">
 </head>
@@ -48,8 +48,12 @@
     <div class="convo">
       <div class="convo-head">
         <h1 data-i18n="play_title">Playground</h1>
-        <label class="pick"><span data-i18n="model">Model</span> <select id="model"></select></label>
+        <div class="pick">
+          <div class="range" role="group" data-i18n-label="mode_label" aria-label="Mode"><button type="button" data-mode="chat" aria-pressed="true" data-i18n="mode_chat">Chat</button><button type="button" data-mode="image" aria-pressed="false" data-i18n="mode_image">Image</button></div>
+          <label class="pick"><span data-i18n="model">Model</span> <select id="model"></select></label>
+        </div>
       </div>
+      <p class="status" id="imgNote" hidden><span data-i18n="no_image_providers">To create images, add Cloudflare or OpenRouter. Both are free.</span> <button class="copy" id="addImg" type="button" data-i18n="btn_add">Add a free provider</button></p>
       <div class="chat" id="chat" aria-live="polite"><p class="lead" id="empty" data-i18n="play_empty">Ask anything. Each answer shows which provider and model gave it, and how long it took.</p></div>
       <form id="ask">
         <label for="prompt" class="sr" data-i18n="your_message">Your message</label>

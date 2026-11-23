@@ -54,5 +54,11 @@
     flush();
     return out.join('\n');
   }
+  // A code block that is a whole SVG drawing becomes a picture source. Shown through <img>, an SVG
+  // cannot run scripts or load anything from the web.
+  globalThis.svgPreview = (code) => {
+    const t = String(code).trim();
+    return /^<svg[\s>]/i.test(t) && /<\/svg>$/i.test(t) ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(t)}` : null;
+  };
   globalThis.renderMarkdown = renderMarkdown;
 })();
