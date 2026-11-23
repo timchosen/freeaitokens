@@ -43,6 +43,9 @@ test('desktop build names every release file without a version', async () => {
   const { readFileSync } = await import('node:fs');
   const b = JSON.parse(readFileSync(new URL('../desktop/package.json', import.meta.url), 'utf8')).build;
   assert.deepEqual(b.mac.target, [{ target: 'dmg', arch: ['universal'] }, { target: 'zip', arch: ['universal'] }]);
+  // The universal app carries the keychain module for both chips, which CI installs on the Mac runner.
+  assert.equal(b.mac.x64ArchFiles, '**/keyring.darwin-*.node');
+  assert.match(readFileSync(new URL('../.github/workflows/desktop.yml', import.meta.url), 'utf8'), /keyring-darwin-x64@[\d.]+ @napi-rs\/keyring-darwin-arm64@/);
   assert.equal(b.mac.artifactName, 'FreeAITokens-mac.${ext}');
   assert.equal(b.mac.identity, '-'); // ad-hoc signed, so a downloaded copy gets Open Anyway instead of "damaged"
   assert.equal(b.mac.hardenedRuntime, false);

@@ -31,6 +31,7 @@
     ],
     "icon": "icons/icon.png",
     "mac": {
+      "x64ArchFiles": "**/keyring.darwin-*.node",
       "target": [
         {
           "target": "dmg",

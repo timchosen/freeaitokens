@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync, readdirSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 // @ts-ignore plain JS module
 import { render, stats, build } from '../site/build.mjs';
 
@@ -62,7 +63,7 @@ test('starsLabel hides small or unknown counts', () => {
 });
 
 import { spawnSync } from 'node:child_process';
-const SCRIPT = new URL('../site/static/install', import.meta.url).pathname;
+const SCRIPT = fileURLToPath(new URL('../site/static/install', import.meta.url));
 function dry(os: string, arch: string, home = '/home/u') {
   return spawnSync('sh', [SCRIPT], { encoding: 'utf8', env: { PATH: process.env.PATH, HOME: home, FREEAITOKENS_DRY_RUN: '1', FREEAITOKENS_OS: os, FREEAITOKENS_ARCH: arch } });
 }
@@ -118,7 +119,7 @@ test('review fixes: release deploy blocks placeholders, Windows download is quie
 
 test('owner links live only in site.config.json, so a fork changes one file', async () => {
   const { readdirSync: ls, statSync } = await import('node:fs');
-  const root = new URL('../site/', import.meta.url).pathname;
+  const root = fileURLToPath(new URL('../site/', import.meta.url));
   const walk = (d: string): string[] => ls(d).flatMap((f) => {
     const p = join(d, f);
     if (['dist', '.wrangler', 'node_modules', 'site.config.json', 'wrangler.jsonc'].includes(f)) return [];
