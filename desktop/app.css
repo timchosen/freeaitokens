@@ -100,7 +100,7 @@ select { font: inherit; font-size: 13px; color: var(--ink); background: var(--ca
 .msg.md h1, .msg.md h2 { font-size: 18px; }
 .msg.md pre { background: var(--chip); border-radius: 8px; padding: 10px 12px; overflow-x: auto; }
 .msg.md pre code { background: none; padding: 0; white-space: pre; }
-.msg.md blockquote { border-inline-start: 3px solid var(--line); padding-inline-start: 10px; color: var(--muted); }
+.msg.md blockquote { background: var(--chip); border-radius: 8px; padding: 8px 12px; color: var(--muted); }
 .msg.md hr { border: 0; border-top: 1px solid var(--line); margin: 1em 0; }
 
 /* Settings rows */
