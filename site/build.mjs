@@ -183,7 +183,7 @@ const approx = (n, t, lang) => fmt(t.about_n, { n: new Intl.NumberFormat(lang, {
 
 // Everything that names the owner (GitHub repo, donation link, domain) comes from here, so a fork edits one file.
 const config = JSON.parse(readFileSync(join(here, 'site.config.json'), 'utf8'));
-const TEXT_FILES = /^(install|install\.ps1|.*\.(md|js|txt))$/;
+const TEXT_FILES = /^(install|install\.ps1|_headers|.*\.(md|js|txt))$/;
 
 function providerTerms(cat, t = EN) {
   return stackTable([t.th_provider, t.th_what_to_know], cat.map((p) => {

@@ -152,4 +152,18 @@ function wire() {
   }
 }
 
-if (typeof document !== 'undefined') wire();
+// Sync page: "send me my key". The answer is the same whatever happens, so it is shown either way.
+function wireResend() {
+  const form = document.getElementById('resend');
+  if (!form) return;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const b = form.querySelector('button');
+    b.disabled = true;
+    try { await fetch(form.action, { method: 'POST', body: new FormData(form) }); } catch { /* same answer either way */ }
+    document.getElementById('resend-done').hidden = false;
+    b.disabled = false;
+  });
+}
+
+if (typeof document !== 'undefined') { wire(); wireResend(); }

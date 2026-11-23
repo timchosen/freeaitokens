@@ -1,0 +1,55 @@
+<!-- title: Sinkronisasi | description: Obrolan dan kunci penyedia FreeAITokens yang sama di semua komputer Anda, terenkripsi ujung ke ujung, seharga $10 per tahun atau $49 sekali bayar. -->
+<div class="page">
+  <h1>Sinkronisasi</h1>
+  <p class="lead">Pakai obrolan dan kunci penyedia yang sama di semua komputer Anda. Semuanya dienkripsi di komputer Anda sebelum keluar, dan hanya frasa sandi Anda yang bisa membukanya.</p>
+
+  <div class="cards">
+    <div class="card">
+      <h3>Satu tahun</h3>
+      <p class="price"><b>$10</b> per tahun</p>
+      <p>Diperpanjang tiap tahun. Batalkan kapan saja dari aplikasi.</p>
+      <p><a class="btn small-btn" href="https://sync.{{domain}}/buy?plan=year">Sinkronkan selama setahun</a></p>
+    </div>
+    <div class="card">
+      <h3>Seumur hidup</h3>
+      <p class="price"><b>$49</b> sekali bayar</p>
+      <p>Satu kali bayar, tanpa perpanjangan.</p>
+      <p><a class="btn small-btn" href="https://sync.{{domain}}/buy?plan=life">Sinkronkan selamanya</a></p>
+    </div>
+  </div>
+  <p class="small muted">Harga dalam dolar AS. Stripe menjual sinkronisasi dan mengurus pembayaran serta pajaknya.</p>
+
+  <h2>Apa yang dilakukan sinkronisasi</h2>
+  <ul>
+    <li>Obrolan tersimpan dan kunci penyedia Anda muncul di setiap komputer tempat Anda menyalakan sinkronisasi.</li>
+    <li>Perubahan di satu komputer sampai ke komputer lain dalam sekitar satu menit.</li>
+    <li>Berjalan di aplikasi FreeAITokens untuk Mac, Windows, dan Linux. Alat baris perintah tidak menyinkronkan.</li>
+  </ul>
+
+  <h2>Apa yang tidak dilakukannya</h2>
+  <ul>
+    <li><b>Server sinkronisasi tidak bisa membaca data Anda.</b> Obrolan dan kunci dienkripsi di komputer Anda dengan kunci yang hanya bisa dibuka frasa sandi Anda. Server menyimpan data acak, ukurannya, dan kapan berubah.</li>
+    <li><b>Tidak ada yang bisa mengatur ulang frasa sandi Anda.</b> Saat menyiapkan sinkronisasi, Anda mendapat kode pemulihan. Jika Anda lupa frasa sandi dan kehilangan kodenya, data yang disinkronkan tidak bisa dibuka. Yang ada di komputer Anda tetap ada.</li>
+    <li>Gambar yang Anda buat tetap di komputer yang membuatnya. Obrolannya tersinkron, file gambarnya tidak.</li>
+    <li>Sinkronisasi tidak memberi akses AI. Anda tetap memakai akun gratis Anda sendiri, satu per penyedia.</li>
+  </ul>
+
+  <h2>Cara memulai</h2>
+  <ol>
+    <li>Di aplikasi, buka Pengaturan › Sinkronisasi dan pilih paket. Aplikasi mengambil kunci Anda sendiri.</li>
+    <li>Pilih frasa sandi dan simpan kode pemulihan yang ditampilkan.</li>
+    <li>Di komputer lain, pilih "Saya sudah punya kunci" lalu masukkan kunci dan frasa sandi.</li>
+  </ol>
+
+  <h2>Jika paket Anda berakhir</h2>
+  <p>Sinkronisasi berhenti, dan tidak ada yang berubah di komputer Anda. Data terenkripsi Anda tetap di server selama 90 hari, jadi perpanjangan melanjutkan dari posisi terakhir; setelah itu data dihapus. Pembayaran yang dikembalikan atau disengketakan menghentikan sinkronisasi seketika, dengan 90 hari yang sama.</p>
+
+  <h2 id="key">Kirimi saya kunci</h2>
+  <p>Kehilangan kunci sinkronisasi, atau membelinya di situs ini? Masukkan email yang Anda pakai membayar dan kami akan mengirim semua kunci yang dibeli dengannya.</p>
+  <form id="resend" class="resend" action="https://sync.{{domain}}/resend" method="post">
+    <label for="resend-email">Email</label>
+    <input id="resend-email" name="email" type="email" required autocomplete="email">
+    <button class="btn small-btn" type="submit">Kirim kunci saya</button>
+  </form>
+  <p id="resend-done" class="small muted" role="status" hidden>Jika alamat itu pernah membeli sinkronisasi, kuncinya sedang dikirim. Periksa kotak masuk Anda dalam beberapa menit.</p>
+</div>

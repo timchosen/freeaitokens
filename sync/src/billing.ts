@@ -13,7 +13,7 @@ async function checkout(env: Env, plan: string, claim: string | null, license: s
     'line_items[0][price]': plan === 'year' ? env.STRIPE_PRICE_YEAR : env.STRIPE_PRICE_LIFE,
     'line_items[0][quantity]': '1',
     'managed_payments[enabled]': 'true',
-    success_url: `${env.SITE_URL}/sync/thanks`,
+    success_url: `${env.SITE_URL}/sync-thanks`,
     cancel_url: `${env.SITE_URL}/sync`,
   };
   if (claim) form.client_reference_id = claim;

@@ -1,7 +1,7 @@
 <!-- title: Privacy | description: FreeAITokens collects nothing about you: no accounts, no tracking, and your keys and prompts stay between you and each provider. -->
 <div class="page">
   <h1>Privacy</h1>
-  <p class="lead">The short version: FreeAITokens doesn't collect anything about you.</p>
+  <p class="lead">The short version: FreeAITokens doesn't collect anything about you. Optional paid sync stores only encrypted data it can't read.</p>
 
   <h2>This website</h2>
   <ul>
@@ -13,11 +13,22 @@
   <h2>The app and the command</h2>
   <ul>
     <li><b>Your keys</b> stay on your computer, in its keychain where it has one, and are only sent to the provider they belong to.</li>
-    <li><b>Your prompts and answers</b> go straight between your computer and the AI provider. They never pass through a FreeAITokens server. What each provider does with them is set by its own privacy policy; providers that may use them for training are marked.</li>
+    <li><b>Your prompts and answers</b> go straight between your computer and the AI provider. They never pass through a FreeAITokens server. What each provider does with them is set by its own privacy policy; providers that may use them for training are marked. If you turn on sync, your saved chats are also stored encrypted, as described below.</li>
     <li><b>The provider list</b> is downloaded a few times a day from a FreeAITokens service on Cloudflare. That request contains nothing about you or your use; like any web request, it reveals your IP address to Cloudflare.</li>
     <li><b>No telemetry.</b> The app doesn't report usage, errors or anything else.</li>
     <li>The local address listens only on your own computer and needs a token, so other devices and websites can't use it.</li>
   </ul>
+
+  <h2>Sync (optional, paid)</h2>
+  <p>If you buy sync, a FreeAITokens server on Cloudflare stores:</p>
+  <ul>
+    <li><b>Your chats and keys, encrypted</b> on your computer before they're sent. The server never has your passphrase or the key that opens them, so it can't read them.</li>
+    <li>For each synced item: a random id, its size, a version number and when it changed.</li>
+    <li>A scrambled form (a hash) of your sync key, never the key itself.</li>
+    <li>A scrambled form (a keyed hash) of the email you paid with, only so the "send me my key" form can find your key. The email itself isn't kept.</li>
+    <li>Your plan, when it ends, and Stripe's ids for your payment and customer record.</li>
+  </ul>
+  <p>Stripe sells sync and takes the payment, so your payment details and email go to Stripe under <a href="https://stripe.com/privacy">its privacy policy</a>. When a plan ends, or a payment is refunded or disputed, your encrypted data is deleted 90 days later.</p>
 
   <h2>Questions</h2>
   <p>Ask on <a href="{{repoUrl}}/issues">GitHub</a>, or report a security issue <a href="{{repoUrl}}/security/policy">privately</a>.</p>

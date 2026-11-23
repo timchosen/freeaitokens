@@ -2,7 +2,7 @@
 <div class="page">
   <h1>Privasi</h1>
   <p class="small muted">Ini terjemahan untuk memudahkan. Jika berbeda dengan <a href="/privacy" hreflang="en">versi bahasa Inggris</a>, maka versi bahasa Inggris yang berlaku.</p>
-  <p class="lead">Singkatnya: FreeAITokens tidak mengumpulkan apa pun tentangmu.</p>
+  <p class="lead">Singkatnya: FreeAITokens tidak mengumpulkan apa pun tentangmu. Sinkronisasi berbayar opsional hanya menyimpan data terenkripsi yang tidak bisa dibacanya.</p>
 
   <h2>Situs web ini</h2>
   <ul>
@@ -14,11 +14,22 @@
   <h2>Aplikasi dan perintahnya</h2>
   <ul>
     <li><b>Kunci-kuncimu</b> tetap di komputermu, di keychain bila ada, dan hanya dikirim ke penyedia pemiliknya.</li>
-    <li><b>Prompt dan jawabanmu</b> langsung berpindah antara komputermu dan penyedia AI. Semuanya tidak pernah melewati server FreeAITokens. Apa yang dilakukan tiap penyedia dengan data itu diatur oleh kebijakan privasinya sendiri; penyedia yang mungkin memakainya untuk pelatihan diberi tanda.</li>
+    <li><b>Prompt dan jawabanmu</b> langsung berpindah antara komputermu dan penyedia AI. Semuanya tidak pernah melewati server FreeAITokens. Apa yang dilakukan tiap penyedia dengan data itu diatur oleh kebijakan privasinya sendiri; penyedia yang mungkin memakainya untuk pelatihan diberi tanda. Jika Anda menyalakan sinkronisasi, obrolan tersimpan Anda juga disimpan terenkripsi, seperti dijelaskan di bawah.</li>
     <li><b>Daftar penyedia</b> diunduh beberapa kali sehari dari layanan FreeAITokens di Cloudflare. Permintaan itu tidak berisi apa pun tentangmu atau cara kamu memakainya; seperti permintaan web pada umumnya, ia memperlihatkan alamat IP-mu kepada Cloudflare.</li>
     <li><b>Tanpa telemetri.</b> Aplikasi tidak melaporkan pemakaian, error, atau apa pun lainnya.</li>
     <li>Alamat lokal hanya mendengarkan di komputermu sendiri dan membutuhkan token, sehingga perangkat dan situs web lain tidak bisa memakainya.</li>
   </ul>
+
+  <h2>Sinkronisasi (opsional, berbayar)</h2>
+  <p>Jika Anda membeli sinkronisasi, server FreeAITokens di Cloudflare menyimpan:</p>
+  <ul>
+    <li><b>Obrolan dan kunci Anda, terenkripsi</b> di komputer Anda sebelum dikirim. Server tidak pernah memegang frasa sandi Anda atau kunci yang membukanya, jadi tidak bisa membacanya.</li>
+    <li>Untuk setiap item yang disinkronkan: id acak, ukurannya, nomor versi, dan kapan berubah.</li>
+    <li>Bentuk acak (hash) dari kunci sinkronisasi Anda, tidak pernah kuncinya sendiri.</li>
+    <li>Bentuk acak (hash berkunci) dari email yang Anda pakai membayar, hanya agar formulir "kirimi saya kunci" bisa menemukan kunci Anda. Emailnya sendiri tidak disimpan.</li>
+    <li>Paket Anda, kapan berakhir, dan id Stripe untuk pembayaran serta catatan pelanggan Anda.</li>
+  </ul>
+  <p>Stripe menjual sinkronisasi dan menerima pembayarannya, jadi detail pembayaran dan email Anda dikirim ke Stripe sesuai <a href="https://stripe.com/privacy">kebijakan privasinya</a>. Saat paket berakhir, atau pembayaran dikembalikan atau disengketakan, data terenkripsi Anda dihapus 90 hari kemudian.</p>
 
   <h2>Pertanyaan</h2>
   <p>Tanyakan di <a href="{{repoUrl}}/issues">GitHub</a>, atau laporkan masalah keamanan <a href="{{repoUrl}}/security/policy">secara pribadi</a>.</p>

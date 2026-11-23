@@ -2,7 +2,7 @@
 <div class="page">
   <h1>Privacidade</h1>
   <p class="small muted">Esta é uma tradução para sua conveniência. Se ela diferir da <a href="/privacy" hreflang="en">versão em inglês</a>, vale a versão em inglês.</p>
-  <p class="lead">Em resumo: o FreeAITokens não coleta nada sobre você.</p>
+  <p class="lead">Em resumo: o FreeAITokens não coleta nada sobre você. A sincronização opcional e paga guarda só dados criptografados que ela não consegue ler.</p>
 
   <h2>Este site</h2>
   <ul>
@@ -14,11 +14,22 @@
   <h2>O app e o comando</h2>
   <ul>
     <li><b>Suas chaves</b> ficam no seu computador, no chaveiro dele quando houver, e só são enviadas ao provedor a que pertencem.</li>
-    <li><b>Suas mensagens e as respostas</b> vão direto entre o seu computador e o provedor de IA. Nunca passam por um servidor do FreeAITokens. O que cada provedor faz com elas é definido pela política de privacidade dele; os provedores que podem usá-las para treinar seus modelos são marcados.</li>
+    <li><b>Suas mensagens e as respostas</b> vão direto entre o seu computador e o provedor de IA. Nunca passam por um servidor do FreeAITokens. O que cada provedor faz com elas é definido pela política de privacidade dele; os provedores que podem usá-las para treinar seus modelos são marcados. Se você ativar a sincronização, suas conversas salvas também ficam guardadas criptografadas, como explicado abaixo.</li>
     <li><b>A lista de provedores</b> é baixada algumas vezes por dia de um serviço do FreeAITokens na Cloudflare. Essa requisição não contém nada sobre você nem sobre o seu uso; como qualquer requisição na web, ela mostra o seu endereço IP à Cloudflare.</li>
     <li><b>Sem telemetria.</b> O app não envia dados de uso, erros nem qualquer outra coisa.</li>
     <li>O endereço local só responde no seu próprio computador e exige um token, então outros aparelhos e sites não conseguem usá-lo.</li>
   </ul>
+
+  <h2>Sincronização (opcional, paga)</h2>
+  <p>Se você comprar a sincronização, um servidor do FreeAITokens na Cloudflare guarda:</p>
+  <ul>
+    <li><b>Suas conversas e chaves, criptografadas</b> no seu computador antes de serem enviadas. O servidor nunca tem sua frase-senha nem a chave que as abre, então não consegue lê-las.</li>
+    <li>Para cada item sincronizado: um id aleatório, o tamanho, um número de versão e quando mudou.</li>
+    <li>Uma forma embaralhada (um hash) da sua chave de sincronização, nunca a chave em si.</li>
+    <li>Uma forma embaralhada (um hash com chave) do e-mail usado no pagamento, só para que o formulário "me envie minha chave" encontre sua chave. O e-mail em si não é guardado.</li>
+    <li>Seu plano, quando ele termina e os identificadores da Stripe do seu pagamento e cadastro de cliente.</li>
+  </ul>
+  <p>A Stripe vende a sincronização e recebe o pagamento, então seus dados de pagamento e e-mail vão para a Stripe conforme <a href="https://stripe.com/privacy">a política de privacidade dela</a>. Quando um plano termina, ou um pagamento é reembolsado ou contestado, seus dados criptografados são apagados 90 dias depois.</p>
 
   <h2>Dúvidas</h2>
   <p>Pergunte no <a href="{{repoUrl}}/issues">GitHub</a>, ou avise sobre um problema de segurança <a href="{{repoUrl}}/security/policy">em particular</a>.</p>
