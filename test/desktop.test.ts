@@ -253,3 +253,61 @@ test('privateAddress spots loopback, private, link-local and other local address
   for (const ip of ['127.0.0.1', '10.1.2.3', '172.16.0.1', '172.31.255.255', '192.168.1.1', '169.254.169.254', '0.0.0.0', '100.64.0.1', '::1', '::', 'fe80::1', 'fd00::1', '::ffff:127.0.0.1', '::ffff:192.168.0.5', '198.18.0.1', '192.0.0.1', 'fec0::1', '2002:7f00:1::', '64:ff9b::7f00:1', '64:ff9b:1::1', '::7f00:1']) assert.equal(privateAddress(ip), true, ip);
   for (const ip of ['8.8.8.8', '172.32.0.1', '104.18.2.3', '2606:4700::1111', '::ffff:8.8.8.8']) assert.equal(privateAddress(ip), false, ip);
 });
+
+// Task 8: chats kept in the app's state folder
+// @ts-ignore plain JS module
+import { migrateChats, openChatStore, cleanChat } from '../desktop/chats.js';
+import { mkdtempSync, statSync, readFileSync as readF } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join as pjoin } from 'node:path';
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+test('migrateChats gives every chat and message an id and a time, keeping order and content', () => {
+  const old = [
+    { id: 1700000000000, title: 'b', model: 'free', mode: 'chat', updated: 2000, messages: [{ role: 'user', content: 'hi' }, { role: 'assistant', content: 'yo', meta: { provider: 'Groq', model: 'x', ms: 3 } }] },
+    { title: 'a', model: 'free', updated: 1000, messages: [{ role: 'user', content: 'pic', kind: 'image' }, { role: 'assistant', content: '', image: '0b5c7a3e-1f2d-4c5b-9a8e-7d6c5b4a3f21.png', prompt: 'pic' }] },
+  ];
+  const out = migrateChats(old);
+  assert.equal(out.length, 2);
+  assert.deepEqual(out.map((c: any) => c.title), ['b', 'a']);
+  for (const c of out) {
+    assert.match(c.id, UUID);
+    for (const m of c.messages) assert.match(m.id, UUID);
+    const at = c.messages.map((m: any) => m.at);
+    assert.deepEqual([...at].sort((x, y) => x - y), at, 'times keep message order');
+    assert.ok(at.at(-1) <= c.updated);
+  }
+  assert.equal(out[0].messages[1].content, 'yo');
+  assert.deepEqual(out[0].messages[1].meta, { provider: 'Groq', model: 'x', ms: 3 });
+  assert.equal(out[1].messages[1].image, '0b5c7a3e-1f2d-4c5b-9a8e-7d6c5b4a3f21.png');
+  assert.equal(out[0].mode, 'chat');
+  assert.deepEqual(migrateChats('junk'), []);
+  assert.deepEqual(migrateChats([null, 5, { title: 'x' }]), []);
+});
+
+test('cleanChat refuses oversized or malformed chats', () => {
+  const ok = migrateChats([{ title: 't', model: 'free', updated: 1, messages: [{ role: 'user', content: 'hi' }] }])[0];
+  assert.ok(cleanChat(ok));
+  assert.equal(cleanChat({ ...ok, id: 'not-a-uuid' }), null);
+  assert.equal(cleanChat({ ...ok, messages: [{ ...ok.messages[0], role: 'system' }] }), null);
+  assert.equal(cleanChat({ ...ok, messages: [{ ...ok.messages[0], content: 'x'.repeat(100_001) }] }), null);
+  assert.equal(cleanChat({ ...ok, messages: [{ ...ok.messages[0], image: '../../etc/passwd' }] }), null);
+});
+
+test('chat store round-trips through its file, owner-only, and remove leaves a hidden tombstone', () => {
+  const file = pjoin(mkdtempSync(pjoin(tmpdir(), 'fat-chats-')), 'chats.json');
+  const s = openChatStore(file);
+  const [a, b] = migrateChats([{ title: 'a', model: 'free', updated: 1, messages: [] }, { title: 'b', model: 'free', updated: 2, messages: [] }]);
+  const seen: string[] = [];
+  s.onChange((id: string) => seen.push(id));
+  s.put(a); s.put(b);
+  assert.deepEqual(openChatStore(file).list().map((c: any) => c.title), ['b', 'a'], 'newest first, from disk');
+  if (process.platform !== 'win32') assert.equal(statSync(file).mode & 0o777, 0o600);
+  s.remove(a.id);
+  assert.deepEqual(s.list().map((c: any) => c.title), ['b']);
+  const raw = JSON.parse(readF(file, 'utf8'));
+  const stub = raw.chats.find((c: any) => c.id === a.id);
+  assert.ok(stub.deleted && stub.messages.length === 0);
+  assert.deepEqual(seen, [a.id, b.id, a.id]);
+});

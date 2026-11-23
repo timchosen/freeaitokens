@@ -101,11 +101,18 @@ for (const b of document.querySelectorAll('[data-copy]')) {
 $('addTop').addEventListener('click', () => api.add());
 $('addProv').addEventListener('click', () => api.add());
 
-// Playground: chats are saved in this window's storage, on this computer only.
-const STORE = 'freeaitokens.chats';
-const load = () => { try { return JSON.parse(localStorage.getItem(STORE)) ?? []; } catch { return []; } };
-const save = () => { try { localStorage.setItem(STORE, JSON.stringify(chats.slice(0, 100))); } catch { /* storage full or blocked */ } };
-let chats = load();
+// Playground: chats are saved by the main process in the app's state folder.
+const OLD_STORE = 'freeaitokens.chats'; // where chats lived before sync; moved once
+let chats = [];
+async function loadChats() {
+  let old = null;
+  try { old = localStorage.getItem(OLD_STORE); } catch { /* storage blocked */ }
+  if (old) {
+    try { chats = await api.chats.migrate(JSON.parse(old)); } catch { chats = await api.chats.list(); }
+    try { localStorage.removeItem(OLD_STORE); } catch { /* storage blocked */ }
+  } else chats = await api.chats.list();
+}
+const save = (c) => api.chats.put(c);
 let current = null; // the open chat, or null for a new one
 
 function listChats() {
@@ -120,7 +127,7 @@ function listChats() {
     x.setAttribute('aria-label', t('delete_chat', { title: c.title }));
     x.addEventListener('click', () => {
       api.dropImages(c.messages.filter((m) => m.image).map((m) => m.image));
-      chats = chats.filter((y) => y !== c); save(); if (current === c) openChat(null); else listChats();
+      chats = chats.filter((y) => y !== c); api.chats.remove(c.id); if (current === c) openChat(null); else listChats();
     });
     li.append(b, x);
     return li;
@@ -201,10 +208,10 @@ $('chat').addEventListener('click', (e) => {
 async function send() {
   const text = $('prompt').value.trim();
   if (!text || $('send').disabled) return;
-  if (!current) { current = { id: Date.now(), title: text.slice(0, 60), model: $('model').value, mode, messages: [], updated: Date.now() }; chats.unshift(current); }
+  if (!current) { current = { id: crypto.randomUUID(), title: text.slice(0, 60), model: $('model').value, mode, messages: [], updated: Date.now() }; chats.unshift(current); }
   const chat = current;
   const making = mode === 'image';
-  chat.messages.push({ role: 'user', content: text, ...(making ? { kind: 'image' } : {}) });
+  chat.messages.push({ id: crypto.randomUUID(), at: Date.now(), role: 'user', content: text, ...(making ? { kind: 'image' } : {}) });
   bubble(chat.messages.at(-1));
   $('prompt').value = '';
   $('send').disabled = busy = true;
@@ -216,14 +223,15 @@ async function send() {
   busy = false;
   fillModels();
   if (r.ok && r.image) srcs.set(r.image, r.src);
-  chat.messages.push(!r.ok ? { role: 'assistant', content: r.reason, error: true }
-    : r.image ? { role: 'assistant', content: '', image: r.image, prompt: text, meta: { provider: r.provider, model: r.model, ms: r.ms } }
-    : { role: 'assistant', content: r.text, meta: { provider: r.provider, model: r.model, ms: r.ms, tokens: r.tokens } });
+  const stamp = { id: crypto.randomUUID(), at: Date.now() };
+  chat.messages.push(!r.ok ? { ...stamp, role: 'assistant', content: r.reason, error: true }
+    : r.image ? { ...stamp, role: 'assistant', content: '', image: r.image, prompt: text, meta: { provider: r.provider, model: r.model, ms: r.ms } }
+    : { ...stamp, role: 'assistant', content: r.text, meta: { provider: r.provider, model: r.model, ms: r.ms, tokens: r.tokens } });
   chat.model = $('model').value;
   chat.mode = mode;
   chat.updated = Date.now();
   chats = [chat, ...chats.filter((c) => c !== chat)];
-  save();
+  save(chat);
   if (current === chat) bubble(chat.messages.at(-1));
   listChats();
   refresh();
@@ -324,14 +332,14 @@ $('checkUpd').addEventListener('click', async () => {
 });
 $('clearChats').addEventListener('click', () => {
   if (!confirm(t('confirm_delete'))) return;
+  for (const c of chats) api.chats.remove(c.id);
   chats = [];
   api.dropImages('all');
-  save();
   openChat(null);
 });
 $('lang').addEventListener('change', () => api.lang($('lang').value)); // the main process reloads this window
 
-applyStrings().then(() => {
+applyStrings().then(loadChats).then(() => {
   listChats();
   refresh();
   setInterval(() => { if (document.hidden) return; refresh(); if (!$('usage').hidden) showUsage(); }, 15_000);

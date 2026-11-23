@@ -18,4 +18,10 @@ contextBridge.exposeInMainWorld('freeaitokens', {
   launch: (tool) => ipcRenderer.invoke('app:launch', tool),
   copy: (what) => ipcRenderer.invoke('app:copy', what),
   add: (id) => ipcRenderer.invoke('app:add', id),
+  chats: {
+    list: () => ipcRenderer.invoke('chats:list'),
+    put: (c) => ipcRenderer.invoke('chats:put', c),
+    remove: (id) => ipcRenderer.invoke('chats:remove', id),
+    migrate: (list) => ipcRenderer.invoke('chats:migrate', list),
+  },
 });

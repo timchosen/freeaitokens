@@ -1,6 +1,6 @@
 // How two copies of the same synced thing combine. Both orders give the same answer, so devices converge.
 export type Msg = { id: string; at: number; role: 'user' | 'assistant'; content: string; error?: boolean; meta?: object };
-export type Chat = { id: string; title: string; model: string; updated: number; deleted?: number; messages: Msg[] };
+export type Chat = { id: string; title: string; model: string; mode?: 'chat' | 'image'; updated: number; deleted?: number; messages: Msg[] };
 export type KeyBundle = Record<string, { key: string | null; updated: number }>;
 
 // Deterministic pick on ties, so the result never depends on which side is "a".
@@ -20,7 +20,7 @@ export function mergeChat(a: Chat, b: Chat): Chat {
   const editedAt = Math.max(...[a, b].filter((c) => c.deleted == null).map((c) => c.updated), -Infinity);
   // A delete stands unless one side edited the chat after it; a deleted chat carries no messages.
   if (deletedAt > -Infinity && deletedAt >= editedAt) return { id: a.id, title: '', model: '', updated, deleted: deletedAt, messages: [] };
-  return { id: a.id, title: top.title, model: top.model, updated, messages };
+  return { id: a.id, title: top.title, model: top.model, ...(top.mode ? { mode: top.mode } : {}), updated, messages };
 }
 
 export function mergeKeys(a: KeyBundle, b: KeyBundle): KeyBundle {

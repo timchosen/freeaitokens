@@ -46,12 +46,13 @@ const chat = (o: Partial<Chat>): Chat => ({ id: 'c1', title: 'T', model: 'free',
 
 test('mergeChat keeps every message from both sides, in time order, and is the same either way round', () => {
   const a = chat({ title: 'old', updated: 5, messages: [msg('m1', 1), msg('m2', 2)] });
-  const b = chat({ title: 'new', model: 'groq/x', updated: 9, messages: [msg('m1', 1), msg('m3', 3), msg('m0', 0)] });
+  const b = chat({ title: 'new', model: 'groq/x', mode: 'image', updated: 9, messages: [msg('m1', 1), msg('m3', 3), msg('m0', 0)] });
   const m = mergeChat(a, b);
   assert.deepEqual(m.messages.map((x) => x.id), ['m0', 'm1', 'm2', 'm3']);
   assert.equal(m.title, 'new');
   assert.equal(m.model, 'groq/x');
   assert.equal(m.updated, 9);
+  assert.equal(m.mode, 'image', "the newer side's mode is kept");
   assert.deepEqual(mergeChat(b, a), m);
 });
 

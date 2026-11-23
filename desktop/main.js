@@ -19,6 +19,7 @@ import { route, NoCapacityError } from 'freeaitokens/dist/core/orchestrator.js';
 import { routeMedia, NoProviderError } from 'freeaitokens/dist/core/media.js';
 import { allowedUrl, choices, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType, privateAddress } from './logic.js';
 import './t.js';
+import { openChatStore, cleanChat, migrateChats } from './chats.js';
 import { needsAccount, joinAccount } from 'freeaitokens/dist/core/catalogue.js';
 
 const here = (f) => fileURLToPath(new URL(f, import.meta.url));
@@ -269,6 +270,18 @@ ipcMain.handle('app:saveImage', async (_e, what) => {
 ipcMain.handle('app:dropImages', (_e, list) => {
   if (list === 'all') return rmSync(imagesDir(), { recursive: true, force: true });
   for (const image of Array.isArray(list) ? list : []) if (typeof image === 'string' && IMAGE_FILE.test(image)) rmSync(join(imagesDir(), image), { force: true });
+});
+
+// Saved chats live in the state folder (not window storage) so sync can reach them.
+let chatStore;
+const chatsNow = () => (chatStore ??= openChatStore(join(stateDir(), 'chats.json')));
+ipcMain.handle('chats:list', () => chatsNow().list());
+ipcMain.handle('chats:put', (_e, c) => { const clean = cleanChat(c); if (clean && !clean.deleted) chatsNow().put(clean); return !!clean; });
+ipcMain.handle('chats:remove', (_e, id) => { if (typeof id === 'string') chatsNow().remove(id); });
+// The chats from window storage, once: ignored when the store already has chats.
+ipcMain.handle('chats:migrate', (_e, list) => {
+  if (!chatsNow().all().length) for (const c of migrateChats(list)) chatsNow().put(c);
+  return chatsNow().list();
 });
 
 // Both windows ask for their strings; Settings changes the language and reloads them.

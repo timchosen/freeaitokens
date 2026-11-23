@@ -25,6 +25,7 @@
     "files": [
       "main.js",
       "logic.js",
+      "chats.js",
       "preload.cjs",
       "add.html",
       "app.html",
