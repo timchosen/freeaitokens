@@ -10,7 +10,7 @@ import { fromOllamaChat, fromOllamaGenerate, toOllamaChat, toOllamaGenerate, toO
 import { fromGemini, toGemini, toGeminiStream, geminiCount, geminiError, GEMINI_MODEL } from '../core/gemini.js';
 import { localToken, saveState, loadState } from './state.js';
 import { LimitTracker } from '../core/limits.js';
-import { routeMedia, NoProviderError, KIND_PATH, type MediaBody, type MediaCandidate } from '../core/media.js';
+import { routeMedia, NoProviderError, target, type MediaBody, type MediaCandidate } from '../core/media.js';
 import type { MediaKind } from '../core/catalogue.js';
 
 export interface ServerHandle { port: number; address: string; reused: boolean; close(): Promise<void> }
@@ -150,8 +150,8 @@ export function makeHandler(deps: RouteDeps, token: string, formats: Record<stri
       if (video) {
         const c = jobs.get(decodeURIComponent(video[1]));
         if (!c) return send(res, 404, openaiError(404, 'Unknown video job. Jobs are forgotten when freeaitokens restarts.'));
-        const r = await deps.fetch(`${c.model.baseUrl ?? c.provider.baseUrl}${c.model.path ?? KIND_PATH.video}/${encodeURIComponent(video[1])}${video[2] ?? ''}`,
-          { headers: c.apiKey ? { authorization: `Bearer ${c.apiKey}` } : {}, signal: AbortSignal.timeout(120_000) });
+        const { url, auth } = target(c, 'video');
+        const r = await deps.fetch(`${url}/${encodeURIComponent(video[1])}${video[2] ?? ''}`, { headers: auth, signal: AbortSignal.timeout(120_000) });
         return pipe(res, r);
       }
       if (kind) {

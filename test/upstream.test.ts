@@ -48,3 +48,11 @@ test('leaves other providers\' tools untouched', async () => {
   assert.deepEqual(b.tools[0], tool);
   assert.equal(b.parallel_tool_calls, undefined);
 });
+
+test('a provider with {account} in its address gets the account from the "account:token" key', async () => {
+  const [cf] = parseCatalogue([{ id: 'cf', name: 'CF', baseUrl: 'https://api.cf.example/accounts/{account}/ai/v1', keyless: false, paid: false, terms: 'ok', steps: [], models: [{ id: 'm', context: 1000, tools: true, images: false, quality: 0.5 }] }]);
+  const { calls, f } = spy();
+  await callUpstream({ provider: cf, model: cf.models[0], apiKey: 'abc123:secret-token', key: 'cf/m' }, { messages: [] } as any, f);
+  assert.equal(calls[0].url, 'https://api.cf.example/accounts/abc123/ai/v1/chat/completions');
+  assert.equal(new Headers(calls[0].init.headers).get('authorization'), 'Bearer secret-token');
+});

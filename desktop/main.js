@@ -8,6 +8,7 @@ import { openKeyStore } from 'freeaitokens/dist/node/keys.js';
 import { localToken, saveState } from 'freeaitokens/dist/node/state.js';
 import { runList, validateKey, keySteps, connectOpenRouter } from 'freeaitokens/dist/node/add.js';
 import { allowedUrl, choices, menuTemplate } from './logic.js';
+import { needsAccount, joinAccount } from 'freeaitokens/dist/core/catalogue.js';
 
 const here = (f) => fileURLToPath(new URL(f, import.meta.url));
 if (!app.requestSingleInstanceLock()) app.quit();
@@ -43,11 +44,13 @@ function openAdd() {
 
 ipcMain.handle('providers', () => choices(deps.catalogue, keys, keySteps));
 ipcMain.handle('open', (_e, url) => { if (allowedUrl(deps.catalogue, url)) void shell.openExternal(url); });
-ipcMain.handle('save', async (_e, id, key) => {
+ipcMain.handle('save', async (_e, id, key, account) => {
   const prov = deps.catalogue.find((p) => p.id === id && !p.keyless);
   if (!prov || typeof key !== 'string' || !key.trim()) return { ok: false, reason: 'nothing to save' };
-  const v = await validateKey(prov, key.trim(), fetch);
-  if (v.ok) keys.set(prov.id, key.trim());
+  const stored = needsAccount(prov) ? joinAccount(typeof account === 'string' ? account : '', key) : key.trim();
+  if (!stored) return { ok: false, reason: 'the Account ID is missing or not valid' };
+  const v = await validateKey(prov, stored, fetch);
+  if (v.ok) keys.set(prov.id, stored);
   return v;
 });
 ipcMain.handle('connect', async (_e, id) => {

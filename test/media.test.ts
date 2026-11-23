@@ -91,3 +91,63 @@ test('naming a catalogue media model pins the request to it (embeddings from dif
   // A pinned model that is busy does not fall over to another one.
   await assert.rejects(routeMedia('embedding', { json: { model: 'emb-b', input: 'x' } }, deps(() => new Response('{}', { status: 503 }))), NoCapacityError);
 });
+
+// Cloudflare: the account goes into the address, and image, speech and transcription use its own /run format.
+const cfCat = parseCatalogue([{ ...base, id: 'cf', name: 'CF', baseUrl: 'https://cf.example/accounts/{account}/ai/v1', media: [
+  { id: '@cf/emb', kind: 'embedding', quality: 0.5 },
+  { id: '@cf/flux', kind: 'image', quality: 0.5, api: 'workers-ai' },
+  { id: '@cf/aura', kind: 'speech', quality: 0.5, api: 'workers-ai' },
+  { id: '@cf/whisper', kind: 'transcription', quality: 0.5, api: 'workers-ai' },
+] }]);
+function cfDeps(reply: (url: string, init: RequestInit) => Response, seen: { url: string; init: RequestInit }[]): RouteDeps {
+  return { ...deps(reply, seen), catalogue: cfCat, keys: (id) => (id === 'cf' ? 'acct1:tok' : null) };
+}
+
+test('Cloudflare embeddings use the OpenAI path with the account in the address', async () => {
+  const seen: any[] = [];
+  await routeMedia('embedding', { json: { input: 'x' } }, cfDeps(() => new Response('{}'), seen));
+  assert.equal(seen[0].url, 'https://cf.example/accounts/acct1/ai/v1/embeddings');
+  assert.equal(new Headers(seen[0].init.headers).get('authorization'), 'Bearer tok');
+});
+
+test('Cloudflare images: OpenAI request in, /run request out, base64 image back as data[].b64_json', async () => {
+  const seen: any[] = [];
+  const { response } = await routeMedia('image', { json: { prompt: 'a cat', n: 1, size: '1024x1024' } },
+    cfDeps(() => new Response(JSON.stringify({ result: { image: 'QUJD' }, success: true })), seen));
+  assert.equal(seen[0].url, 'https://cf.example/accounts/acct1/ai/run/@cf/flux');
+  assert.deepEqual(JSON.parse(seen[0].init.body), { prompt: 'a cat' });
+  const j: any = await response.json();
+  assert.equal(j.data[0].b64_json, 'QUJD');
+  assert.equal(typeof j.created, 'number');
+});
+
+test('Cloudflare speech: input becomes text, a known voice becomes the speaker, audio passes through', async () => {
+  const seen: any[] = [];
+  const { response } = await routeMedia('speech', { json: { input: 'hello', voice: 'luna' } },
+    cfDeps(() => new Response(new Uint8Array([1, 2]), { headers: { 'content-type': 'audio/mpeg' } }), seen));
+  assert.deepEqual(JSON.parse(seen[0].init.body), { text: 'hello', speaker: 'luna' });
+  assert.deepEqual([...new Uint8Array(await response.arrayBuffer())], [1, 2]);
+  await routeMedia('speech', { json: { input: 'hi', voice: 'alloy' } }, cfDeps(() => new Response('x'), seen));
+  assert.deepEqual(JSON.parse(seen[1].init.body), { text: 'hi' }); // an OpenAI voice name is left out
+});
+
+test('Cloudflare transcription: the uploaded file goes as base64, the text comes back OpenAI-shaped', async () => {
+  const seen: any[] = [];
+  const form = new FormData();
+  form.set('file', new Blob([new Uint8Array([104, 105])]), 'a.wav');
+  form.set('language', 'en');
+  form.set('prompt', 'names');
+  const { response } = await routeMedia('transcription', { form },
+    cfDeps(() => new Response(JSON.stringify({ result: { text: 'hi there', vtt: 'WEBVTT' }, success: true })), seen));
+  assert.deepEqual(JSON.parse(seen[0].init.body), { audio: 'aGk=', language: 'en', initial_prompt: 'names' });
+  assert.deepEqual(await response.json(), { text: 'hi there' });
+  const form2 = new FormData();
+  form2.set('file', new Blob([new Uint8Array([1])]), 'a.wav');
+  form2.set('response_format', 'text');
+  const r2 = await routeMedia('transcription', { form: form2 }, cfDeps(() => new Response(JSON.stringify({ result: { text: 'plain' } })), seen));
+  assert.equal(await r2.response.text(), 'plain');
+});
+
+test('catalogue rejects an unknown media api', () => {
+  assert.throws(() => parseCatalogue([{ ...base, id: 'x', name: 'X', baseUrl: 'https://x.example', media: [{ id: 'm', kind: 'image', quality: 0.5, api: 'other' }] }]), /api/);
+});

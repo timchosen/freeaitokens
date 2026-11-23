@@ -1,4 +1,5 @@
 import type { Candidate } from './orchestrator.js';
+import { endpoint } from './catalogue.js';
 import type { ChatRequest } from './types.js';
 
 export type Fetch = typeof fetch;
@@ -15,10 +16,11 @@ export async function callUpstream(c: Candidate, req: ChatRequest, f: Fetch, sig
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(new Error('upstream timed out')), HEADERS_TIMEOUT_MS);
   signal?.addEventListener('abort', () => ctl.abort(signal.reason), { once: true });
+  const { base, key } = endpoint(c.provider.baseUrl, c.apiKey);
   try {
-    return await f(`${c.provider.baseUrl}/chat/completions`, {
+    return await f(`${base}/chat/completions`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json', ...(c.apiKey ? { authorization: `Bearer ${c.apiKey}` } : {}) },
+      headers: { 'content-type': 'application/json', ...(key ? { authorization: `Bearer ${key}` } : {}) },
       body: JSON.stringify(adapt(c.provider.id, { ...req, model: c.model.id })),
       signal: ctl.signal,
     });

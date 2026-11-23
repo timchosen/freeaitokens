@@ -3,7 +3,8 @@ export interface Model { id: string; context: number; tools: boolean; images: bo
 export const MEDIA_KINDS = ['embedding', 'completion', 'image', 'speech', 'transcription', 'video'] as const;
 export type MediaKind = typeof MEDIA_KINDS[number];
 // Non-chat models live apart from `models` so older clients, which treat every model as chat, never pick one.
-export interface MediaModel { id: string; kind: MediaKind; quality: number; limits?: Limits; baseUrl?: string; path?: string; context?: number }
+// api 'workers-ai': Cloudflare's own /run/<model> format instead of the OpenAI one.
+export interface MediaModel { id: string; kind: MediaKind; quality: number; limits?: Limits; baseUrl?: string; path?: string; context?: number; api?: 'workers-ai' }
 export interface Provider {
   id: string;
   name: string;
@@ -22,6 +23,20 @@ export interface Provider {
   limits?: Limits;
   models: Model[];
   media?: MediaModel[];
+}
+
+// A provider whose address holds the account ({account}) is given its key as "account:token".
+export function endpoint(base: string, key: string | null): { base: string; key: string | null } {
+  if (!base.includes('{account}') || !key) return { base, key };
+  const i = key.indexOf(':');
+  return { base: base.replace('{account}', encodeURIComponent(key.slice(0, i))), key: key.slice(i + 1) };
+}
+
+export const needsAccount = (p: Pick<Provider, 'baseUrl'>) => p.baseUrl.includes('{account}');
+// The stored key for such a provider; null when either part is missing or the account is not a plain id.
+export function joinAccount(account: string, token: string): string | null {
+  const a = account.trim(), t = token.trim();
+  return /^[A-Za-z0-9_-]{1,64}$/.test(a) && t ? `${a}:${t}` : null;
 }
 
 function fail(where: string, field: string): never {
@@ -52,6 +67,7 @@ export function parseCatalogue(json: unknown): Provider[] {
       if (!MEDIA_KINDS.includes(m.kind)) fail(mw, 'kind');
       if (typeof m.quality !== 'number' || m.quality < 0 || m.quality > 1) fail(mw, 'quality');
       if (m.baseUrl !== undefined && !String(m.baseUrl).startsWith('https://')) fail(mw, 'baseUrl');
+      if (m.api !== undefined && m.api !== 'workers-ai') fail(mw, 'api');
       if (m.path !== undefined && !/^\/[\w\-./]*$/.test(m.path)) fail(mw, 'path'); // a path, never a new host
     }
     if (p.keyPattern !== undefined) new RegExp(p.keyPattern); // throws on a bad pattern

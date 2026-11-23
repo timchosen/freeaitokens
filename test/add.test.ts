@@ -152,3 +152,11 @@ test('runList names the non-chat kinds a provider offers', () => {
     media: [{ id: 'e', kind: 'embedding', quality: 0.5 }, { id: 'i', kind: 'image', quality: 0.5 }, { id: 'i2', kind: 'image', quality: 0.5 }] }]);
   assert.match(runList(c, store, new LimitTracker(emptyState())), /also: embedding, image$/);
 });
+
+test('validateKey puts the account into the address and sends only the token', async () => {
+  const seen: any[] = [];
+  const cf = parseCatalogue([{ id: 'cf', name: 'CF', baseUrl: 'https://api.cf.example/accounts/{account}/ai/v1', keyless: false, paid: false, terms: 'ok', steps: [], models: [{ id: 'm', context: 1000, tools: true, images: false, quality: 0.5 }] }])[0];
+  await validateKey(cf, 'abc123:tok', fakeFetch(200, seen));
+  assert.equal(seen[0].url, 'https://api.cf.example/accounts/abc123/ai/v1/chat/completions');
+  assert.equal(new Headers(seen[0].init.headers).get('authorization'), 'Bearer tok');
+});

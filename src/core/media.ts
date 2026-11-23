@@ -1,7 +1,8 @@
 // Routing for non-chat requests (embeddings, completions, images, speech, transcription, video).
 // The body passes through as the provider expects it; only the model is replaced.
-import type { MediaKind, MediaModel, Provider } from './catalogue.js';
+import { endpoint, type MediaKind, type MediaModel, type Provider } from './catalogue.js';
 import type { LimitTracker } from './limits.js';
+import { BadRequest } from './types.js';
 import { NoCapacityError, type RouteDeps, type RouteOptions, type KeyLookup } from './orchestrator.js';
 
 export const KIND_PATH: Record<MediaKind, string> = {
@@ -54,8 +55,50 @@ function tokensOf(body: MediaBody): number {
   return Math.ceil(JSON.stringify(j.input ?? j.prompt ?? '').length / 4);
 }
 
-function requestFor(c: MediaCandidate, body: MediaBody, signal: AbortSignal): RequestInit {
-  const auth: Record<string, string> = c.apiKey ? { authorization: `Bearer ${c.apiKey}` } : {};
+// Where a candidate's requests go, and the key to send (the account, if any, is in the address).
+export function target(c: MediaCandidate, kind: MediaKind): { url: string; auth: Record<string, string> } {
+  const { base, key } = endpoint(c.model.baseUrl ?? c.provider.baseUrl, c.apiKey);
+  const url = c.model.api === 'workers-ai' ? `${base.replace(/\/v1$/, '')}/run/${c.model.id}` : `${base}${c.model.path ?? KIND_PATH[kind]}`;
+  return { url, auth: key ? { authorization: `Bearer ${key}` } : {} };
+}
+
+const AURA_SPEAKERS = new Set(['angus', 'asteria', 'arcas', 'orion', 'orpheus', 'athena', 'luna', 'zeus', 'perseus', 'helios', 'hera', 'stella']);
+const base64 = (u8: Uint8Array) => {
+  let s = '';
+  for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode(...u8.subarray(i, i + 0x8000));
+  return btoa(s);
+};
+
+// Cloudflare's /run input for an OpenAI-style request.
+async function workersAiInput(kind: MediaKind, body: MediaBody): Promise<Record<string, unknown>> {
+  const get = (k: string) => ('json' in body ? body.json[k] : body.form.get(k) ?? undefined);
+  if (kind === 'image') return { prompt: get('prompt') };
+  if (kind === 'speech') {
+    const voice = get('voice');
+    return { text: get('input'), ...(typeof voice === 'string' && AURA_SPEAKERS.has(voice) ? { speaker: voice } : {}) };
+  }
+  if (kind === 'transcription') {
+    const file = get('file');
+    if (!(file instanceof Blob)) throw new BadRequest('A transcription request needs an audio file in the "file" field.');
+    const language = get('language'), prompt = get('prompt');
+    return { audio: base64(new Uint8Array(await file.arrayBuffer())), ...(language ? { language } : {}), ...(prompt ? { initial_prompt: prompt } : {}) };
+  }
+  return 'json' in body ? body.json : {};
+}
+
+// An OpenAI-style answer from Cloudflare's /run output.
+async function fromWorkersAi(kind: MediaKind, res: Response, body: MediaBody): Promise<Response> {
+  if (kind !== 'image' && kind !== 'transcription') return res; // speech is already audio bytes
+  const r: any = ((await res.json()) as any)?.result ?? {};
+  if (kind === 'image') return Response.json({ created: Math.floor(Date.now() / 1000), data: [{ b64_json: r.image }] });
+  const format = 'json' in body ? body.json.response_format : body.form.get('response_format');
+  if (format === 'text') return new Response(String(r.text ?? ''), { headers: { 'content-type': 'text/plain' } });
+  if (format === 'vtt') return new Response(String(r.vtt ?? ''), { headers: { 'content-type': 'text/vtt' } });
+  return Response.json({ text: r.text ?? '' });
+}
+
+async function requestFor(c: MediaCandidate, kind: MediaKind, body: MediaBody, auth: Record<string, string>, signal: AbortSignal): Promise<RequestInit> {
+  if (c.model.api === 'workers-ai') return { method: 'POST', headers: { ...auth, 'content-type': 'application/json' }, body: JSON.stringify(await workersAiInput(kind, body)), signal };
   if ('form' in body) {
     const form = new FormData();
     for (const [k, v] of body.form) if (k !== 'model') form.append(k, v);
@@ -68,6 +111,7 @@ function requestFor(c: MediaCandidate, body: MediaBody, signal: AbortSignal): Re
 export async function routeMedia(kind: MediaKind, body: MediaBody, deps: RouteDeps, waited = false): Promise<{ response: Response; candidate: MediaCandidate }> {
   const { tracker } = deps;
   if (!deps.catalogue.some((p) => (p.media ?? []).some((m) => m.kind === kind))) throw new NoProviderError(kind);
+  if (kind === 'transcription' && !('form' in body && body.form.get('file') instanceof Blob)) throw new BadRequest('A transcription request needs an audio file in the "file" field.');
   const tokens = tokensOf(body);
   let rejected: { response: Response; candidate: MediaCandidate } | null = null, rejects = 0;
   // Embeddings from different models cannot be compared, so a named model is never swapped for another.
@@ -79,7 +123,8 @@ export async function routeMedia(kind: MediaKind, body: MediaBody, deps: RouteDe
     let res: Response;
     try {
       // Generation can be slow (images, speech): allow two minutes for the headers.
-      res = await deps.fetch(`${c.model.baseUrl ?? c.provider.baseUrl}${c.model.path ?? KIND_PATH[kind]}`, requestFor(c, body, AbortSignal.timeout(120_000)));
+      const { url, auth } = target(c, kind);
+      res = await deps.fetch(url, await requestFor(c, kind, body, auth, AbortSignal.timeout(120_000)));
     } catch {
       fail(COOL.error);
       continue;
@@ -96,7 +141,7 @@ export async function routeMedia(kind: MediaKind, body: MediaBody, deps: RouteDe
     }
     tracker.record(c.key, tokens, true, tracker.now() - start);
     if (c.provider.paid) tracker.recordPaid();
-    return { response: res, candidate: c };
+    return { response: c.model.api === 'workers-ai' ? await fromWorkersAi(kind, res, body) : res, candidate: c };
   }
   if (rejected) return rejected;
   const cooling = Object.values(tracker.state.cooling).filter((u) => u > tracker.now());

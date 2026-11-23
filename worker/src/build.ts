@@ -1,4 +1,4 @@
-import type { Model, Provider } from '../../src/core/catalogue.js';
+import { endpoint, type Model, type Provider } from '../../src/core/catalogue.js';
 
 type Fetch = typeof fetch;
 export interface Envelope { payload: string; signature: string }
@@ -11,10 +11,11 @@ const GONE = /not[ _-]?found|does not exist|decommission|deprecated|no longer (a
 // One small tool-call request: is the model alive, and does it call tools?
 async function probe(p: Provider, modelId: string, key: string | undefined, f: Fetch): Promise<'ok' | 'gone' | 'unsure' | { tools: boolean }> {
   let res: Response;
+  const ep = endpoint(p.baseUrl, key ?? null);
   try {
-    res = await f(`${p.baseUrl}/chat/completions`, {
+    res = await f(`${ep.base}/chat/completions`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json', ...(key ? { authorization: `Bearer ${key}` } : {}) },
+      headers: { 'content-type': 'application/json', ...(ep.key ? { authorization: `Bearer ${ep.key}` } : {}) },
       body: JSON.stringify({
         model: modelId, max_tokens: 200,
         messages: [{ role: 'user', content: 'What is the weather in Paris? Use the tool.' }],
@@ -40,7 +41,8 @@ async function probe(p: Provider, modelId: string, key: string | undefined, f: F
 
 async function listModels(p: Provider, key: string | undefined, f: Fetch): Promise<{ id: string; context?: number }[]> {
   try {
-    const r = await f(`${p.baseUrl}/models`, { headers: key ? { authorization: `Bearer ${key}` } : {}, signal: AbortSignal.timeout(PROBE_TIMEOUT_MS) });
+    const ep = endpoint(p.baseUrl, key ?? null);
+    const r = await f(`${ep.base}/models`, { headers: ep.key ? { authorization: `Bearer ${ep.key}` } : {}, signal: AbortSignal.timeout(PROBE_TIMEOUT_MS) });
     const j: any = await r.json();
     return (Array.isArray(j?.data) ? j.data : []).filter((m: any) => typeof m?.id === 'string')
       .map((m: any) => ({ id: m.id, context: Number(m.context_length ?? m.context_window) || undefined }));

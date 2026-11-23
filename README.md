@@ -1,6 +1,6 @@
 # freeaitokens
 
-Up to about **7 billion free AI tokens a month**. AI providers each give a small free allowance; freeaitokens adds 26 of them together behind one local endpoint, picks the best model available for every request, and moves to another one when a provider hits its limit. Use it from your own scripts and apps, chat clients, editors or coding agents.
+Up to about **7 billion free AI tokens a month**. AI providers each give a small free allowance; freeaitokens adds 27 of them together behind one local endpoint, picks the best model available for every request, and moves to another one when a provider hits its limit. Use it from your own scripts and apps, chat clients, editors or coding agents.
 
 ```bash
 npx freeaitokens
@@ -40,8 +40,9 @@ The launchers only affect that one session and write nothing to your tool's conf
 - **Speaks five formats**: OpenAI chat completions, Anthropic Messages (Claude Code), OpenAI Responses (Codex), Gemini (Gemini CLI) and Ollama (`/api/chat`, for local-model clients that can send a key).
 - **Not only chat.** The same endpoint takes the OpenAI routes for embeddings (`/v1/embeddings`), plain completions such as editor autocomplete (`/v1/completions`), image generation (`/v1/images/generations`), text to speech (`/v1/audio/speech`), transcription (`/v1/audio/transcriptions`) and video (`/v1/videos`, then poll `/v1/videos/<id>` and download `/v1/videos/<id>/content`). Each goes to a free provider that offers that kind of model, with the same failover and limit tracking. The body is passed through as sent, apart from the model name, so options a provider does not support may be refused by it. Video jobs are remembered only while freeaitokens runs.
 
-  - **Free today:** embeddings (Gemini, OpenRouter, SEA-LION, OVH), completions (Cerebras, OpenRouter, OVH), images (OpenRouter), text to speech (Groq, OpenRouter), transcription (Groq, OVH). No provider offers free video yet, so `/v1/videos` answers that none is set up.
+  - **Free today:** embeddings (Gemini, OpenRouter, SEA-LION, Cloudflare, OVH), completions (Cerebras, OpenRouter, OVH), images (Cloudflare Flux, OpenRouter), text to speech (Groq, OpenRouter, Cloudflare), transcription (Groq, Cloudflare, OVH). No provider offers free video yet, so `/v1/videos` answers that none is set up.
   - **Embeddings:** vectors from different models cannot be compared. The response names the model used; send that name as `model` (for example `gemini-embedding-001` or `ovh/bge-m3`) and every later request stays on it instead of switching.
+  - **Cloudflare** images, speech and transcription use Cloudflare's own format, which freeaitokens converts: an image comes back as one `b64_json` (size and count are not passed on), speech voices are Aura's (`luna`, `asteria`, `orion`…; others get the default), and transcriptions return `text` (or `response_format` `text` or `vtt`).
   - **Groq text to speech** works only after you accept the model's terms in the Groq console. Output is WAV, at most 200 characters per request.
 
 ## Providers
@@ -58,6 +59,7 @@ The launchers only affect that one session and write nothing to your tool's conf
 | NVIDIA NIM | Free key | A trial for prototyping and testing, not production use. |
 | Z.ai (GLM) | Free key | Only the Flash models are free. |
 | OVH AI Endpoints | No | About 2 requests a minute per IP for each model. |
+| Cloudflare Workers AI | Free account | 10,000 free Neurons a day, shared by chat, embeddings, images, speech and transcription. `add` asks for your Account ID and an API token. |
 
 Resellers. Their models are rated below most of the providers above, so they are mostly a fallback. `freeaitokens add` shows each one's caveats before you sign up.
 

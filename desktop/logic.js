@@ -9,7 +9,8 @@ export function allowedUrl(catalogue, url) {
 export function choices(catalogue, keys, stepsOf) {
   return catalogue.filter((p) => !p.keyless && !keys.get(p.id)).map((p) => {
     const s = p.connect === 'openrouter' ? null : stepsOf(p);
-    return { id: p.id, name: p.name, note: p.termsNote ?? '', connect: p.connect ?? null, steps: s?.text ?? '', open: s?.open ?? null };
+    // account: the address holds the account, so the window asks for the account ID too.
+    return { id: p.id, name: p.name, note: p.termsNote ?? '', connect: p.connect ?? null, account: String(p.baseUrl ?? '').includes('{account}'), steps: s?.text ?? '', open: s?.open ?? null };
   });
 }
 

@@ -8,6 +8,7 @@ const cat = [
   { id: 'groq', name: 'Groq', keyless: false, keyUrl: 'https://console.groq.com/keys', signupUrl: 'https://console.groq.com', termsNote: 'n' },
   { id: 'or', name: 'OpenRouter', keyless: false, connect: 'openrouter', keyUrl: 'https://openrouter.ai/keys' },
   { id: 'has', name: 'Has', keyless: false, keyUrl: 'https://has.example' },
+  { id: 'cf', name: 'CF', keyless: false, keyUrl: 'https://cf.example', baseUrl: 'https://cf.example/accounts/{account}/ai/v1' },
 ];
 
 test('allowedUrl accepts only pages the provider list names', () => {
@@ -21,7 +22,9 @@ test('allowedUrl accepts only pages the provider list names', () => {
 test('choices lists keyed providers without a key, with steps, and OpenRouter as a connect flow', () => {
   const keys = { get: (id: string) => (id === 'has' ? 'k' : null) };
   const c = choices(cat, keys, (p: any) => ({ text: `steps for ${p.id}`, open: p.keyUrl }));
-  assert.deepEqual(c.map((x: any) => x.id), ['groq', 'or']);
+  assert.deepEqual(c.map((x: any) => x.id), ['groq', 'or', 'cf']);
+  assert.equal(c[0].account, false);
+  assert.equal(c[2].account, true); // asks for the account ID as well as the token
   assert.equal(c[0].steps, 'steps for groq');
   assert.equal(c[0].open, 'https://console.groq.com/keys');
   assert.equal(c[1].connect, 'openrouter');

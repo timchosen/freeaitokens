@@ -29,6 +29,10 @@
 <div id="keyFlow">
   <pre id="steps"></pre>
   <button class="secondary" id="openPage">Open the key page</button>
+  <div id="accountRow" hidden>
+    <label for="account">Paste your Account ID</label>
+    <input id="account" autocomplete="off" spellcheck="false">
+  </div>
   <label for="key">Paste your key</label>
   <input id="key" type="password" autocomplete="off" spellcheck="false">
   <button id="save">Check and save</button>
@@ -51,6 +55,8 @@
     $('keyFlow').hidden = !!p.connect;
     $('connectFlow').hidden = !p.connect;
     $('key').value = '';
+    $('account').value = '';
+    $('accountRow').hidden = !p.account;
     status('');
   }
   async function load() {
@@ -68,7 +74,7 @@
   }
   $('prov').addEventListener('change', show);
   $('openPage').addEventListener('click', () => { const p = current(); if (p?.open) window.freeaitokens.open(p.open); });
-  $('save').addEventListener('click', () => run($('save'), () => window.freeaitokens.save(current().id, $('key').value)));
+  $('save').addEventListener('click', () => run($('save'), () => window.freeaitokens.save(current().id, $('key').value, $('account').value)));
   $('key').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('save').click(); });
   $('connect').addEventListener('click', () => run($('connect'), () => window.freeaitokens.connect(current().id)));
   load();

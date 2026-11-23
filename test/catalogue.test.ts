@@ -45,3 +45,22 @@ test('needsOf gives the same conversation id across turns of one chat', () => {
   assert.notEqual(first.conversationId, other.conversationId);
   assert.ok(later.tokens > first.tokens);
 });
+
+test('endpoint fills {account} from an "account:token" key, and leaves other providers alone', async () => {
+  const { endpoint } = await import('../src/core/catalogue.ts');
+  assert.deepEqual(endpoint('https://a.example/accounts/{account}/ai/v1', 'abc:tok'), { base: 'https://a.example/accounts/abc/ai/v1', key: 'tok' });
+  assert.deepEqual(endpoint('https://a.example/v1', 'k:with:colons'), { base: 'https://a.example/v1', key: 'k:with:colons' });
+  assert.deepEqual(endpoint('https://a.example/v1', null), { base: 'https://a.example/v1', key: null });
+  // An account that is not a plain id never changes the host or path.
+  assert.equal(endpoint('https://a.example/accounts/{account}/ai', '../../evil:tok').base, 'https://a.example/accounts/..%2F..%2Fevil/ai');
+});
+
+test('joinAccount makes the stored "account:token" key and refuses an account that is not a plain id', async () => {
+  const { joinAccount, needsAccount } = await import('../src/core/catalogue.ts');
+  assert.equal(joinAccount(' 0123abcd ', ' tok '), '0123abcd:tok');
+  assert.equal(joinAccount('a/b', 'tok'), null);
+  assert.equal(joinAccount('', 'tok'), null);
+  assert.equal(joinAccount('abc', ''), null);
+  assert.equal(needsAccount({ baseUrl: 'https://x/accounts/{account}/ai/v1' } as any), true);
+  assert.equal(needsAccount({ baseUrl: 'https://x/v1' } as any), false);
+});

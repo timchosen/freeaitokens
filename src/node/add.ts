@@ -2,7 +2,7 @@ import http from 'node:http';
 import { execFileSync, spawn } from 'node:child_process';
 import { createHash, randomBytes } from 'node:crypto';
 import * as p from '@clack/prompts';
-import type { Provider } from '../core/catalogue.js';
+import { endpoint, needsAccount, joinAccount, type Provider } from '../core/catalogue.js';
 import type { LimitTracker } from '../core/limits.js';
 import type { Fetch } from '../core/upstream.js';
 import type { KeyStore } from './keys.js';
@@ -16,11 +16,12 @@ export function matchKey(prov: Provider, text: string): string | null {
 // A bad key is refused at once; a slow or broken model only means: try the next one (at most 3).
 export async function validateKey(prov: Provider, key: string, f: Fetch): Promise<{ ok: true } | { ok: false; reason: string }> {
   let reason = '';
+  const ep = endpoint(prov.baseUrl, key);
   for (const m of prov.models.slice(0, 3)) {
     try {
-      const r = await f(`${prov.baseUrl}/chat/completions`, {
+      const r = await f(`${ep.base}/chat/completions`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${ep.key}` },
         body: JSON.stringify({ model: m.id, messages: [{ role: 'user', content: 'hi' }], max_tokens: 1 }),
         signal: AbortSignal.timeout(20_000),
       });
@@ -156,9 +157,12 @@ export async function runAdd(catalogue: Provider[], keys: KeyStore, f: Fetch): P
         s.stop(key ? 'Key found on the clipboard.' : 'No key seen on the clipboard.');
       }
       if (!key) {
+        // The account is not secret; it goes into the provider's address, the key stays the token.
+        const account = needsAccount(prov) ? await p.text({ message: `Paste your ${prov.name} Account ID`, validate: (v) => (joinAccount(v ?? '', 'x') ? undefined : 'Letters, digits, - and _ only') }) : '';
+        if (p.isCancel(account)) { p.cancel('Nothing added.'); return; }
         const typed = await p.password({ message: `Paste your ${prov.name} key` });
         if (p.isCancel(typed)) { p.cancel('Nothing added.'); return; }
-        key = typed.trim() || null;
+        key = needsAccount(prov) ? joinAccount(account, typed) : typed.trim() || null;
       }
     }
     if (key) {
