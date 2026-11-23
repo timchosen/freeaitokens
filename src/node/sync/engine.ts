@@ -11,7 +11,7 @@ export interface LocalStore {
   keys(): Record<string, string | null | undefined>; setKey(provider: string, key: string | null): void;
   state(): SyncState; setState(s: SyncState): void;
 }
-type Reason = 'expired' | 'revoked' | 'offline' | 'corrupt' | 'unauthorized' | 'full';
+type Reason = 'expired' | 'revoked' | 'offline' | 'corrupt' | 'unauthorized' | 'full' | 'busy';
 export type SyncResult = { ok: true; pulled: number; pushed: number } | { ok: false; reason: Reason; detail?: string };
 type Conn = { base: string; license: string; fetch: typeof fetch };
 
@@ -25,6 +25,7 @@ async function api(c: Conn, method: string, path: string, init: { body?: BodyIni
   if (r.status === 401) throw new SyncFail('unauthorized');
   if (r.status === 402) throw new SyncFail(((await r.json().catch(() => ({}))) as any).error === 'revoked' ? 'revoked' : 'expired');
   if (r.status === 413 && path.startsWith('/v1/items/')) throw new SyncFail('full', 'Sync storage is full.');
+  if (r.status === 429) throw new SyncFail('busy'); // write limit per minute: the next run carries on
   if (r.status >= 500) throw new SyncFail('offline', `The sync server answered ${r.status}.`);
   return r;
 }
@@ -70,6 +71,7 @@ export class SyncEngine {
     let bundle = mergeKeys(st.keyBundle ?? {}, changes);
     let keysDirty = Object.keys(changes).length > 0;
     let cursor = st.cursor, pulled = 0, pushed = 0;
+    const damaged: string[] = [];
 
     const pull = async () => {
       for (let more = true; more;) {
@@ -89,7 +91,13 @@ export class SyncEngine {
           pulled++;
           // Deletes travel as encrypted tombstones; a bare server marker is not trusted. Write our copy back.
           if (it.deleted || !it.blob) { if (it.id === keysId) keysDirty = true; else if (work.has(it.id)) dirty.add(it.id); continue; }
-          const v = decryptItem(dataKey, it.id, Buffer.from(it.blob, 'base64'));
+          let v;
+          // A damaged or forged item is never applied; it is reported, and everything else still syncs.
+          try { v = decryptItem(dataKey, it.id, Buffer.from(it.blob, 'base64')); } catch (e) {
+            if (!(e instanceof CorruptItemError)) throw e;
+            damaged.push(it.id);
+            continue;
+          }
           if (it.id === keysId && v.type === 'keys') {
             bundle = mergeKeys(bundle, v.keys);
             keysDirty = !same(bundle, v.keys);
@@ -157,6 +165,7 @@ export class SyncEngine {
     }
     const keySnapshot = Object.fromEntries(Object.entries(bundle).filter(([, v]) => v.key != null).map(([p, v]) => [p, v.key!]));
     store.setState({ cursor, versions, keySnapshot, keysItemId: keysId, keyBundle: bundle, dirty: [...dirty] });
+    if (damaged.length) return { ok: false, reason: 'corrupt', detail: new CorruptItemError().message };
     return { ok: true, pulled, pushed };
   }
 }

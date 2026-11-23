@@ -5,7 +5,8 @@ import { dirname } from 'node:path';
 import { createHash, randomBytes } from 'node:crypto';
 
 export const KEY_RE = /^FAT-(?:[A-Z2-7]{5}-){4}[A-Z2-7]{5}$/;
-const LICENSE = 'sync:license', DATAKEY = 'sync:datakey';
+// A key bought in the app waits in the keychain (CLAIMED) until a passphrase is chosen.
+const LICENSE = 'sync:license', DATAKEY = 'sync:datakey', CLAIMED = 'sync:claimed';
 const CLAIM_FOR = 30 * 60_000;
 // Pages the app may open in the browser for paying: Stripe's checkout and billing pages.
 const PAY_HOSTS = new Set(['checkout.stripe.com', 'billing.stripe.com']);
@@ -78,7 +79,7 @@ export function createSyncService({ base, keys, chats, stateFile, fetch, engine,
     return {
       state: s, last: saved.last, reason: saved.reason, detail: saved.detail,
       ...(on ? { items: u.items, bytes: u.bytes, plan: u.plan, paidUntil: u.paid_until } : {}),
-      ...(!on && saved.claimed ? { key: saved.claimed } : {}),
+      ...(!on && keys.get(CLAIMED) ? { key: keys.get(CLAIMED) } : {}),
     };
   }
 
@@ -88,11 +89,17 @@ export function createSyncService({ base, keys, chats, stateFile, fetch, engine,
     return (running ??= (async () => {
       try {
         const r = await new engine.SyncEngine({ ...conn(), dataKey: dataKey(), store: store() }).run();
+        if (r.reason === 'busy') { // the server's write limit: not an error, carry on in a minute
+          write({ state: 'on', reason: undefined, detail: undefined });
+          if (started) { clearTimeout(nudge); nudge = setTimeout(() => void syncNow(), 61_000); }
+          return r;
+        }
         if (!r.ok) {
           write({ state: r.reason === 'expired' || r.reason === 'revoked' ? r.reason : 'error', reason: r.reason, detail: r.detail });
           return r;
         }
-        const u = await (await fetch(`${base}/v1/usage`, { headers: { authorization: `Bearer ${license()}` } })).json().catch(() => null);
+        // Only for the numbers on the screen: a failure here doesn't make the sync a failure.
+        const u = await fetch(`${base}/v1/usage`, { headers: { authorization: `Bearer ${license()}` } }).then((x) => x.json()).catch(() => null);
         write({ state: 'on', reason: undefined, detail: undefined, last: Date.now(), ...(u && !u.error ? { usage: u } : {}) });
         if (r.pulled) onPulled();
         return r;
@@ -110,7 +117,8 @@ export function createSyncService({ base, keys, chats, stateFile, fetch, engine,
       return payUrl(j.url);
     }
     const token = randomBytes(32).toString('hex');
-    write({ claim: { token, until: Date.now() + CLAIM_FOR }, claimed: undefined });
+    keys.remove(CLAIMED);
+    write({ claim: { token, until: Date.now() + CLAIM_FOR } });
     if (started) pollLoop();
     return `${base}/buy?plan=${plan}&claim=${createHash('sha256').update(token).digest('hex')}`;
   }
@@ -122,7 +130,8 @@ export function createSyncService({ base, keys, chats, stateFile, fetch, engine,
     if (!r?.ok) return null;
     const { key } = await r.json();
     if (!KEY_RE.test(key ?? '')) return null;
-    write({ claim: undefined, claimed: key });
+    keys.set(CLAIMED, key);
+    write({ claim: undefined });
     return key;
   }
   let polling = null;
@@ -140,23 +149,29 @@ export function createSyncService({ base, keys, chats, stateFile, fetch, engine,
   const keep = (lic, dk) => { keys.set(LICENSE, lic); keys.set(DATAKEY, Buffer.from(dk).toString('base64')); };
 
   // First computer: makes the data key and returns the recovery code. Later computers: unlock and pull.
-  async function setup(lic, passphrase) {
+  // `confirmed` is false when the passphrase was typed once ("I already have a key"): a brand-new account then
+  // answers { confirm: true } so the screen can ask for it again before it becomes the only way in.
+  async function setup(lic, passphrase, confirmed = true) {
     lic = String(lic ?? '').trim().toUpperCase();
     check(lic, passphrase);
     const c = conn(lic);
     let out = {}, dk;
     if (await engine.hasVault(c)) dk = await engine.joinExisting({ ...c, passphrase });
-    else { const n = await engine.setupNew({ ...c, passphrase }); dk = n.dataKey; out = { recovery: n.recovery }; }
+    else {
+      if (!confirmed) return { confirm: true };
+      const n = await engine.setupNew({ ...c, passphrase }); dk = n.dataKey; out = { recovery: n.recovery };
+    }
     keep(lic, dk);
-    write({ cursor: 0, versions: {}, dirty: chats.list().map((x) => x.id), snap: undefined, claim: undefined, claimed: undefined, state: 'on', detail: undefined });
+    keys.remove(CLAIMED);
+    write({ cursor: 0, versions: {}, dirty: chats.list().map((x) => x.id), snap: undefined, claim: undefined, state: 'on', detail: undefined });
     await syncNow();
     return out;
   }
 
-  async function recover(code, passphrase, lic = license() ?? saved.claimed) {
+  async function recover(code, passphrase, lic = license() ?? keys.get(CLAIMED)) {
     check(lic, passphrase);
     const dk = await engine.resetWithRecovery({ ...conn(lic), code: String(code ?? ''), passphrase });
-    if (!license()) { keep(lic, dk); write({ cursor: 0, versions: {}, dirty: chats.list().map((x) => x.id), snap: undefined, claimed: undefined, state: 'on' }); }
+    if (!license()) { keep(lic, dk); keys.remove(CLAIMED); write({ cursor: 0, versions: {}, dirty: chats.list().map((x) => x.id), snap: undefined, state: 'on' }); }
     await syncNow();
   }
 
@@ -174,7 +189,7 @@ export function createSyncService({ base, keys, chats, stateFile, fetch, engine,
 
   // Stops syncing here and forgets the sync key and data key. Chats and provider keys stay.
   function turnOff() {
-    keys.remove(LICENSE); keys.remove(DATAKEY);
+    keys.remove(LICENSE); keys.remove(DATAKEY); keys.remove(CLAIMED);
     clearTimeout(nudge); clearInterval(polling);
     saved = {};
     rmSync(stateFile, { force: true });

@@ -186,15 +186,30 @@ test('engine: deleting a chat on one device does not wipe an edit the other devi
   for (const st of [A, B]) assert.deepEqual(live(st).map((c) => c.messages.map((m) => m.id)), [['m1', 'b2']]);
 });
 
-test('engine: an undecryptable item or an expired license changes nothing locally; offline is reported', async () => {
+test('engine: an undecryptable item is reported and never applied, the rest still syncs, and the next run is not stuck on it', async () => {
+  const { s, A, B, ea, eb } = await pair();
+  const bad = randomUUID(), fine = randomUUID();
+  edit(A, chat({ id: bad, title: 'v1', updated: 1, messages: [msg('m1', 1)] }));
+  await ea.run(); await eb.run();
+  edit(A, chat({ id: bad, title: 'v2', updated: 2, messages: [msg('m1', 1), msg('m2', 2)] }));
+  edit(A, chat({ id: fine, title: 'fine', updated: 3, messages: [msg('f1', 3)] }));
+  await ea.run();
+  const row = s.db.prepare('SELECT obj FROM items WHERE id = ?').get(bad) as any;
+  s.blobs.set(row.obj, s.blobs.get(row.obj)!.map((x: number, i: number) => (i === 20 ? x ^ 1 : x)));
+  assert.deepEqual(await eb.run(), { ok: false, reason: 'corrupt', detail: 'A synced item could not be decrypted.' });
+  assert.deepEqual(live(B).find((c) => c.id === bad)!.title, 'v1', 'the damaged copy changed nothing here');
+  assert.ok(live(B).some((c) => c.id === fine), 'everything else came in');
+  assert.equal((await eb.run()).ok, true, 'not stuck');
+});
+
+test('engine: an undecryptable item on a first pull, an expired license or no network change nothing locally', async () => {
   const { s, A, B, ea, eb } = await pair();
   edit(A, chat({ id: randomUUID(), updated: 1, messages: [msg('m1', 1)] }));
   await ea.run();
-  const before = structuredClone(B.data);
   const good = new Map(s.blobs);
   for (const [k, v] of s.blobs) s.blobs.set(k, v.map((x, i) => (i === 20 ? x ^ 1 : x)));
-  assert.deepEqual(await eb.run(), { ok: false, reason: 'corrupt', detail: 'A synced item could not be decrypted.' });
-  assert.deepEqual(B.data, before);
+  assert.equal((await eb.run() as any).reason, 'corrupt');
+  assert.deepEqual(live(B), []);
   for (const [k, v] of good) s.blobs.set(k, v);
 
   const C = memStore();
@@ -263,4 +278,11 @@ test('engine: a run that never gets past a conflict says so instead of reporting
   const r = await new SyncEngine({ ...opts(stuck), dataKey, store: A }).run();
   assert.equal(r.ok, false);
   assert.deepEqual(A.data.st, before, 'dirty marks kept for the next run');
+});
+
+test('engine: the server saying "too many writes" is reported as busy, not as an error', async () => {
+  const { s, A, dataKey } = await pair();
+  edit(A, chat({ id: randomUUID(), updated: 1, messages: [msg('m1', 1)] }));
+  const limited = (async (u: any, i?: any) => (i?.method === 'PUT' ? new Response('{"error":"too many writes"}', { status: 429 }) : s.f(u, i))) as typeof fetch;
+  assert.deepEqual(await new SyncEngine({ ...opts(limited), dataKey, store: A }).run(), { ok: false, reason: 'busy' });
 });
