@@ -4,7 +4,9 @@ import worker from '../sync/src/index.ts';
 import { licenseKey } from '../sync/src/license.ts';
 import { makeEnv, addLicense } from './helpers/sync-env.ts';
 
-const ctx = { waitUntil() {}, passThroughOnException() {} } as any;
+const pending: Promise<unknown>[] = [];
+const ctx = { waitUntil(p: Promise<unknown>) { pending.push(p); }, passThroughOnException() {} } as any;
+const settle = () => Promise.all(pending.splice(0));
 export const call = (env: any, path: string, init: RequestInit & { key?: string } = {}) => {
   const headers = new Headers(init.headers);
   if (init.key) headers.set('authorization', `Bearer ${init.key}`);
@@ -255,4 +257,60 @@ test('items: concurrent writes cannot push a license over its storage cap', asyn
   const rs = await Promise.all([1, 2, 3].map(() => put(env, crypto.randomUUID(), '12345678', K(0), { 'if-none-match': '*' })));
   assert.deepEqual(rs.map((r) => r.status).sort(), [200, 413, 413]);
   assert.ok((db.prepare('SELECT bytes FROM counters').get() as any).bytes <= 200 * 1024 * 1024);
+});
+
+// Task 4: key resend and cleanup
+import { cleanup } from '../sync/src/cleanup.ts';
+
+const resend = (env: any, email: string, ip = '1.2.3.4') =>
+  call(env, '/resend', { method: 'POST', body: new URLSearchParams({ email }), headers: { 'cf-connecting-ip': ip } });
+
+test('resend: same answer for known and unknown addresses, one mail per license, rate-limited, no address stored', async () => {
+  const { env, db, mail } = makeEnv();
+  const eh = await hmacHex('mail-secret', 'ana@example.com');
+  await addLicense(db, K(0), { session: 'cs_a', email_hash: eh });
+  await addLicense(db, K(1), { session: 'cs_b', email_hash: eh });
+  const unknown = await resend(env, 'nobody@example.com');
+  const known = await resend(env, '  Ana@Example.com ', '5.6.7.8');
+  await settle();
+  assert.equal(unknown.status, known.status);
+  assert.equal(await unknown.text(), await known.text());
+  assert.equal(known.headers.get('access-control-allow-origin'), 'https://freeaitokens.co');
+  assert.equal(mail.length, 2);
+  const { licenseKey } = await import('../sync/src/license.ts');
+  assert.ok(mail.every((m) => m.to === 'ana@example.com'));
+  const keys = await Promise.all([licenseKey('lic-secret', 'cs_a'), licenseKey('lic-secret', 'cs_b')]);
+  for (const k of keys) assert.ok(mail.some((m) => m.text.includes(k)), 'each license key is mailed');
+  for (let i = 0; i < 3; i++) await resend(env, 'ana@example.com', `9.9.9.${i}`);
+  await settle();
+  assert.equal(mail.length, 2 + 2 * 2, 'the fourth request of the day for one address sends nothing');
+  for (let i = 0; i < 5; i++) await resend(env, `x${i}@example.com`, '7.7.7.7');
+  assert.deepEqual(await (await resend(env, 'ana@example.com', '7.7.7.7')).json(), { ok: true }, 'still the same answer when limited');
+  const dump = JSON.stringify(['licenses', 'rates', 'events', 'claims'].map((t) => db.prepare(`SELECT * FROM ${t}`).all()));
+  assert.ok(!/example\.com/i.test(dump), 'no email text anywhere');
+});
+
+test('cleanup deletes data 90 days after a plan ends or is revoked, old tombstones and expired claims', async () => {
+  const { env, db, blobs } = makeEnv();
+  const now = Date.now(), DAY = 86_400_000;
+  await addLicense(db, K(0), { paid_until: now - 89 * DAY });
+  await addLicense(db, K(1), { paid_until: now - 91 * DAY });
+  await addLicense(db, K(2), { plan: 'life', paid_until: null, revoked: now - 91 * DAY });
+  await addLicense(db, K(3), { plan: 'life', paid_until: null });
+  // Give each license an item (written directly; their plans have ended so the API would refuse).
+  for (const i of [0, 1, 2, 3]) {
+    const kh = (db.prepare('SELECT key_hash FROM licenses WHERE first_session = ?').get(`cs_${K(i)}`) as any).key_hash;
+    db.prepare('INSERT INTO items (key_hash, id, version, seq, size, deleted, updated, obj) VALUES (?, ?, 1, 1, 3, 0, ?, ?)').run(kh, `id${i}`, now, `${kh}/id${i}/o`);
+    db.prepare('INSERT INTO counters (key_hash, seq, bytes) VALUES (?, 1, 3)').run(kh);
+    blobs.set(`${kh}/id${i}/o`, new Uint8Array(3));
+  }
+  const kh3 = (db.prepare('SELECT key_hash FROM licenses WHERE first_session = ?').get(`cs_${K(3)}`) as any).key_hash;
+  db.prepare('INSERT INTO items (key_hash, id, version, seq, size, deleted, updated, obj) VALUES (?, ?, 2, 2, 0, 1, ?, NULL)').run(kh3, 'old-tomb', now - 91 * DAY);
+  db.prepare('INSERT INTO items (key_hash, id, version, seq, size, deleted, updated, obj) VALUES (?, ?, 2, 3, 0, 1, ?, NULL)').run(kh3, 'new-tomb', now - 10 * DAY);
+  db.prepare('INSERT INTO claims (claim_hash, session, expires) VALUES (?, ?, ?), (?, ?, ?)').run('a', 's', now - 1, 'b', 's', now + DAY);
+  const r = await cleanup(env, now);
+  assert.deepEqual(r, { licenses: 2, tombstones: 1, claims: 1 });
+  assert.equal(blobs.size, 2, 'K0 (89 days) and K3 (lifetime) keep their data');
+  assert.equal((db.prepare('SELECT COUNT(*) AS n FROM licenses').get() as any).n, 4, 'license rows stay so a renewal finds them');
+  assert.deepEqual((db.prepare("SELECT id FROM items WHERE deleted = 1").all() as any[]).map((x) => x.id), ['new-tomb']);
 });

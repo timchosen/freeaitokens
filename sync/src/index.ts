@@ -2,6 +2,8 @@
 import { authLicense, json } from './auth.ts';
 import { items } from './items.ts';
 import { buy, renew, billing, claim, webhook } from './billing.ts';
+import { resend } from './resend.ts';
+import { cleanup } from './cleanup.ts';
 
 // Minimal shapes of the Cloudflare bindings this Worker uses.
 interface Stmt { bind(...a: unknown[]): Stmt; first<T = Record<string, any>>(col?: string): Promise<T | null>; all<T = Record<string, any>>(): Promise<{ results: T[] }>; run(): Promise<{ meta: { changes: number } }> }
@@ -13,10 +15,14 @@ export interface Env {
   STRIPE_PRICE_YEAR: string; STRIPE_PRICE_LIFE: string; SITE_URL: string;
 }
 
-async function route(req: Request, env: Env, now: number): Promise<Response> {
+type Ctx = { waitUntil(p: Promise<unknown>): void };
+
+async function route(req: Request, env: Env, now: number, ctx: Ctx): Promise<Response> {
   const { pathname } = new URL(req.url);
   if (pathname === '/buy' && req.method === 'GET') return buy(req, env);
   if (pathname === '/stripe/webhook' && req.method === 'POST') return webhook(req, env, now);
+  if (pathname === '/resend' && req.method === 'POST') return resend(req, env, now, (p) => ctx.waitUntil(p));
+  if (pathname === '/resend' && req.method === 'OPTIONS') return new Response(null, { status: 204, headers: { 'access-control-allow-origin': env.SITE_URL, 'access-control-allow-methods': 'POST', 'access-control-max-age': '86400' } });
   const c = /^\/v1\/claim\/([^/]+)$/.exec(pathname);
   if (c && req.method === 'GET') return claim(env, c[1], now);
   if (!pathname.startsWith('/v1/')) return json({ error: 'not found' }, 404);
@@ -35,7 +41,10 @@ async function route(req: Request, env: Env, now: number): Promise<Response> {
 }
 
 export default {
-  async fetch(req: Request, env: Env): Promise<Response> {
-    try { return await route(req, env, Date.now()); } catch (e) { console.error(e); return json({ error: 'server error' }, 500); }
+  async fetch(req: Request, env: Env, ctx: Ctx): Promise<Response> {
+    try { return await route(req, env, Date.now(), ctx); } catch (e) { console.error(e); return json({ error: 'server error' }, 500); }
+  },
+  async scheduled(_ev: unknown, env: Env): Promise<void> {
+    console.log('cleanup', await cleanup(env, Date.now()));
   },
 };
