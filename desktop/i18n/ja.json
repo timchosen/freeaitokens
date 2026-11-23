@@ -158,5 +158,10 @@
   "no_transcription_providers": "文字起こしには Groq か Cloudflare を追加してください。どちらも無料です。",
   "err_audio": "このファイルは読み込める音声ではありません。MP3、M4A、WAV、WebM、OGG、FLAC を使ってください。",
   "err_speech": "音声が返ってきませんでした。もう一度お試しください。",
-  "audio_too_big": "このファイルは 25 MB を超えています。短いものを選んでください。"
+  "audio_too_big": "このファイルは 25 MB を超えています。短いものを選んでください。",
+  "set_theme": "外観",
+  "set_theme_text": "ライト、ダーク、またはこのコンピューターと同じ。",
+  "theme_system": "このコンピューターと同じ",
+  "theme_light": "ライト",
+  "theme_dark": "ダーク"
 }

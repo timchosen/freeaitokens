@@ -4,6 +4,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('freeaitokens', {
   strings: () => ipcRenderer.invoke('strings'),
   lang: (code) => ipcRenderer.invoke('app:lang', code),
+  theme: (theme) => ipcRenderer.invoke('app:theme', theme),
   status: () => ipcRenderer.invoke('app:status'),
   chat: (messages, model) => ipcRenderer.invoke('app:chat', messages, model),
   image: (prompt, model) => ipcRenderer.invoke('app:image', prompt, model),

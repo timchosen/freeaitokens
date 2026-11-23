@@ -158,5 +158,10 @@
   "no_transcription_providers": "Untuk mentranskripsi audio, tambahkan Groq atau Cloudflare. Keduanya gratis.",
   "err_audio": "File itu bukan audio yang bisa dibaca aplikasi ini. Gunakan MP3, M4A, WAV, WebM, OGG, atau FLAC.",
   "err_speech": "Tidak ada suara yang kembali. Coba lagi.",
-  "audio_too_big": "File itu lebih dari 25 MB. Pilih yang lebih pendek."
+  "audio_too_big": "File itu lebih dari 25 MB. Pilih yang lebih pendek.",
+  "set_theme": "Tampilan",
+  "set_theme_text": "Terang, gelap, atau sama dengan komputer ini.",
+  "theme_system": "Sama dengan komputer ini",
+  "theme_light": "Terang",
+  "theme_dark": "Gelap"
 }

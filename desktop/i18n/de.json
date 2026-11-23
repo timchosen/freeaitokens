@@ -158,5 +158,10 @@
   "no_transcription_providers": "Zum Transkribieren füge Groq oder Cloudflare hinzu. Beide sind kostenlos.",
   "err_audio": "Diese Datei ist kein lesbares Audio. Verwende MP3, M4A, WAV, WebM, OGG oder FLAC.",
   "err_speech": "Es kam keine Sprache zurück. Versuche es noch einmal.",
-  "audio_too_big": "Die Datei ist größer als 25 MB. Wähle eine kürzere."
+  "audio_too_big": "Die Datei ist größer als 25 MB. Wähle eine kürzere.",
+  "set_theme": "Erscheinungsbild",
+  "set_theme_text": "Hell, dunkel oder wie auf diesem Computer.",
+  "theme_system": "Wie auf diesem Computer",
+  "theme_light": "Hell",
+  "theme_dark": "Dunkel"
 }

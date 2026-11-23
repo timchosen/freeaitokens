@@ -57,6 +57,7 @@ async function refresh() {
   if (!version) $('updText').textContent = t('set_version', { v: s.version });
   version = s.version;
   $('login').checked = s.startAtLogin;
+  $('theme').value = s.theme ?? 'system';
   lists = { auto: s.models, chat: s.models, image: s.images };
   fillModels();
   const usable = s.providers.filter((p) => p.status !== 'add');
@@ -411,6 +412,7 @@ $('clearChats').addEventListener('click', () => {
   openChat(null);
 });
 $('lang').addEventListener('change', () => api.lang($('lang').value)); // the main process reloads this window
+$('theme').addEventListener('change', async () => { $('theme').value = await api.theme($('theme').value); });
 
 applyStrings().then(() => {
   listChats();

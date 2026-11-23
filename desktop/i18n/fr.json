@@ -158,5 +158,10 @@
   "no_transcription_providers": "Pour transcrire de l'audio, ajoutez Groq ou Cloudflare. Les deux sont gratuits.",
   "err_audio": "Ce fichier n'est pas un audio lisible. Utilisez MP3, M4A, WAV, WebM, OGG ou FLAC.",
   "err_speech": "Aucune voix n'est revenue. Réessayez.",
-  "audio_too_big": "Ce fichier dépasse 25 Mo. Choisissez-en un plus court."
+  "audio_too_big": "Ce fichier dépasse 25 Mo. Choisissez-en un plus court.",
+  "set_theme": "Apparence",
+  "set_theme_text": "Clair, sombre ou comme cet ordinateur.",
+  "theme_system": "Comme cet ordinateur",
+  "theme_light": "Clair",
+  "theme_dark": "Sombre"
 }

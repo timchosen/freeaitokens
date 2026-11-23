@@ -1,5 +1,5 @@
 // freeaitokens tray app: runs the same local endpoint as the CLI, from the menu bar / system tray.
-import { app, Tray, Menu, BrowserWindow, ipcMain, clipboard, ClipboardItem, nativeImage, shell, dialog } from 'electron';
+import { app, Tray, Menu, BrowserWindow, ipcMain, clipboard, ClipboardItem, nativeImage, nativeTheme, shell, dialog } from 'electron';
 import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
@@ -31,6 +31,9 @@ const endpoint = () => `http://127.0.0.1:${srv.port}/v1`;
 const LOCALES = JSON.parse(readFileSync(here('./i18n/locales.json'), 'utf8'));
 const settingsFile = () => join(stateDir(), 'desktop.json');
 const readSettings = () => { try { return JSON.parse(readFileSync(settingsFile(), 'utf8')); } catch { return {}; } };
+// Light, dark, or follow the computer: the windows' colours follow nativeTheme.
+const THEMES = ['system', 'light', 'dark'];
+const applyTheme = () => { const th = readSettings().theme; nativeTheme.themeSource = THEMES.includes(th) ? th : 'system'; };
 let locale, strings, t;
 function loadLang() {
   const code = pickLang(readSettings().lang, app.getPreferredSystemLanguages(), LOCALES.map((l) => l.code));
@@ -119,6 +122,7 @@ ipcMain.handle('app:status', () => ({
   transcription: mediaOptions(deps.catalogue, keys, 'transcription').length > 0,
   version: app.getVersion(),
   startAtLogin: app.getLoginItemSettings().openAtLogin,
+  theme: nativeTheme.themeSource,
 }));
 // Routed here rather than over HTTP, so the answer always says which provider and model gave it,
 // even when another copy of FreeAITokens holds the port.
@@ -392,6 +396,13 @@ ipcMain.handle('strings', () => ({
   lang: locale.lang, dir: locale.dir, strings,
   languages: LOCALES.map(({ code, name }) => ({ code, name })), chosen: readSettings().lang ?? 'system',
 }));
+ipcMain.handle('app:theme', (_e, theme) => {
+  if (!THEMES.includes(theme)) return nativeTheme.themeSource;
+  mkdirSync(stateDir(), { recursive: true });
+  writeFileSync(settingsFile(), JSON.stringify({ ...readSettings(), theme }));
+  applyTheme();
+  return theme;
+});
 ipcMain.handle('app:lang', (_e, code) => {
   if (code !== 'system' && !LOCALES.some((l) => l.code === code)) return;
   mkdirSync(stateDir(), { recursive: true });
@@ -429,6 +440,7 @@ app.on('before-quit', async () => { if (deps) saveState(deps.tracker.state); awa
 app.whenReady().then(async () => {
   app.dock?.hide();
   loadLang();
+  applyTheme();
   keys = openKeyStore();
   deps = makeDeps(currentCatalogue(loadCatalogue()), keys, parseArgs([]));
   void updateCatalogue().then((c) => { if (c) { deps.catalogue = c; refresh(); } });

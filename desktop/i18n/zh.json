@@ -158,5 +158,10 @@
   "no_transcription_providers": "要转写音频，请添加 Groq 或 Cloudflare。两者都免费。",
   "err_audio": "该文件不是本应用能读取的音频。请使用 MP3、M4A、WAV、WebM、OGG 或 FLAC。",
   "err_speech": "没有返回语音。请重试。",
-  "audio_too_big": "该文件超过 25 MB。请选择更短的文件。"
+  "audio_too_big": "该文件超过 25 MB。请选择更短的文件。",
+  "set_theme": "外观",
+  "set_theme_text": "浅色、深色，或与这台电脑相同。",
+  "theme_system": "与这台电脑相同",
+  "theme_light": "浅色",
+  "theme_dark": "深色"
 }

@@ -158,5 +158,10 @@
   "no_transcription_providers": "Para transcrever áudio, adicione Groq ou Cloudflare. Ambos são gratuitos.",
   "err_audio": "Esse arquivo não é um áudio que o app consiga ler. Use MP3, M4A, WAV, WebM, OGG ou FLAC.",
   "err_speech": "Nenhuma voz voltou. Tente de novo.",
-  "audio_too_big": "Esse arquivo passa de 25 MB. Escolha um mais curto."
+  "audio_too_big": "Esse arquivo passa de 25 MB. Escolha um mais curto.",
+  "set_theme": "Aparência",
+  "set_theme_text": "Claro, escuro ou igual a este computador.",
+  "theme_system": "Igual a este computador",
+  "theme_light": "Claro",
+  "theme_dark": "Escuro"
 }
