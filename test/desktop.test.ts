@@ -38,3 +38,14 @@ test('menu shows the endpoint, one line per provider and a checked login item', 
   assert.equal(t.find((i: any) => i.label === 'Providers').submenu[0].label, 'A · b');
   assert.equal(t.find((i: any) => i.label === 'Start at login').checked, true);
 });
+
+test('desktop build names every release file without a version', async () => {
+  const { readFileSync } = await import('node:fs');
+  const b = JSON.parse(readFileSync(new URL('../desktop/package.json', import.meta.url), 'utf8')).build;
+  assert.deepEqual(b.mac.target, [{ target: 'dmg', arch: ['universal'] }, { target: 'zip', arch: ['universal'] }]);
+  assert.equal(b.mac.artifactName, 'FreeAITokens-mac.${ext}');
+  assert.equal(b.win.artifactName, 'FreeAITokens-windows.${ext}');
+  assert.equal(b.appImage.artifactName, 'FreeAITokens-linux-${arch}.${ext}');
+  assert.equal(b.deb.artifactName, 'FreeAITokens-linux-${arch}.${ext}');
+  assert.deepEqual(b.linux.target, [{ target: 'AppImage', arch: ['x64', 'arm64'] }, { target: 'deb', arch: ['x64', 'arm64'] }]);
+});

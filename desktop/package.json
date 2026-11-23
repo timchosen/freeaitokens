@@ -24,9 +24,11 @@
     "appId": "io.github.timchosen.freeaitokens",
     "files": ["main.js", "logic.js", "preload.cjs", "add.html", "icons/**"],
     "icon": "icons/icon.png",
-    "mac": { "target": ["dmg", "zip"], "category": "public.app-category.developer-tools", "identity": null, "extendInfo": { "LSUIElement": true } },
-    "win": { "target": ["nsis"] },
-    "linux": { "target": ["AppImage", "deb"], "category": "Development", "maintainer": "Timchosen Uzua" },
+    "mac": { "target": [{ "target": "dmg", "arch": ["universal"] }, { "target": "zip", "arch": ["universal"] }], "artifactName": "FreeAITokens-mac.${ext}", "category": "public.app-category.developer-tools", "identity": null, "extendInfo": { "LSUIElement": true } },
+    "win": { "target": ["nsis"], "artifactName": "FreeAITokens-windows.${ext}" },
+    "linux": { "target": [{ "target": "AppImage", "arch": ["x64", "arm64"] }, { "target": "deb", "arch": ["x64", "arm64"] }], "category": "Development", "maintainer": "Timchosen Uzua" },
+    "appImage": { "artifactName": "FreeAITokens-linux-${arch}.${ext}" },
+    "deb": { "artifactName": "FreeAITokens-linux-${arch}.${ext}" },
     "publish": { "provider": "github", "owner": "timchosen", "repo": "freeaitokens" }
   }
 }
