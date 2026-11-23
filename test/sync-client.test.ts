@@ -80,3 +80,121 @@ test('unwrapDataKey refuses scrypt settings outside the known range before deriv
     await assert.rejects(unwrap(bad(o), 'x'), /settings/, JSON.stringify(o));
   }
 });
+
+// Task 7: the engine against the real Worker
+import worker from '../sync/src/index.ts';
+import { makeEnv, addLicense } from './helpers/sync-env.ts';
+import { SyncEngine, setupNew, joinExisting, changePassphrase, resetWithRecovery, type LocalStore, type SyncState } from '../src/node/sync/engine.ts';
+import { randomUUID } from 'node:crypto';
+
+const LIC = 'FAT-AAAAA-AAAAA-AAAAA-AAAAA-AAAAB';
+const wctx = { waitUntil() {}, passThroughOnException() {} } as any;
+function server() {
+  const s = makeEnv();
+  const f = (async (u: any, init?: any) => worker.fetch(new Request(u, init), s.env, wctx)) as typeof fetch;
+  return { ...s, f };
+}
+function memStore(): LocalStore & { data: { chats: Map<string, Chat>; keys: Record<string, string | null>; st: SyncState } } {
+  const data = { chats: new Map<string, Chat>(), keys: {} as Record<string, string | null>, st: { cursor: 0, versions: {}, keySnapshot: {}, dirty: [] } as SyncState };
+  return {
+    data,
+    chats: () => [...data.chats.values()].map((c) => structuredClone(c)),
+    putChat: (c) => { data.chats.set(c.id, structuredClone(c)); },
+    removeChat: (id) => { data.chats.delete(id); },
+    keys: () => ({ ...data.keys }),
+    setKey: (p, k) => { if (k == null) delete data.keys[p]; else data.keys[p] = k; },
+    state: () => structuredClone(data.st),
+    setState: (s) => { data.st = structuredClone(s); },
+  };
+}
+const edit = (st: ReturnType<typeof memStore>, c: Chat) => { st.putChat(c); st.data.st.dirty.push(c.id); };
+const opts = (f: typeof fetch) => ({ base: 'https://sync.test', license: LIC, fetch: f });
+
+async function pair() {
+  const s = server();
+  await addLicense(s.db, LIC);
+  const { dataKey } = await setupNew({ ...opts(s.f), passphrase: 'pass one two' });
+  const A = memStore(), B = memStore();
+  const ea = new SyncEngine({ ...opts(s.f), dataKey, store: A });
+  const eb = new SyncEngine({ ...opts(s.f), dataKey: await joinExisting({ ...opts(s.f), passphrase: 'pass one two' }), store: B });
+  return { s, A, B, ea, eb, dataKey };
+}
+
+test('engine: two devices on one license converge on chats and keys', async () => {
+  const { A, B, ea, eb } = await pair();
+  const id = randomUUID();
+  edit(A, chat({ id, title: 'hello', updated: 1, messages: [msg('m1', 1)] }));
+  A.setKey('groq', 'gsk_a');
+  assert.deepEqual(await ea.run(), { ok: true, pulled: 0, pushed: 2 });
+  assert.equal((await eb.run()).ok, true);
+  assert.deepEqual(B.chats(), A.chats());
+  assert.deepEqual(B.keys(), { groq: 'gsk_a' });
+  B.setKey('groq', null);
+  await eb.run(); await ea.run();
+  assert.deepEqual(A.keys(), {}, 'a removal travels too');
+});
+
+test('engine: both editing one chat before syncing keeps both messages', async () => {
+  const { s, A, B, ea, eb, dataKey } = await pair();
+  const id = randomUUID();
+  edit(A, chat({ id, updated: 1, messages: [msg('m1', 1)] }));
+  await ea.run(); await eb.run();
+  edit(A, chat({ id, updated: 2, messages: [msg('m1', 1), msg('a2', 2)] }));
+  edit(B, chat({ id, updated: 3, messages: [msg('m1', 1), msg('b3', 3)] }));
+  // A pushes after B pulled and before B pushes, so B's push meets a newer version: 412, re-pull, merge, retry.
+  let raced = false;
+  const racing = (async (u: any, i?: any) => { if (i?.method === 'PUT' && !raced) { raced = true; await ea.run(); } return s.f(u, i); }) as typeof fetch;
+  const eb2 = new SyncEngine({ ...opts(racing), dataKey, store: B });
+  assert.equal((await eb2.run()).ok, true);
+  assert.ok(raced);
+  await ea.run();
+  for (const st of [A, B]) assert.deepEqual(st.chats()[0].messages.map((m) => m.id), ['m1', 'a2', 'b3']);
+  void eb;
+});
+
+test('engine: a chat deleted on one device disappears on the other', async () => {
+  const { A, B, ea, eb } = await pair();
+  const id = randomUUID();
+  edit(A, chat({ id, updated: 1, messages: [msg('m1', 1)] }));
+  await ea.run(); await eb.run();
+  A.removeChat(id); A.data.st.dirty.push(id);
+  await ea.run(); await eb.run();
+  assert.deepEqual(B.chats(), []);
+});
+
+test('engine: an undecryptable item or an expired license changes nothing locally; offline is reported', async () => {
+  const { s, A, B, ea, eb } = await pair();
+  edit(A, chat({ id: randomUUID(), updated: 1, messages: [msg('m1', 1)] }));
+  await ea.run();
+  const before = structuredClone(B.data);
+  const good = new Map(s.blobs);
+  for (const [k, v] of s.blobs) s.blobs.set(k, v.map((x, i) => (i === 20 ? x ^ 1 : x)));
+  assert.deepEqual(await eb.run(), { ok: false, reason: 'corrupt', detail: 'A synced item could not be decrypted.' });
+  assert.deepEqual(B.data, before);
+  for (const [k, v] of good) s.blobs.set(k, v);
+
+  const C = memStore();
+  edit(C, chat({ id: randomUUID(), updated: 5, messages: [msg('c1', 5)] }));
+  let calls = 0;
+  const expiring = (async (u: any, i?: any) => { if (++calls === 2) s.db.prepare('UPDATE licenses SET paid_until = 1').run(); return s.f(u, i); }) as typeof fetch;
+  const ec = new SyncEngine({ ...opts(expiring), dataKey: (ea as any).o.dataKey, store: C });
+  const cBefore = structuredClone(C.data);
+  assert.deepEqual(await ec.run(), { ok: false, reason: 'expired' });
+  assert.deepEqual(C.data, cBefore);
+
+  const off = new SyncEngine({ ...opts((async () => { throw new TypeError('fetch failed'); }) as typeof fetch), dataKey: Buffer.alloc(32), store: memStore() });
+  assert.deepEqual(await off.run(), { ok: false, reason: 'offline', detail: 'fetch failed' });
+});
+
+test('engine setup: wrong passphrase, second setup, passphrase change and recovery reset', async () => {
+  const s = server();
+  await addLicense(s.db, LIC);
+  const { dataKey, recovery } = await setupNew({ ...opts(s.f), passphrase: 'first pass' });
+  await assert.rejects(setupNew({ ...opts(s.f), passphrase: 'again' }), /already/);
+  await assert.rejects(joinExisting({ ...opts(s.f), passphrase: 'nope' }), WrongPassphraseError);
+  await changePassphrase({ ...opts(s.f), dataKey, passphrase: 'second pass' });
+  assert.deepEqual(await joinExisting({ ...opts(s.f), passphrase: 'second pass' }), dataKey);
+  assert.deepEqual(await resetWithRecovery({ ...opts(s.f), code: recovery, passphrase: 'third pass' }), dataKey);
+  assert.deepEqual(await joinExisting({ ...opts(s.f), passphrase: 'third pass' }), dataKey);
+  await assert.rejects(resetWithRecovery({ ...opts(s.f), code: recoveryCode(Buffer.alloc(32, 7)), passphrase: 'x' }), /recovery code/);
+});
