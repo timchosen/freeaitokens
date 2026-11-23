@@ -56,6 +56,12 @@ export async function claim(env: Env, token: string, now: number): Promise<Respo
 
 const periodEnd = (sub: any) => (sub?.items?.data?.[0]?.current_period_end ?? sub?.current_period_end) * 1000;
 
+async function cancelSubscription(env: Env, id: string): Promise<void> {
+  try { await stripe(env, 'DELETE', `/v1/subscriptions/${id}`); } catch (e) {
+    if (!/no such subscription|already (been )?cancel/i.test((e as Error).message)) throw e; // gone already counts as done
+  }
+}
+
 async function completed(env: Env, s: any, now: number): Promise<void> {
   if (s.payment_status !== 'paid' && s.payment_status !== 'no_payment_required') return; // async payments finish later
   const plan = s.mode === 'subscription' ? 'year' : 'life';
@@ -69,11 +75,11 @@ async function completed(env: Env, s: any, now: number): Promise<void> {
     const lic = await env.SYNC_DB.prepare('SELECT * FROM licenses WHERE key_hash = ?').bind(upgrade).first<LicenseRow>();
     if (!lic) throw new Error(`checkout for unknown license ${upgrade.slice(0, 8)}`);
     if (lic.stripe_ref === ref) return;
+    // The new purchase replaces any old subscription, even one that looks lapsed (past_due can still be charged).
+    // Cancelled before the license moves on, so if this fails, Stripe's retry of the event tries again.
+    if (lic.stripe_ref?.startsWith('sub_')) await cancelSubscription(env, lic.stripe_ref);
     await env.SYNC_DB.prepare('UPDATE licenses SET plan = ?, stripe_ref = ?, stripe_customer = COALESCE(?, stripe_customer), email_hash = COALESCE(?, email_hash), paid_until = ? WHERE key_hash = ?')
       .bind(plan, ref, s.customer ?? null, emailHash, until, upgrade).run();
-    if (plan === 'life' && lic.plan === 'year' && lic.stripe_ref?.startsWith('sub_') && (lic.paid_until ?? 0) > now) {
-      await stripe(env, 'DELETE', `/v1/subscriptions/${lic.stripe_ref}`);
-    }
     return;
   }
   const keyHash = await sha256hex(await licenseKey(env.LICENSE_SECRET, s.id));
@@ -119,7 +125,12 @@ async function handle(env: Env, type: string, o: any, now: number): Promise<void
       const end = Math.max(...(o.lines?.data ?? []).map((l: any) => l.period?.end ?? 0)) * 1000;
       if (!sub || !end) return;
       const lic = await env.SYNC_DB.prepare('SELECT plan FROM licenses WHERE stripe_ref = ?').bind(sub).first<{ plan: string }>();
-      if (!lic) throw new Error('invoice for a license not created yet'); // 500: Stripe retries after checkout lands
+      if (!lic) {
+        // A new subscription's first invoice can beat its checkout event: 500, so Stripe retries after it lands.
+        if (o.billing_reason === 'subscription_create') throw new Error('invoice for a license not created yet');
+        console.warn('invoice for a subscription no license uses', sub); // replaced by a renewal or upgrade
+        return;
+      }
       if (lic.plan === 'year') await env.SYNC_DB.prepare('UPDATE licenses SET paid_until = ? WHERE stripe_ref = ?').bind(end, sub).run();
       return;
     }

@@ -125,7 +125,8 @@ function stubStripe() {
     const url = String(u);
     if (!url.startsWith('https://api.stripe.com/')) return realFetch(u, init);
     stripeCalls.push({ url, method: init.method ?? 'GET', body: String(init.body ?? '') });
-    return new Response(JSON.stringify(stripeReply(url, init.method ?? 'GET')), { status: 200 });
+    const { __status = 200, ...reply } = stripeReply(url, init.method ?? 'GET') ?? {};
+    return new Response(JSON.stringify(reply), { status: __status });
   }) as any;
 }
 async function hook(env: any, type: string, object: any, id = `evt_${Math.random()}`) {
@@ -180,7 +181,7 @@ test('webhook: yearly plan gets paid_until from the invoice, even when the invoi
   stubStripe();
   const { env, db } = makeEnv();
   const end = Math.floor(Date.now() / 1000) + 365 * 86400;
-  const invoice = { id: 'in_1', parent: { subscription_details: { subscription: 'sub_1' } }, lines: { data: [{ period: { end } }] } };
+  const invoice = { id: 'in_1', billing_reason: 'subscription_create', parent: { subscription_details: { subscription: 'sub_1' } }, lines: { data: [{ period: { end } }] } };
   assert.equal((await hook(env, 'invoice.paid', invoice, 'evt_inv')).status, 500, 'license not there yet: Stripe retries');
   await hook(env, 'checkout.session.completed', completed({ id: 'cs_year_1', mode: 'subscription', subscription: 'sub_1', payment_intent: null }));
   assert.equal((await hook(env, 'invoice.paid', invoice, 'evt_inv')).status, 200);
@@ -360,5 +361,31 @@ test('webhook: a won dispute does not lift a revocation that has no record of th
   const key = await (await import('../sync/src/license.ts')).licenseKey('lic-secret', 'cs_life_1');
   await hook(env, 'charge.dispute.closed', { id: 'dp_9', charge: 'ch_9', status: 'won' });
   assert.deepEqual(await (await call(env, '/v1/usage', { key })).json(), { error: 'revoked' });
+  globalThis.fetch = realFetch;
+});
+
+test('webhook: renewing a lapsed yearly plan cancels the old subscription first, so a late retry of it cannot charge twice', async () => {
+  stubStripe();
+  stripeReply = () => ({});
+  const { env, db } = makeEnv();
+  await hook(env, 'checkout.session.completed', completed({ id: 'cs_year_1', mode: 'subscription', subscription: 'sub_1', payment_intent: null }));
+  const kh = (db.prepare('SELECT key_hash FROM licenses').get() as any).key_hash;
+  db.prepare('UPDATE licenses SET paid_until = ?').run(Date.now() - 86_400_000); // card failed: past_due, looks expired
+  // The cancel fails once (Stripe down): the event fails too, and Stripe's retry cancels.
+  stripeReply = (url, method) => (method === 'DELETE' ? { __status: 500, error: { message: 'try later' } } : {});
+  const renew = completed({ id: 'cs_year_2', mode: 'subscription', subscription: 'sub_2', payment_intent: null, metadata: { license: kh } });
+  assert.equal((await hook(env, 'checkout.session.completed', renew, 'evt_renew')).status, 500);
+  stripeReply = () => ({});
+  assert.equal((await hook(env, 'checkout.session.completed', renew, 'evt_renew')).status, 200);
+  assert.ok(stripeCalls.some((c) => c.method === 'DELETE' && c.url.endsWith('/v1/subscriptions/sub_1') ), 'old subscription cancelled');
+  assert.equal((db.prepare('SELECT stripe_ref FROM licenses').get() as any).stripe_ref, 'sub_2');
+  // An invoice still arriving for the old subscription is acknowledged, not retried for days.
+  const old = { id: 'in_old', billing_reason: 'subscription_cycle', parent: { subscription_details: { subscription: 'sub_1' } }, lines: { data: [{ period: { end: 2e9 } }] } };
+  assert.equal((await hook(env, 'invoice.paid', old)).status, 200);
+  assert.equal((db.prepare('SELECT stripe_ref FROM licenses').get() as any).stripe_ref, 'sub_2');
+  // A subscription Stripe already cancelled counts as cancelled.
+  stripeReply = (url, method) => (method === 'DELETE' ? { __status: 404, error: { message: 'No such subscription: sub_2' } } : {});
+  const again = completed({ id: 'cs_year_3', mode: 'subscription', subscription: 'sub_3', payment_intent: null, metadata: { license: kh } });
+  assert.equal((await hook(env, 'checkout.session.completed', again)).status, 200);
   globalThis.fetch = realFetch;
 });
