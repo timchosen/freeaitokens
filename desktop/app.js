@@ -108,8 +108,10 @@ async function loadChats() {
   let old = null;
   try { old = localStorage.getItem(OLD_STORE); } catch { /* storage blocked */ }
   if (old) {
-    try { chats = await api.chats.migrate(JSON.parse(old)); } catch { chats = await api.chats.list(); }
-    try { localStorage.removeItem(OLD_STORE); } catch { /* storage blocked */ }
+    try {
+      chats = await api.chats.migrate(JSON.parse(old));
+      try { localStorage.removeItem(OLD_STORE); } catch { /* storage blocked */ }
+    } catch { chats = await api.chats.list(); } // kept in window storage, so the next start tries again
   } else chats = await api.chats.list();
 }
 const save = (c) => api.chats.put(c);
@@ -231,8 +233,9 @@ async function send() {
   chat.mode = mode;
   chat.updated = Date.now();
   chats = [chat, ...chats.filter((c) => c.id !== chat.id)]; // by id: sync may have swapped in a fresh copy meanwhile
-  await save(chat);
+  const saved = await save(chat);
   if (current === chat) bubble(chat.messages.at(-1));
+  if (!saved && current === chat) bubble({ role: 'assistant', content: t('chat_too_long'), error: true }); // shown, not stored
   else if (current?.id === chat.id) {
     // Sync refreshed this chat while we waited: show the stored copy, which now holds both sides.
     chats = await api.chats.list();
@@ -368,7 +371,7 @@ function renderSync() {
   const when = s.last ? t('sync_last', { time: new Date(s.last).toLocaleString(tag) }) : t('sync_never');
   const plan = s.plan === 'life' ? t('sync_plan_life') : s.paidUntil ? t('sync_plan_year', { date: new Date(s.paidUntil).toLocaleDateString(tag) }) : '';
   $('syncInfo').textContent = [when, s.items != null ? t('sync_usage', { items: s.items, size: fmtSize(s.bytes) }) : '', plan].filter(Boolean).join(' · ');
-  $('syncManage').hidden = s.plan !== 'year';
+  $('syncManage').hidden = $('syncUpgradeOn').hidden = s.plan !== 'year';
   showPanel('syncOn');
   if (s.state === 'error') syncSay(s.reason === 'offline' ? t('sync_offline') : s.reason === 'full' ? t('sync_full') : t('sync_failed', { reason: s.detail ?? s.reason ?? '' }), true);
 }
@@ -414,6 +417,7 @@ $('syncYear').addEventListener('click', (e) => syncDo(e.currentTarget, () => api
 $('syncLife').addEventListener('click', (e) => syncDo(e.currentTarget, () => api.sync.buy('life')));
 $('syncRenew').addEventListener('click', (e) => syncDo(e.currentTarget, () => api.sync.buy('year')));
 $('syncUpgrade').addEventListener('click', (e) => syncDo(e.currentTarget, () => api.sync.buy('life')));
+$('syncUpgradeOn').addEventListener('click', (e) => syncDo(e.currentTarget, () => api.sync.buy('life')));
 $('syncHave').addEventListener('click', () => openSyncForm('have'));
 $('syncCancel').addEventListener('click', () => api.sync.cancel());
 $('syncBack').addEventListener('click', () => { syncForm = null; refreshSync(); });
@@ -425,8 +429,13 @@ $('syncForm').addEventListener('submit', async (e) => {
   const r = await syncDo($('syncGo'), () =>
     kind === 'change' ? api.sync.pass(pass)
     : kind === 'recover' ? api.sync.recover($('syncCode').value, pass, $('syncKey').value)
-    : api.sync.setup($('syncKey').value, pass));
+    : api.sync.setup($('syncKey').value, pass, !$('syncPass2Row').hidden));
   if (!r) return;
+  if (r.confirm) { // a key with no account yet: its first passphrase is typed twice
+    $('syncPass2Row').hidden = false;
+    syncSay(t('sync_confirm_new'));
+    return $('syncPass2').focus();
+  }
   syncForm = null;
   $('syncPass').value = $('syncPass2').value = '';
   if (r.recovery) return showCode(r.recovery);

@@ -258,7 +258,7 @@ test('privateAddress spots loopback, private, link-local and other local address
 // Task 8: chats kept in the app's state folder
 // @ts-ignore plain JS module
 import { migrateChats, openChatStore, cleanChat } from '../desktop/chats.js';
-import { mkdtempSync, statSync, readFileSync as readF } from 'node:fs';
+import { mkdtempSync, statSync, readFileSync as readF, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join as pjoin } from 'node:path';
 
@@ -418,8 +418,13 @@ test('sync service: synced keys touch only known providers, and only sync or Str
 async function twoComputers(opts: { aKeys?: Record<string, string>; bKeys?: Record<string, string> } = {}) {
   const { env, db } = makeEnv();
   const wctx = { waitUntil() {}, passThroughOnException() {} } as any;
-  const net = { down: false };
-  const f = (async (u: any, i?: any) => { if (net.down) throw new TypeError('fetch failed'); return worker.fetch(new Request(u, i), env, wctx); }) as typeof fetch;
+  const net: { down: boolean; hook?: (url: string, init?: any) => Response | Error | undefined } = { down: false };
+  const f = (async (u: any, i?: any) => {
+    if (net.down) throw new TypeError('fetch failed');
+    const hit = net.hook?.(String(u), i);
+    if (hit instanceof Error) throw hit;
+    return hit ?? worker.fetch(new Request(u, i), env, wctx);
+  }) as typeof fetch;
   const engine = await import('../src/node/sync/engine.ts');
   const key = await licenseKey('lic-secret', 'cs_two');
   await addLicense(db, key, { session: 'cs_two' });
@@ -499,4 +504,57 @@ test('sync service: a pulled chat older than this computer\'s copy is merged int
   const svc = createSyncService({ base: 'https://sync.test', keys, chats, stateFile: pjoin(dir, 's.json'), fetch: f, engine: fakeEngine, providers: () => [] });
   await svc.syncNow();
   assert.deepEqual(chats.list()[0].messages.map((m: any) => m.content).sort(), ['here', 'there']);
+});
+
+test('sync service: a picked-up key waits in the keychain, not in the state file', async () => {
+  const { env, db } = makeEnv();
+  const wctx = { waitUntil() {}, passThroughOnException() {} } as any;
+  const f = (async (u: any, i?: any) => worker.fetch(new Request(u, i), env, wctx)) as typeof fetch;
+  const dir = mkdtempSync(pjoin(tmpdir(), 'fat-sync-'));
+  const keys = fakeKeys();
+  const svc = createSyncService({ base: 'https://sync.test', keys, chats: openChatStore(pjoin(dir, 'c.json')), stateFile: pjoin(dir, 's.json'), fetch: f, engine: await import('../src/node/sync/engine.ts'), providers: () => [] });
+  const url = await svc.buy('life');
+  const key = await licenseKey('lic-secret', 'cs_claimed');
+  await addLicense(db, key, { session: 'cs_claimed' });
+  db.prepare('INSERT INTO claims (claim_hash, session, expires) VALUES (?, ?, ?)').run(url.split('claim=')[1], 'cs_claimed', Date.now() + 60_000);
+  assert.equal(await svc.pollClaim(), key);
+  assert.equal(svc.status().key, key);
+  assert.ok(!readF(pjoin(dir, 's.json'), 'utf8').includes(key), 'not on disk in plain text');
+  await svc.setup(key, 'a long passphrase');
+  assert.equal(keys.get('sync:claimed'), null, 'gone once set up');
+});
+
+test('sync service: a key with no account yet asks for the new passphrase twice, even through "I already have a key"', async () => {
+  const { env, db } = makeEnv();
+  const wctx = { waitUntil() {}, passThroughOnException() {} } as any;
+  const f = (async (u: any, i?: any) => worker.fetch(new Request(u, i), env, wctx)) as typeof fetch;
+  const key = await licenseKey('lic-secret', 'cs_site');
+  await addLicense(db, key, { session: 'cs_site' });
+  const dir = mkdtempSync(pjoin(tmpdir(), 'fat-sync-'));
+  const keys = fakeKeys();
+  const svc = createSyncService({ base: 'https://sync.test', keys, chats: openChatStore(pjoin(dir, 'c.json')), stateFile: pjoin(dir, 's.json'), fetch: f, engine: await import('../src/node/sync/engine.ts'), providers: () => [] });
+  assert.deepEqual(await svc.setup(key, 'a long passphrase', false), { confirm: true });
+  assert.equal(svc.status().state, 'off', 'nothing set up yet');
+  assert.match((await svc.setup(key, 'a long passphrase', true)).recovery, /^[A-Z2-7]{4}-/);
+});
+
+test('sync service: "too many writes" keeps sync on, and a failed usage check does not fail a good run', async () => {
+  const { A, net } = await twoComputers();
+  const [c] = migrateChats([{ title: 'x', model: 'free', updated: 5, messages: [{ role: 'user', content: 'yo' }] }]);
+  A.chats.put(c);
+  net.hook = (_u, i) => (i?.method === 'PUT' ? new Response('{"error":"too many writes"}', { status: 429 }) : undefined);
+  assert.equal((await A.svc.syncNow() as any).reason, 'busy');
+  assert.equal(A.svc.status().state, 'on', 'not shown as an error; it carries on next time');
+  net.hook = (u) => (u.endsWith('/v1/usage') ? new TypeError('fetch failed') : undefined);
+  assert.equal((await A.svc.syncNow()).ok, true);
+  assert.equal(A.svc.status().state, 'on');
+});
+
+test('chat store drops removed-chat stubs older than 90 days when it opens', () => {
+  const file = pjoin(mkdtempSync(pjoin(tmpdir(), 'fat-chats-')), 'chats.json');
+  const day = 86_400_000, now = Date.now();
+  const stub = (deleted: number) => ({ id: randomUUID(), title: '', model: '', updated: 1, deleted, messages: [] });
+  const [old, fresh] = [stub(now - 91 * day), stub(now - 10 * day)];
+  writeFileSync(file, JSON.stringify({ chats: [old, fresh] }));
+  assert.deepEqual(openChatStore(file).all().map((c: any) => c.id), [fresh.id]);
 });

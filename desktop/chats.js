@@ -49,7 +49,9 @@ export function migrateChats(list) {
 // `merge` (sync's mergeChat) lets `save` combine a copy with the stored one, so an old copy never drops messages.
 export function openChatStore(file, merge = null) {
   let all;
-  try { all = (JSON.parse(readFileSync(file, 'utf8')).chats ?? []).map(cleanChat).filter(Boolean); } catch { all = []; }
+  // Stubs older than 90 days are dropped: the sync server forgets deletes after the same time.
+  const keepFrom = Date.now() - 90 * 86_400_000;
+  try { all = (JSON.parse(readFileSync(file, 'utf8')).chats ?? []).map(cleanChat).filter((c) => c && !(c.deleted < keepFrom)); } catch { all = []; }
   const listeners = [];
   const write = (id) => {
     mkdirSync(dirname(file), { recursive: true });

@@ -189,5 +189,7 @@
   "sync_working": "Trabalhando…",
   "sync_wrong_pass": "Essa frase-senha não abre esta chave de sincronização.",
   "sync_bad_key": "Isso não é uma chave de sincronização. Ela tem este formato: FAT-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX.",
-  "sync_bad_code": "Esse código de recuperação não abre esta chave de sincronização."
+  "sync_bad_code": "Esse código de recuperação não abre esta chave de sincronização.",
+  "chat_too_long": "Esta conversa é longa demais para ser salva. Comece uma nova para continuar.",
+  "sync_confirm_new": "Esta chave ainda não foi configurada, então esta será a primeira frase-senha dela. Digite-a de novo para confirmar."
 }

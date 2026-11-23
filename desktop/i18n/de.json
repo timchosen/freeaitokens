@@ -189,5 +189,7 @@
   "sync_working": "Wird bearbeitet…",
   "sync_wrong_pass": "Diese Passphrase öffnet diesen Sync-Schlüssel nicht.",
   "sync_bad_key": "Das ist kein Sync-Schlüssel. Er sieht so aus: FAT-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX.",
-  "sync_bad_code": "Dieser Wiederherstellungscode öffnet diesen Sync-Schlüssel nicht."
+  "sync_bad_code": "Dieser Wiederherstellungscode öffnet diesen Sync-Schlüssel nicht.",
+  "chat_too_long": "Dieser Chat ist zu lang zum Speichern. Starte einen neuen Chat, um weiterzumachen.",
+  "sync_confirm_new": "Dieser Schlüssel ist noch nicht eingerichtet, also wird dies seine erste Passphrase. Gib sie zur Sicherheit noch einmal ein."
 }

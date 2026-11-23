@@ -311,7 +311,7 @@ const syncCall = (fn) => async (_e, ...a) => { try { return { ok: true, ...(awai
 ipcMain.handle('sync:status', () => sync.status());
 ipcMain.handle('sync:buy', syncCall(async (plan) => { await shell.openExternal(await sync.buy(plan === 'life' ? 'life' : 'year')); }));
 ipcMain.handle('sync:cancel', () => sync.cancelClaim());
-ipcMain.handle('sync:setup', syncCall((key, pass) => sync.setup(key, pass)));
+ipcMain.handle('sync:setup', syncCall((key, pass, confirmed) => sync.setup(key, pass, confirmed !== false)));
 ipcMain.handle('sync:now', syncCall(async () => { const r = await sync.syncNow(); return r.ok ? {} : { result: r }; }));
 ipcMain.handle('sync:recovery', () => sync.recovery());
 ipcMain.handle('sync:pass', syncCall((pass) => sync.changePassphrase(pass)));

@@ -22,7 +22,7 @@ contextBridge.exposeInMainWorld('freeaitokens', {
     status: () => ipcRenderer.invoke('sync:status'),
     buy: (plan) => ipcRenderer.invoke('sync:buy', plan),
     cancel: () => ipcRenderer.invoke('sync:cancel'),
-    setup: (key, pass) => ipcRenderer.invoke('sync:setup', key, pass),
+    setup: (key, pass, confirmed) => ipcRenderer.invoke('sync:setup', key, pass, confirmed),
     now: () => ipcRenderer.invoke('sync:now'),
     recovery: () => ipcRenderer.invoke('sync:recovery'),
     pass: (pass) => ipcRenderer.invoke('sync:pass', pass),
