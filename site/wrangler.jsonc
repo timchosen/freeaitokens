@@ -2,6 +2,10 @@
   // freeaitokens.co: static files only, no Worker code.
   "name": "freeaitokens-site",
   "compatibility_date": "2026-10-15",
+  "routes": [
+    { "pattern": "freeaitokens.co", "custom_domain": true },
+    { "pattern": "www.freeaitokens.co", "custom_domain": true }
+  ],
   "assets": {
     "directory": "./dist",
     "html_handling": "auto-trailing-slash",
