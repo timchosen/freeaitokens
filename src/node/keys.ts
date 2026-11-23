@@ -5,6 +5,8 @@ import { stateDir } from './state.js';
 
 export interface KeyStore {
   get(providerId: string): string | null;
+  // Like get, but throws when the store can't be read (locked, access denied), so sync never takes that for "no key".
+  read?(providerId: string): string | null;
   set(providerId: string, key: string): void;
   remove(providerId: string): void;
   backend: 'keychain' | 'file';
@@ -17,6 +19,7 @@ export function keychainStore(entry = (id: string) => new Entry(SERVICE, id)): K
     backend: 'keychain',
     // A locked, denied or broken keychain item reads as "no key", never as a crash.
     get: (id) => { try { return entry(id).getPassword() ?? null; } catch { return null; } },
+    read: (id) => entry(id).getPassword() ?? null,
     set: (id, key) => entry(id).setPassword(key),
     remove: (id) => { entry(id).deleteCredential(); },
   };
@@ -37,6 +40,7 @@ function fileStore(): KeyStore {
   return {
     backend: 'file',
     get: (id) => read()[id] ?? null,
+    read: (id) => (existsSync(f) ? JSON.parse(readFileSync(f, 'utf8'))[id] ?? null : null),
     set: (id, key) => {
       if (!warned) { warned = true; process.stderr.write(`No system keychain found. Keys are stored unencrypted in ${f}, readable only by you.\n`); }
       write({ ...read(), [id]: key });

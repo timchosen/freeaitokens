@@ -65,6 +65,17 @@ test('mergeChat: an edit made after a delete wins; a delete after the last edit 
   assert.equal(mergeChat(edited, later).deleted, 8);
 });
 
+test('mergeChat: a delete only removes the version it saw; an edit it never saw wins, even if made before the delete', () => {
+  // The tombstone keeps the deleted copy's `updated` (5); it was deleted at 11.
+  const tomb = chat({ updated: 5, deleted: 11 });
+  const unseen = chat({ updated: 10, messages: [msg('m10', 10)] });
+  for (const m of [mergeChat(tomb, unseen), mergeChat(unseen, tomb)]) {
+    assert.equal(m.deleted, undefined);
+    assert.deepEqual(m.messages.map((x) => x.id), ['m10']);
+  }
+  assert.equal(mergeChat(tomb, chat({ updated: 5, messages: [msg('m5', 5)] })).deleted, 11, 'the copy it deleted stays deleted');
+});
+
 test('mergeKeys: newer per provider wins, removals included; CLI changes show up as edits', () => {
   const a = { groq: { key: 'g1', updated: 1 }, cf: { key: 'c1', updated: 5 } };
   const b = { groq: { key: 'g2', updated: 3 }, cf: { key: null, updated: 4 }, or: { key: 'o1', updated: 2 } };
@@ -85,7 +96,7 @@ test('unwrapDataKey refuses scrypt settings outside the known range before deriv
 // Task 7: the engine against the real Worker
 import worker from '../sync/src/index.ts';
 import { makeEnv, addLicense } from './helpers/sync-env.ts';
-import { SyncEngine, setupNew, joinExisting, changePassphrase, resetWithRecovery, type LocalStore, type SyncState } from '../src/node/sync/engine.ts';
+import { SyncEngine, setupNew, joinExisting, hasVault, changePassphrase, resetWithRecovery, type LocalStore, type SyncState } from '../src/node/sync/engine.ts';
 import { randomUUID } from 'node:crypto';
 
 const LIC = 'FAT-AAAAA-AAAAA-AAAAA-AAAAA-AAAAB';
@@ -95,19 +106,20 @@ function server() {
   const f = (async (u: any, init?: any) => worker.fetch(new Request(u, init), s.env, wctx)) as typeof fetch;
   return { ...s, f };
 }
-function memStore(): LocalStore & { data: { chats: Map<string, Chat>; keys: Record<string, string | null>; st: SyncState } } {
+function memStore(): LocalStore & { removeChat(id: string): void; data: { chats: Map<string, Chat>; keys: Record<string, string | null>; st: SyncState } } {
   const data = { chats: new Map<string, Chat>(), keys: {} as Record<string, string | null>, st: { cursor: 0, versions: {}, keySnapshot: {}, dirty: [] } as SyncState };
   return {
     data,
     chats: () => [...data.chats.values()].map((c) => structuredClone(c)),
     putChat: (c) => { data.chats.set(c.id, structuredClone(c)); },
-    removeChat: (id) => { data.chats.delete(id); },
+    removeChat: (id) => { const c = data.chats.get(id); if (c && !c.deleted) data.chats.set(id, { id, title: '', model: '', updated: c.updated, deleted: Date.now(), messages: [] }); },
     keys: () => ({ ...data.keys }),
     setKey: (p, k) => { if (k == null) delete data.keys[p]; else data.keys[p] = k; },
     state: () => structuredClone(data.st),
     setState: (s) => { data.st = structuredClone(s); },
   };
 }
+const live = (st: { chats(): Chat[] }) => st.chats().filter((c) => !c.deleted);
 const edit = (st: ReturnType<typeof memStore>, c: Chat) => { st.putChat(c); st.data.st.dirty.push(c.id); };
 const opts = (f: typeof fetch) => ({ base: 'https://sync.test', license: LIC, fetch: f });
 
@@ -160,7 +172,18 @@ test('engine: a chat deleted on one device disappears on the other', async () =>
   await ea.run(); await eb.run();
   A.removeChat(id); A.data.st.dirty.push(id);
   await ea.run(); await eb.run();
-  assert.deepEqual(B.chats(), []);
+  assert.deepEqual(live(B), []);
+});
+
+test('engine: deleting a chat on one device does not wipe an edit the other device made earlier but had not synced', async () => {
+  const { A, B, ea, eb } = await pair();
+  const id = randomUUID();
+  edit(A, chat({ id, updated: 1, messages: [msg('m1', 1)] }));
+  await ea.run(); await eb.run();
+  edit(B, chat({ id, updated: 2, messages: [msg('m1', 1), msg('b2', 2)] })); // B offline: not synced yet
+  A.removeChat(id); A.data.st.dirty.push(id); // A deletes later, never having seen b2
+  await ea.run(); await eb.run(); await ea.run();
+  for (const st of [A, B]) assert.deepEqual(live(st).map((c) => c.messages.map((m) => m.id)), [['m1', 'b2']]);
 });
 
 test('engine: an undecryptable item or an expired license changes nothing locally; offline is reported', async () => {
@@ -210,4 +233,34 @@ test('engine: a server-side delete marker (not an encrypted tombstone) removes n
   assert.deepEqual(B.chats().map((c) => c.id), [id]);
   const row = s.db.prepare('SELECT deleted FROM items WHERE id = ?').get(id) as any;
   assert.equal(row.deleted, 0, 'B wrote its copy back');
+});
+
+test('engine: renewing after the 90-day cleanup re-uploads this computer\'s data, and a new computer joins the same account', async () => {
+  const { cleanup } = await import('../sync/src/cleanup.ts');
+  const { s, A, ea } = await pair();
+  const id = randomUUID();
+  edit(A, chat({ id, title: 'kept', updated: 1, messages: [msg('m1', 1)] }));
+  A.setKey('groq', 'gsk_a');
+  await ea.run();
+  const DAY = 86_400_000;
+  s.db.prepare('UPDATE licenses SET paid_until = ?').run(Date.now() - 91 * DAY);
+  await cleanup(s.env, Date.now());
+  s.db.prepare('UPDATE licenses SET paid_until = ?').run(Date.now() + 365 * DAY); // renewed
+  assert.equal((await ea.run()).ok, true);
+  assert.ok(await hasVault(opts(s.f)), 'the wrapped data key survives, so the passphrase still opens the account');
+  const C = memStore();
+  const ec = new SyncEngine({ ...opts(s.f), dataKey: await joinExisting({ ...opts(s.f), passphrase: 'pass one two' }), store: C });
+  assert.equal((await ec.run()).ok, true);
+  assert.deepEqual(live(C).map((c) => c.title), ['kept']);
+  assert.deepEqual(C.keys(), { groq: 'gsk_a' });
+});
+
+test('engine: a run that never gets past a conflict says so instead of reporting success, and changes nothing', async () => {
+  const { s, A, dataKey } = await pair();
+  edit(A, chat({ id: randomUUID(), updated: 1, messages: [msg('m1', 1)] }));
+  const stuck = (async (u: any, i?: any) => (i?.method === 'PUT' ? new Response(JSON.stringify({ version: 99 }), { status: 412 }) : s.f(u, i))) as typeof fetch;
+  const before = structuredClone(A.data.st);
+  const r = await new SyncEngine({ ...opts(stuck), dataKey, store: A }).run();
+  assert.equal(r.ok, false);
+  assert.deepEqual(A.data.st, before, 'dirty marks kept for the next run');
 });

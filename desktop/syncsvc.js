@@ -43,27 +43,29 @@ export function createSyncService({ base, keys, chats, stateFile, fetch, engine,
   // What the engine sees. The key snapshot holds keys, so it is kept sealed under the data key.
   const store = () => {
     const dk = dataKey();
+    let taken = [];
     return {
-      chats: () => chats.list(),
+      chats: () => chats.all(), // deleted ones too: their stubs carry the delete to other computers
       putChat: (c) => {
         const cur = chats.all().find((x) => x.id === c.id);
         if (cur && cur.updated > c.updated) { pending.add(c.id); return; } // edited here during the run
         quiet = true; try { chats.put(c); } finally { quiet = false; }
       },
-      removeChat: (id) => { quiet = true; try { chats.remove(id); } finally { quiet = false; } },
-      keys: () => Object.fromEntries(providers().map((p) => [p, keys.get(p)])),
+      // A key that can't be read right now (keychain locked, access denied) is `undefined`: sync leaves it alone.
+      keys: () => Object.fromEntries(providers().map((p) => { try { return [p, (keys.read ?? keys.get)(p)]; } catch { return [p, undefined]; } })),
       // Only provider keys sync; a bundle can never reach other keychain entries such as sync:license.
       setKey: (p, k) => { if (!providers().includes(p)) return; if (k == null) keys.remove(p); else keys.set(p, k); },
       state: () => {
         let snap = { keySnapshot: {}, keyBundle: {} };
         try { if (saved.snap) snap = engine.decryptItem(dk, 'local-snapshot', Buffer.from(saved.snap, 'base64')); } catch { /* start over: every key counts as new */ }
-        const dirty = [...new Set([...(saved.dirty ?? []), ...pending])];
-        pending.clear();
+        // Marks leave `pending` only when the run saves its state, so a failed run (offline, expired) keeps them.
+        taken = [...pending];
+        const dirty = [...new Set([...(saved.dirty ?? []), ...taken])];
         return { cursor: saved.cursor ?? 0, versions: saved.versions ?? {}, dirty, ...snap };
       },
-      setState: ({ keySnapshot, keyBundle, keysItemId, ...rest }) => write({
+      setState: ({ keySnapshot, keyBundle, keysItemId, ...rest }) => { for (const id of taken) pending.delete(id); write({
         ...rest, snap: Buffer.from(engine.encryptItem(dk, 'local-snapshot', { keySnapshot, keyBundle })).toString('base64'),
-      }),
+      }); },
     };
   };
 

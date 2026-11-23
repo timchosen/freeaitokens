@@ -62,7 +62,8 @@ export function openChatStore(file) {
     list: () => all.filter((c) => !c.deleted).sort((a, b) => b.updated - a.updated),
     all: () => all.slice(),
     put: (c) => set(c),
-    remove: (id) => { if (all.some((c) => c.id === id)) set({ id, title: '', model: '', updated: Date.now(), deleted: Date.now(), messages: [] }); },
+    // The stub keeps the removed copy's `updated`, so an edit made elsewhere that this copy never had still wins.
+    remove: (id) => { const c = all.find((x) => x.id === id); if (c && !c.deleted) set({ id, title: '', model: '', updated: c.updated, deleted: Date.now(), messages: [] }); },
     onChange: (fn) => { listeners.push(fn); },
   };
 }

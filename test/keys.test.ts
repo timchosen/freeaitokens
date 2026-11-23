@@ -59,3 +59,10 @@ test('a keychain read that fails counts as no key instead of throwing', () => {
   const k = keychainStore(() => ({ getPassword() { throw new Error('Platform failure: UNIX[No such file or directory]'); } }) as any);
   assert.equal(k.get('groq'), null);
 });
+
+test('keychain read: get says "no key" when the keychain refuses, read throws so sync can tell the difference', () => {
+  const s = keychainStore(() => ({ getPassword() { throw new Error('User interaction is not allowed.'); } }) as any);
+  assert.equal(s.get('groq'), null);
+  assert.throws(() => s.read!('groq'), /not allowed/);
+  assert.equal(keychainStore(() => ({ getPassword: () => null }) as any).read!('groq'), null, 'nothing stored is still null');
+});

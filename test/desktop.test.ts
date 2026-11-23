@@ -309,6 +309,7 @@ test('chat store round-trips through its file, owner-only, and remove leaves a h
   const raw = JSON.parse(readF(file, 'utf8'));
   const stub = raw.chats.find((c: any) => c.id === a.id);
   assert.ok(stub.deleted && stub.messages.length === 0);
+  assert.equal(stub.updated, 1, 'the stub keeps the removed copy\'s time, so edits it never saw still win');
   assert.deepEqual(seen, [a.id, b.id, a.id]);
 });
 
@@ -410,4 +411,61 @@ test('sync service: synced keys touch only known providers, and only sync or Str
   assert.equal(await svc.buy('life'), 'https://checkout.stripe.com/c/pay/cs_1');
   reply = { url: 'https://billing.stripe.com/p/session/x' };
   assert.equal(await svc.billingUrl(), 'https://billing.stripe.com/p/session/x');
+});
+
+// Two computers on one sync key, with a switch that takes the network away.
+async function twoComputers(opts: { aKeys?: Record<string, string>; bKeys?: Record<string, string> } = {}) {
+  const { env, db } = makeEnv();
+  const wctx = { waitUntil() {}, passThroughOnException() {} } as any;
+  const net = { down: false };
+  const f = (async (u: any, i?: any) => { if (net.down) throw new TypeError('fetch failed'); return worker.fetch(new Request(u, i), env, wctx); }) as typeof fetch;
+  const engine = await import('../src/node/sync/engine.ts');
+  const key = await licenseKey('lic-secret', 'cs_two');
+  await addLicense(db, key, { session: 'cs_two' });
+  const mk = (preset: Record<string, string> = {}) => {
+    const dir = mkdtempSync(pjoin(tmpdir(), 'fat-sync-'));
+    const keys = fakeKeys();
+    for (const [p, k] of Object.entries(preset)) keys.set(p, k);
+    const chats = openChatStore(pjoin(dir, 'chats.json'));
+    const svc = createSyncService({ base: 'https://sync.test', keys, chats, stateFile: pjoin(dir, 'sync.json'), fetch: f, engine, providers: () => ['groq', 'cf'] });
+    svc.start(); svc.stop(); // started, so edits are marked for the next push, but no timers left running
+    return { keys, chats, svc };
+  };
+  const A = mk(opts.aKeys);
+  await A.svc.setup(key, 'a long passphrase');
+  const B = mk(opts.bKeys);
+  await B.svc.setup(key, 'a long passphrase');
+  return { A, B, net, key, db, env };
+}
+
+test('sync service: a chat edited while offline is pushed once the network is back', async () => {
+  const { A, B, net } = await twoComputers();
+  const [c] = migrateChats([{ title: 'plane', model: 'free', updated: 5, messages: [{ role: 'user', content: 'yo' }] }]);
+  net.down = true;
+  B.chats.put(c);
+  assert.equal((await B.svc.syncNow()).ok, false, 'offline');
+  net.down = false;
+  assert.equal((await B.svc.syncNow()).ok, true);
+  await A.svc.syncNow();
+  assert.deepEqual(A.chats.list().map((x: any) => x.title), ['plane']);
+});
+
+test('sync service: joining with an old copy of a key keeps the account\'s current key, and adds keys only the new computer has', async () => {
+  const { A, B } = await twoComputers({ aKeys: { groq: 'gsk_current' }, bKeys: { groq: 'gsk_old', cf: 'acct:cf_b' } });
+  assert.equal(B.keys.get('groq'), 'gsk_current');
+  await A.svc.syncNow();
+  assert.equal(A.keys.get('groq'), 'gsk_current');
+  assert.equal(A.keys.get('cf'), 'acct:cf_b');
+});
+
+test('sync service: a keychain item that cannot be read is left alone, never synced as a removal', async () => {
+  const { A, B } = await twoComputers({ aKeys: { groq: 'gsk_1' } });
+  assert.equal(B.keys.get('groq'), 'gsk_1');
+  // As after an app update when the person clicks Deny: the plain read says "no key", the strict one throws.
+  const plainGet = B.keys.get;
+  (B.keys as any).get = (k: string) => (k === 'groq' ? null : plainGet(k));
+  (B.keys as any).read = (k: string) => { if (k === 'groq') throw new Error('User interaction is not allowed.'); return null; };
+  assert.equal((await B.svc.syncNow()).ok, true);
+  await A.svc.syncNow();
+  assert.equal(A.keys.get('groq'), 'gsk_1');
 });

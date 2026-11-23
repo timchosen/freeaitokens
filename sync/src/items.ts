@@ -116,7 +116,9 @@ export async function items(req: Request, env: Env, lic: LicenseRow, path: strin
       bytes += r.size;
       out.push({ ...item, blob: b64(await blob.arrayBuffer()) });
     }
-    return json({ items: out, cursor, more });
+    // The newest change number. Lower than a computer's cursor means the data was deleted after a plan ended.
+    const head = (await env.SYNC_DB.prepare('SELECT seq FROM counters WHERE key_hash = ?').bind(kh).first<number>('seq')) ?? 0;
+    return json({ items: out, cursor, more, head });
   }
   const m = /^\/v1\/items\/([^/]+)$/.exec(path);
   if (!m || (req.method !== 'PUT' && req.method !== 'DELETE')) return null;

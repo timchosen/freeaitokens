@@ -17,9 +17,11 @@ export function mergeChat(a: Chat, b: Chat): Chat {
   const top = later(a, b);
   const updated = Math.max(a.updated, b.updated);
   const deletedAt = Math.max(a.deleted ?? -Infinity, b.deleted ?? -Infinity);
+  // A tombstone's `updated` is that of the copy it deleted. Any copy newer than that holds changes the
+  // deleting computer never saw, so it wins and nothing is lost silently.
+  const deletedVersion = Math.max(...[a, b].filter((c) => c.deleted != null).map((c) => c.updated), -Infinity);
   const editedAt = Math.max(...[a, b].filter((c) => c.deleted == null).map((c) => c.updated), -Infinity);
-  // A delete stands unless one side edited the chat after it; a deleted chat carries no messages.
-  if (deletedAt > -Infinity && deletedAt >= editedAt) return { id: a.id, title: '', model: '', updated, deleted: deletedAt, messages: [] };
+  if (deletedAt > -Infinity && deletedVersion >= editedAt) return { id: a.id, title: '', model: '', updated, deleted: deletedAt, messages: [] };
   return { id: a.id, title: top.title, model: top.model, ...(top.mode ? { mode: top.mode } : {}), updated, messages };
 }
 
@@ -30,9 +32,11 @@ export function mergeKeys(a: KeyBundle, b: KeyBundle): KeyBundle {
 }
 
 // What changed here since the last sync, including keys added or removed with the CLI.
-export function localKeyChanges(snapshot: Record<string, string>, current: Record<string, string | null>, now: number): KeyBundle {
+// A provider listed with `undefined` couldn't be read here (keychain locked or denied): it is left out.
+export function localKeyChanges(snapshot: Record<string, string>, current: Record<string, string | null | undefined>, now: number): KeyBundle {
   const out: KeyBundle = {};
   for (const p of new Set([...Object.keys(snapshot), ...Object.keys(current)])) {
+    if (p in current && current[p] === undefined) continue;
     const cur = current[p] ?? null;
     if (cur !== (snapshot[p] ?? null)) out[p] = { key: cur, updated: now };
   }

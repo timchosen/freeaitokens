@@ -6,8 +6,9 @@ import { mergeChat, mergeKeys, localKeyChanges, type Chat, type KeyBundle } from
 
 export type SyncState = { cursor: number; versions: Record<string, number>; keySnapshot: Record<string, string>; keysItemId?: string; keyBundle?: KeyBundle; dirty: string[] };
 export interface LocalStore {
-  chats(): Chat[]; putChat(c: Chat): void; removeChat(id: string): void;
-  keys(): Record<string, string | null>; setKey(provider: string, key: string | null): void;
+  // Every chat, including deleted ones: a deleted chat is a stub that keeps the `updated` of the copy removed.
+  chats(): Chat[]; putChat(c: Chat): void;
+  keys(): Record<string, string | null | undefined>; setKey(provider: string, key: string | null): void;
   state(): SyncState; setState(s: SyncState): void;
 }
 type Reason = 'expired' | 'revoked' | 'offline' | 'corrupt' | 'unauthorized' | 'full';
@@ -59,17 +60,29 @@ export class SyncEngine {
     const original = new Map(store.chats().map((c) => [c.id, c]));
     const work = new Map(original);
     const dirty = new Set(st.dirty);
-    // A dirty chat that is gone locally was deleted here: push a tombstone.
-    for (const id of dirty) if (!work.has(id)) work.set(id, { id, title: '', model: '', updated: now, deleted: now, messages: [] });
+    // Nothing to push for a chat this computer has no record of.
+    for (const id of dirty) if (!work.has(id)) dirty.delete(id);
     const keysNow = store.keys();
-    const changes = localKeyChanges(st.keySnapshot, keysNow, now);
+    // First run here (just joined, or the snapshot was lost): this computer's keys may be months old, so the
+    // account's keys win, keys only this computer has are added, and no local key is removed.
+    const first = !Object.keys(st.keySnapshot).length && !Object.keys(st.keyBundle ?? {}).length;
+    const changes = localKeyChanges(st.keySnapshot, keysNow, first ? 0 : now);
     let bundle = mergeKeys(st.keyBundle ?? {}, changes);
     let keysDirty = Object.keys(changes).length > 0;
     let cursor = st.cursor, pulled = 0, pushed = 0;
 
     const pull = async () => {
       for (let more = true; more;) {
-        const page = await (await api(this.o, 'GET', `/v1/items?since=${cursor}`)).json() as { items: { id: string; version: number; deleted: number; blob?: string }[]; cursor: number; more: boolean };
+        const page = await (await api(this.o, 'GET', `/v1/items?since=${cursor}`)).json() as { items: { id: string; version: number; deleted: number; blob?: string }[]; cursor: number; more: boolean; head?: number };
+        // The server lost this account's items (deleted 90 days after a plan ended, then renewed): upload everything again.
+        // shortcut: misses a reset if other computers wrote more changes than our cursor before we ran; a generation id would catch it.
+        if (page.head != null && (page.head < cursor || (page.head === 0 && Object.keys(versions).length > 0))) {
+          cursor = 0;
+          for (const k of Object.keys(versions)) delete versions[k];
+          for (const [id, c] of work) if (!c.deleted) dirty.add(id);
+          keysDirty = true;
+          continue;
+        }
         for (const it of page.items) {
           if ((versions[it.id] ?? 0) >= it.version) continue; // our own write, already in `work`
           versions[it.id] = it.version;
@@ -92,13 +105,26 @@ export class SyncEngine {
       }
     };
 
+    const keepLocal = () => {
+      if (!first) return;
+      for (const [p, k] of Object.entries(keysNow)) {
+        // Still at time 0 after the pull: the account doesn't have it, so it is this computer's to add.
+        const keep = (k != null && bundle[p]?.key == null) || (bundle[p]?.updated === 0 && bundle[p].key === k);
+        if (keep) { bundle = { ...bundle, [p]: { key: k, updated: now } }; keysDirty = true; }
+      }
+    };
+
     const put = async (id: string, value: object): Promise<boolean> => {
       const v = versions[id];
       const r = await api(this.o, 'PUT', `/v1/items/${id}`, {
         body: Buffer.from(encryptItem(dataKey, id, value)),
         headers: { 'content-type': 'application/octet-stream', ...(v ? { 'if-match': String(v) } : { 'if-none-match': '*' }) },
       });
-      if (r.status === 412) return false;
+      if (r.status === 412) {
+        // The server has no such item any more: write it fresh next time.
+        if (v && ((await r.json().catch(() => ({}))) as { version?: number }).version === 0) delete versions[id];
+        return false;
+      }
       if (!r.ok) throw new SyncFail('offline', `The sync server answered ${r.status}.`);
       versions[id] = ((await r.json()) as { version: number }).version;
       pushed++;
@@ -106,23 +132,29 @@ export class SyncEngine {
     };
 
     await pull();
+    keepLocal();
+    let conflict = false;
     for (let attempt = 0; attempt < 4; attempt++) {
-      let conflict = false;
+      conflict = false;
       for (const id of [...dirty]) {
         if (await put(id, { type: 'chat', chat: work.get(id) })) dirty.delete(id); else conflict = true;
       }
       if (keysDirty) { if (await put(keysId, { type: 'keys', keys: bundle })) keysDirty = false; else conflict = true; }
       if (!conflict) break;
       await pull(); // someone wrote first: take theirs in, merge, try again
+      keepLocal();
     }
+
+    if (conflict) throw new SyncFail('offline', 'Another computer kept changing the same items. Trying again soon.');
 
     // Everything worked: now change this computer.
     for (const [id, c] of work) {
-      if (c.deleted) { if (original.has(id)) store.removeChat(id); }
-      else if (!original.has(id) || !same(original.get(id), c)) store.putChat(c);
+      if (original.has(id) ? !same(original.get(id), c) : !c.deleted) store.putChat(c);
     }
-    for (const id of original.keys()) if (!work.has(id)) store.removeChat(id);
-    for (const [p, { key }] of Object.entries(bundle)) if ((keysNow[p] ?? null) !== key) store.setKey(p, key);
+    for (const [p, { key }] of Object.entries(bundle)) {
+      if (p in keysNow && keysNow[p] === undefined) continue; // unreadable here: not ours to overwrite
+      if ((keysNow[p] ?? null) !== key) store.setKey(p, key);
+    }
     const keySnapshot = Object.fromEntries(Object.entries(bundle).filter(([, v]) => v.key != null).map(([p, v]) => [p, v.key!]));
     store.setState({ cursor, versions, keySnapshot, keysItemId: keysId, keyBundle: bundle, dirty: [...dirty] });
     return { ok: true, pulled, pushed };
