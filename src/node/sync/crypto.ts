@@ -34,8 +34,13 @@ export async function wrapDataKey(dataKey: Buffer, passphrase: string, params: P
   return JSON.stringify({ v: 1, salt: salt.toString('base64'), ...params, box: box.toString('base64') });
 }
 
+// The vault comes from the server, so its scrypt settings are checked before they can cost memory or time.
+const sane = (v: any) => v?.v === 1 && v.r === 8 && Number.isInteger(v.p) && v.p >= 1 && v.p <= 4 &&
+  Number.isInteger(v.N) && v.N >= 2 ** 14 && v.N <= 2 ** 20 && (v.N & (v.N - 1)) === 0;
+
 export async function unwrapDataKey(body: string, passphrase: string): Promise<Buffer> {
   const v = JSON.parse(body);
+  if (!sane(v)) throw new Error('This sync account uses encryption settings this version cannot open.');
   const key = await derive(passphrase, Buffer.from(v.salt, 'base64'), { N: v.N, r: v.r, p: v.p });
   try { return open(key, Buffer.from(v.box, 'base64')); } catch { throw new WrongPassphraseError(); }
 }
