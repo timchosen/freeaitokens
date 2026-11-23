@@ -28,7 +28,8 @@
     <li>Buka <b>System Settings → Privacy &amp; Security</b>, gulir ke bawah, lalu klik <b>Open Anyway</b> di sebelah FreeAITokens.</li>
     <li>Konfirmasi dengan kata sandi atau Touch ID. Ini hanya perlu dilakukan sekali.</li>
   </ol>
-  <p class="small muted">Kalau kamu memasang lewat baris perintah Terminal, langkah ini tidak perlu.</p>
+  <p class="small muted">Memasang lewat baris Terminal? Langkah ini tidak perlu. Masih diblokir? Tempel ini di Terminal, lalu buka aplikasinya lagi:</p>
+  <div class="cmd"><code>xattr -dr com.apple.quarantine /Applications/FreeAITokens.app</code><button class="copy" data-copy="xattr -dr com.apple.quarantine /Applications/FreeAITokens.app">Salin</button></div>
   <h3>Windows</h3>
   <ol>
     <li>Jalankan pemasangnya. Kalau muncul kotak biru "Windows protected your PC", klik <b>More info</b>.</li>

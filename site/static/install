@@ -49,6 +49,8 @@ if [ "$OS" = Darwin ]; then
   mkdir -p "$DEST"
   rm -rf "$DEST/$(basename "$APP")"
   mv "$APP" "$DEST/"
+  # Not signed by Apple yet: clear the "downloaded from the internet" flag so macOS opens it.
+  xattr -dr com.apple.quarantine "$DEST/$(basename "$APP")" 2>/dev/null || true
   echo "Installed $DEST/$(basename "$APP"). Opening it now; look for it in your menu bar."
   open "$DEST/$(basename "$APP")"
 else

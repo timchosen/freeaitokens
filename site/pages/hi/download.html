@@ -28,7 +28,8 @@
     <li><b>System Settings → Privacy &amp; Security</b> खोलें, नीचे स्क्रॉल करें, और FreeAITokens के आगे <b>Open Anyway</b> पर क्लिक करें।</li>
     <li>अपने पासवर्ड या Touch ID से पुष्टि करें। यह सिर्फ़ एक बार करना होता है।</li>
   </ol>
-  <p class="small muted">अगर आपने Terminal वाली लाइन से इंस्टॉल किया है, तो यह कदम छूट जाता है।</p>
+  <p class="small muted">अगर आपने Terminal वाली लाइन से इंस्टॉल किया है, तो यह कदम ज़रूरी नहीं है। फिर भी नहीं खुल रहा? इसे Terminal में पेस्ट करें, फिर ऐप दोबारा खोलें:</p>
+  <div class="cmd"><code>xattr -dr com.apple.quarantine /Applications/FreeAITokens.app</code><button class="copy" data-copy="xattr -dr com.apple.quarantine /Applications/FreeAITokens.app">कॉपी करें</button></div>
   <h3>Windows</h3>
   <ol>
     <li>इंस्टॉलर चलाएँ। अगर नीला "Windows protected your PC" बॉक्स दिखे, तो <b>More info</b> पर क्लिक करें।</li>

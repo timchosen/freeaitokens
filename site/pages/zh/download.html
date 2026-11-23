@@ -28,7 +28,8 @@
     <li>打开<b>系统设置 → 隐私与安全性</b>，向下滚动，点击 FreeAITokens 旁边的<b>仍要打开</b>。</li>
     <li>用你的密码或触控 ID 确认。只需要做这一次。</li>
   </ol>
-  <p class="small muted">如果你是用 Terminal 里的那行命令安装的，就不需要这一步。</p>
+  <p class="small muted">如果你是用终端命令安装的，可以跳过这一步。仍然被阻止？把下面这行粘贴到终端，然后重新打开应用：</p>
+  <div class="cmd"><code>xattr -dr com.apple.quarantine /Applications/FreeAITokens.app</code><button class="copy" data-copy="xattr -dr com.apple.quarantine /Applications/FreeAITokens.app">复制</button></div>
   <h3>Windows</h3>
   <ol>
     <li>运行安装程序。如果出现蓝色的“Windows 已保护你的电脑”窗口，点击<b>更多信息</b>。</li>

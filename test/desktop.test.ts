@@ -45,6 +45,10 @@ test('desktop build names every release file without a version', async () => {
   assert.deepEqual(b.mac.target, [{ target: 'dmg', arch: ['universal'] }, { target: 'zip', arch: ['universal'] }]);
   // The universal app carries the keychain module for both chips, which CI installs on the Mac runner.
   assert.equal(b.mac.x64ArchFiles, '**/keyring.darwin-*.node');
+  const wf = readFileSync(new URL('../.github/workflows/desktop.yml', import.meta.url), 'utf8');
+  assert.match(wf, /CSC_LINK: \$\{\{ runner\.os == 'macOS' && secrets\.MAC_CERT_P12_BASE64 \|\| '' \}\}/, 'the Apple certificate is only used on the Mac job');
+  assert.match(wf, /notarize:true/);
+  assert.match(readFileSync(new URL('../site/static/install', import.meta.url), 'utf8'), /xattr -dr com\.apple\.quarantine/);
   assert.match(readFileSync(new URL('../.github/workflows/desktop.yml', import.meta.url), 'utf8'), /keyring-darwin-x64@[\d.]+ @napi-rs\/keyring-darwin-arm64@/);
   assert.equal(b.mac.artifactName, 'FreeAITokens-mac.${ext}');
   assert.equal(b.mac.identity, '-'); // ad-hoc signed, so a downloaded copy gets Open Anyway instead of "damaged"

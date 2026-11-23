@@ -28,7 +28,8 @@
     <li><b>システム設定 → プライバシーとセキュリティ</b>を開き、下へスクロールして、FreeAITokensの横にある<b>このまま開く</b>をクリックします。</li>
     <li>パスワードまたはTouch IDで確認します。この操作は一度だけです。</li>
   </ol>
-  <p class="small muted">ターミナルの1行でインストールした場合は、この手順は不要です。</p>
+  <p class="small muted">ターミナルの 1 行でインストールした場合、この手順は不要です。それでも開けない場合は、次の行をターミナルに貼り付けてから、もう一度アプリを開いてください：</p>
+  <div class="cmd"><code>xattr -dr com.apple.quarantine /Applications/FreeAITokens.app</code><button class="copy" data-copy="xattr -dr com.apple.quarantine /Applications/FreeAITokens.app">コピー</button></div>
   <h3>Windows</h3>
   <ol>
     <li>インストーラーを実行します。青い「Windows によって PC が保護されました」という画面が出たら、<b>詳細情報</b>をクリックします。</li>

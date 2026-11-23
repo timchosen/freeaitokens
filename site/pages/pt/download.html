@@ -28,7 +28,8 @@
     <li>Abra <b>System Settings → Privacy &amp; Security</b> (Ajustes do Sistema → Privacidade e Segurança), role para baixo e clique em <b>Open Anyway</b> (Abrir Mesmo Assim) ao lado de FreeAITokens.</li>
     <li>Confirme com sua senha ou com o Touch ID. Você só faz isso uma vez.</li>
   </ol>
-  <p class="small muted">Se você instalou pela linha do Terminal, pode pular esta etapa.</p>
+  <p class="small muted">Instalou com a linha do Terminal? Então pule esta etapa. Ainda bloqueado? Cole isto no Terminal e abra o app de novo:</p>
+  <div class="cmd"><code>xattr -dr com.apple.quarantine /Applications/FreeAITokens.app</code><button class="copy" data-copy="xattr -dr com.apple.quarantine /Applications/FreeAITokens.app">Copiar</button></div>
   <h3>Windows</h3>
   <ol>
     <li>Execute o instalador. Se aparecer uma caixa azul "O Windows protegeu o computador", clique em <b>Mais informações</b>.</li>

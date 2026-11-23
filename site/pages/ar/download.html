@@ -28,7 +28,8 @@
     <li>افتح <b>System Settings → Privacy &amp; Security</b>، ومرّر لأسفل، واضغط <b>Open Anyway</b> بجانب FreeAITokens.</li>
     <li>أكّد بكلمة مرورك أو ببصمة Touch ID. تفعل هذا مرة واحدة فقط.</li>
   </ol>
-  <p class="small muted">إذا ثبّته بسطر Terminal فلن تحتاج إلى هذه الخطوة.</p>
+  <p class="small muted">هل ثبّتّه بسطر Terminal؟ إذن لا تحتاج إلى هذه الخطوة. ما زال محظورًا؟ الصق هذا في Terminal ثم افتح التطبيق مرة أخرى:</p>
+  <div class="cmd"><code>xattr -dr com.apple.quarantine /Applications/FreeAITokens.app</code><button class="copy" data-copy="xattr -dr com.apple.quarantine /Applications/FreeAITokens.app">انسخ</button></div>
   <h3>Windows</h3>
   <ol>
     <li>شغّل المثبّت. إذا ظهر مربع أزرق بعنوان «Windows protected your PC» فاضغط <b>More info</b>.</li>
