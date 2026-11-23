@@ -88,6 +88,7 @@ cd sync && npx wrangler d1 execute SYNC_DB --remote --file schema.sql && npx wra
 - [ ] Switch to live mode: create the live products, the webhook endpoint and the portal. Then `wrangler secret put` the live `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` and both price ids.
 - [ ] Keep `LICENSE_SECRET` and `EMAIL_SECRET` unchanged, unless only test purchases exist so far.
 - [ ] Have the lifetime wording reviewed in the site terms (section 8, "for as long as the sync service runs"). It appears in all ten languages.
+- [ ] Decide what ends the lifetime **launch offer** (a date, a number of sales, or both). The site, terms and app only call it a "limited launch offer" for now; nothing stops lifetime sales yet, so ending it needs a code change.
 - [ ] Release the desktop app with a `desktop-v*` tag.
   - Before publishing, check that the Mac zip's `app.asar` contains `syncsvc.js` and `chats.js`.
   - Check that `codesign --verify --deep` passes.
