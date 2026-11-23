@@ -46,7 +46,8 @@ export function migrateChats(list) {
   return out;
 }
 
-export function openChatStore(file) {
+// `merge` (sync's mergeChat) lets `save` combine a copy with the stored one, so an old copy never drops messages.
+export function openChatStore(file, merge = null) {
   let all;
   try { all = (JSON.parse(readFileSync(file, 'utf8')).chats ?? []).map(cleanChat).filter(Boolean); } catch { all = []; }
   const listeners = [];
@@ -62,6 +63,7 @@ export function openChatStore(file) {
     list: () => all.filter((c) => !c.deleted).sort((a, b) => b.updated - a.updated),
     all: () => all.slice(),
     put: (c) => set(c),
+    save: (c) => { const cur = all.find((x) => x.id === c.id); set(cur && !cur.deleted && merge ? merge(cur, c) : c); },
     // The stub keeps the removed copy's `updated`, so an edit made elsewhere that this copy never had still wins.
     remove: (id) => { const c = all.find((x) => x.id === id); if (c && !c.deleted) set({ id, title: '', model: '', updated: c.updated, deleted: Date.now(), messages: [] }); },
     onChange: (fn) => { listeners.push(fn); },

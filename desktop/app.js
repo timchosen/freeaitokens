@@ -230,9 +230,15 @@ async function send() {
   chat.model = $('model').value;
   chat.mode = mode;
   chat.updated = Date.now();
-  chats = [chat, ...chats.filter((c) => c !== chat)];
-  save(chat);
+  chats = [chat, ...chats.filter((c) => c.id !== chat.id)]; // by id: sync may have swapped in a fresh copy meanwhile
+  await save(chat);
   if (current === chat) bubble(chat.messages.at(-1));
+  else if (current?.id === chat.id) {
+    // Sync refreshed this chat while we waited: show the stored copy, which now holds both sides.
+    chats = await api.chats.list();
+    current = chats.find((c) => c.id === chat.id) ?? null;
+    if (current) openChat(current);
+  }
   listChats();
   refresh();
 }

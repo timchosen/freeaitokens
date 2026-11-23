@@ -277,9 +277,9 @@ ipcMain.handle('app:dropImages', (_e, list) => {
 
 // Saved chats live in the state folder (not window storage) so sync can reach them.
 let chatStore;
-const chatsNow = () => (chatStore ??= openChatStore(join(stateDir(), 'chats.json')));
+const chatsNow = () => (chatStore ??= openChatStore(join(stateDir(), 'chats.json'), syncEngine.mergeChat));
 ipcMain.handle('chats:list', () => chatsNow().list());
-ipcMain.handle('chats:put', (_e, c) => { const clean = cleanChat(c); if (clean && !clean.deleted) chatsNow().put(clean); return !!clean; });
+ipcMain.handle('chats:put', (_e, c) => { const clean = cleanChat(c); if (clean && !clean.deleted) chatsNow().save(clean); return !!clean; });
 ipcMain.handle('chats:remove', (_e, id) => { if (typeof id === 'string') chatsNow().remove(id); });
 // The chats from window storage, once: ignored when the store already has chats.
 ipcMain.handle('chats:migrate', (_e, list) => {

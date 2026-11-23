@@ -181,6 +181,7 @@ export async function hasVault(o: Conn): Promise<boolean> { return (await getVau
 
 // For the desktop: one import gives everything sync needs.
 export { recoveryCode, encryptItem, decryptItem, WrongPassphraseError } from './crypto.js';
+export { mergeChat } from './merge.js';
 
 export async function setupNew(o: Conn & { passphrase: string }): Promise<{ dataKey: Buffer; recovery: string }> {
   if (await getVault(o)) throw new Error('This sync key is already set up. Choose "I already have a key" and enter its passphrase.');

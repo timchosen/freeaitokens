@@ -48,8 +48,10 @@ export function createSyncService({ base, keys, chats, stateFile, fetch, engine,
       chats: () => chats.all(), // deleted ones too: their stubs carry the delete to other computers
       putChat: (c) => {
         const cur = chats.all().find((x) => x.id === c.id);
-        if (cur && cur.updated > c.updated) { pending.add(c.id); return; } // edited here during the run
-        quiet = true; try { chats.put(c); } finally { quiet = false; }
+        // Edited here during the run: keep both sides and push the result next time.
+        const edited = cur && !cur.deleted && cur.updated > c.updated;
+        quiet = true; try { chats.put(edited ? engine.mergeChat(cur, c) : c); } finally { quiet = false; }
+        if (edited) pending.add(c.id);
       },
       // A key that can't be read right now (keychain locked, access denied) is `undefined`: sync leaves it alone.
       keys: () => Object.fromEntries(providers().map((p) => { try { return [p, (keys.read ?? keys.get)(p)]; } catch { return [p, undefined]; } })),

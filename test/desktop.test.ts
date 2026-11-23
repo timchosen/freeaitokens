@@ -1,4 +1,5 @@
 import { test } from 'node:test';
+import { randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
 // @ts-ignore plain JS module
 import { allowedUrl, choices, menuLine, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType, privateAddress } from '../desktop/logic.js';
@@ -468,4 +469,34 @@ test('sync service: a keychain item that cannot be read is left alone, never syn
   assert.equal((await B.svc.syncNow()).ok, true);
   await A.svc.syncNow();
   assert.equal(A.keys.get('groq'), 'gsk_1');
+});
+
+test('chat store: saving an old copy of a chat (the window held it while sync pulled) keeps the messages sync brought in', async () => {
+  const { mergeChat } = await import('../src/node/sync/engine.ts');
+  const s = openChatStore(pjoin(mkdtempSync(pjoin(tmpdir(), 'fat-chats-')), 'chats.json'), mergeChat);
+  const [c] = migrateChats([{ title: 'a', model: 'free', updated: 5, messages: [{ role: 'user', content: 'one' }] }]);
+  s.put(c);
+  const pulled = { ...c, updated: 6, messages: [...c.messages, { id: randomUUID(), at: 6, role: 'assistant', content: 'from the laptop' }] };
+  s.put(pulled); // what sync wrote
+  s.save({ ...c, updated: 7, messages: [...c.messages, { id: randomUUID(), at: 7, role: 'user', content: 'two' }] }); // the window's stale copy
+  assert.deepEqual(s.list()[0].messages.map((m: any) => m.content), ['one', 'from the laptop', 'two']);
+});
+
+test('sync service: a pulled chat older than this computer\'s copy is merged into it, not skipped', async () => {
+  const engine = await import('../src/node/sync/engine.ts');
+  const keys = fakeKeys();
+  keys.set('sync:license', 'FAT-AAAAA-AAAAA-AAAAA-AAAAA-AAAAA');
+  keys.set('sync:datakey', Buffer.alloc(32, 1).toString('base64'));
+  const dir = mkdtempSync(pjoin(tmpdir(), 'fat-sync-'));
+  const chats = openChatStore(pjoin(dir, 'c.json'), engine.mergeChat);
+  const [c] = migrateChats([{ title: 'a', model: 'free', updated: 10, messages: [{ role: 'user', content: 'here' }] }]);
+  chats.put(c);
+  const f = (async () => new Response('{}', { status: 200 })) as unknown as typeof fetch;
+  const fakeEngine = { ...engine, SyncEngine: class { o: any; constructor(o: any) { this.o = o; } async run() {
+    this.o.store.putChat({ ...c, updated: 5, messages: [{ id: randomUUID(), at: 4, role: 'assistant', content: 'there' }] });
+    return { ok: true, pulled: 1, pushed: 0 };
+  } } };
+  const svc = createSyncService({ base: 'https://sync.test', keys, chats, stateFile: pjoin(dir, 's.json'), fetch: f, engine: fakeEngine, providers: () => [] });
+  await svc.syncNow();
+  assert.deepEqual(chats.list()[0].messages.map((m: any) => m.content).sort(), ['here', 'there']);
 });
