@@ -1,0 +1,58 @@
+<!-- title: 同步 | description: 在你所有的电脑上使用相同的 FreeAITokens 对话和服务商密钥,端到端加密,每年 10 美元或一次性 49 美元。 -->
+<div class="page">
+  <h1>同步</h1>
+  <p class="lead">在你所有的电脑上使用相同的对话和服务商密钥。所有内容在离开你的电脑之前就已加密,只有你的口令能打开。</p>
+
+  <div class="cards">
+    <div class="card">
+      <h3>一年</h3>
+      <p class="price">每年 <b>10 美元</b></p>
+      <p>每年续订。可随时在应用里取消。</p>
+      <p><a class="btn small-btn" href="https://sync.{{domain}}/buy?plan=year">同步一年</a></p>
+    </div>
+    <div class="card">
+      <h3>终身</h3>
+      <p class="offer">限定首发优惠</p>
+      <p class="price">一次性 <b>49 美元</b></p>
+      <p>只付一次,不再续费。</p>
+      <p><a class="btn small-btn" href="https://sync.{{domain}}/buy?plan=life">永久同步</a></p>
+    </div>
+  </div>
+  <p class="small muted">价格以美元计。同步由 Stripe 销售,付款和税费都由 Stripe 处理。</p>
+
+  <h2>同步能做什么</h2>
+  <ul>
+    <li>你保存的对话和服务商密钥会出现在每台开启同步的电脑上。</li>
+    <li>在一台电脑上的改动,大约一分钟内到达其他电脑。</li>
+    <li>适用于 Mac、Windows 和 Linux 上的 FreeAITokens 应用。命令行工具不同步。</li>
+    <li>抢先获取应用新版本:同步方案有效期间,应用会先向你提供新版本,之后才向所有人提供。</li>
+  </ul>
+
+  <h2>同步不做什么</h2>
+  <ul>
+    <li><b>同步服务器读不到你的数据。</b> 对话和密钥在你的电脑上用一把只有你的口令才能打开的密钥加密。服务器只保存打乱的数据、数据大小和修改时间。</li>
+    <li><b>没有人能重置你的口令。</b> 设置同步时你会得到一个恢复码。如果忘了口令又丢了恢复码,同步的数据就无法打开。你电脑上的内容仍然保留。</li>
+    <li>你创建的图片留在生成它的电脑上。图片所在的对话会同步,图片文件不会。</li>
+    <li>同步不提供 AI 使用权。你仍然使用自己的免费账号,每个服务商一个。</li>
+  </ul>
+
+  <h2>如何开始</h2>
+  <ol>
+    <li>在应用里打开 设置 › 同步,选择一个方案。应用会自己取回你的密钥。</li>
+    <li>设定一个口令,并保存显示的恢复码。</li>
+    <li>在其他电脑上选择“我已经有密钥”,输入密钥和口令。</li>
+  </ol>
+
+  <h2>方案到期后</h2>
+  <p>同步停止,你电脑上的内容不会改变。加密数据会在服务器上保留 90 天,续订后可以接着用;之后会被删除。付款被退款或争议时,同步立即停止,同样保留 90 天。</p>
+
+  <h2 id="key">把密钥发给我</h2>
+  <p>弄丢了同步密钥,或者是在本网站购买的?输入付款时用的邮箱,我们会把用它购买的所有密钥发给你。</p>
+  <form id="resend" class="resend" action="https://sync.{{domain}}/resend" method="post">
+    <input type="hidden" name="lang" value="zh">
+    <label for="resend-email">邮箱</label>
+    <input id="resend-email" name="email" type="email" required autocomplete="email">
+    <button class="btn small-btn" type="submit">发送我的密钥</button>
+  </form>
+  <p id="resend-done" class="small muted" role="status" hidden>如果这个地址购买过同步,密钥已在路上。几分钟后请查看收件箱。</p>
+</div>

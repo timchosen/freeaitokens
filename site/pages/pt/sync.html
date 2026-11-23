@@ -1,0 +1,58 @@
+<!-- title: Sincronização | description: Tenha as mesmas conversas e chaves de provedores do FreeAITokens em todos os seus computadores, com criptografia de ponta a ponta, por US$ 10 por ano ou US$ 49 uma vez. -->
+<div class="page">
+  <h1>Sincronização</h1>
+  <p class="lead">Tenha as mesmas conversas e chaves de provedores em todos os seus computadores. Tudo é criptografado no seu computador antes de sair, e só a sua frase-senha abre.</p>
+
+  <div class="cards">
+    <div class="card">
+      <h3>Um ano</h3>
+      <p class="price"><b>US$ 10</b> por ano</p>
+      <p>Renova todo ano. Cancele quando quiser pelo app.</p>
+      <p><a class="btn small-btn" href="https://sync.{{domain}}/buy?plan=year">Sincronizar por um ano</a></p>
+    </div>
+    <div class="card">
+      <h3>Vitalício</h3>
+      <p class="offer">Oferta de lançamento limitada</p>
+      <p class="price"><b>US$ 49</b> uma vez</p>
+      <p>Um pagamento, sem renovações.</p>
+      <p><a class="btn small-btn" href="https://sync.{{domain}}/buy?plan=life">Sincronizar para sempre</a></p>
+    </div>
+  </div>
+  <p class="small muted">Preços em dólares americanos. A Stripe vende a sincronização e cuida do pagamento e dos impostos.</p>
+
+  <h2>O que a sincronização faz</h2>
+  <ul>
+    <li>Suas conversas salvas e chaves de provedores aparecem em todo computador onde você ativar a sincronização.</li>
+    <li>Uma mudança em um computador chega aos outros em cerca de um minuto.</li>
+    <li>Funciona no app FreeAITokens para Mac, Windows e Linux. A ferramenta de linha de comando não sincroniza.</li>
+    <li>Acesso antecipado às novas versões do app: enquanto seu plano de sincronização estiver ativo, o app oferece as novas versões a você antes de oferecê-las a todos.</li>
+  </ul>
+
+  <h2>O que ela não faz</h2>
+  <ul>
+    <li><b>O servidor de sincronização não consegue ler seus dados.</b> Conversas e chaves são criptografadas no seu computador com uma chave que só a sua frase-senha abre. O servidor guarda dados embaralhados, o tamanho deles e quando mudaram.</li>
+    <li><b>Ninguém pode redefinir sua frase-senha.</b> Ao configurar a sincronização, você recebe um código de recuperação. Se esquecer a frase-senha e perder o código, seus dados sincronizados não podem ser abertos. O que está nos seus computadores continua lá.</li>
+    <li>As imagens que você cria ficam no computador que as fez. As conversas delas sincronizam; os arquivos de imagem, não.</li>
+    <li>A sincronização não dá acesso a IA. Você continua usando suas próprias contas gratuitas, uma por provedor.</li>
+  </ul>
+
+  <h2>Como começar</h2>
+  <ol>
+    <li>No app, abra Configurações › Sincronização e escolha um plano. O app pega sua chave sozinho.</li>
+    <li>Escolha uma frase-senha e guarde o código de recuperação que aparece.</li>
+    <li>Nos outros computadores, escolha "Já tenho uma chave" e digite a chave e a frase-senha.</li>
+  </ol>
+
+  <h2>Se o seu plano acabar</h2>
+  <p>A sincronização para, e nada muda nos seus computadores. Seus dados criptografados ficam no servidor por 90 dias, então ao renovar você continua de onde parou; depois disso são apagados. Um pagamento reembolsado ou contestado para a sincronização na hora, com os mesmos 90 dias.</p>
+
+  <h2 id="key">Me envie minha chave</h2>
+  <p>Perdeu sua chave de sincronização ou comprou neste site? Digite o e-mail usado no pagamento e enviaremos todas as chaves compradas com ele.</p>
+  <form id="resend" class="resend" action="https://sync.{{domain}}/resend" method="post">
+    <input type="hidden" name="lang" value="pt">
+    <label for="resend-email">E-mail</label>
+    <input id="resend-email" name="email" type="email" required autocomplete="email">
+    <button class="btn small-btn" type="submit">Enviar minha chave</button>
+  </form>
+  <p id="resend-done" class="small muted" role="status" hidden>Se esse endereço comprou a sincronização, a chave está a caminho. Confira sua caixa de entrada em alguns minutos.</p>
+</div>

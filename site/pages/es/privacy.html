@@ -2,7 +2,7 @@
 <div class="page">
   <h1>Privacidad</h1>
   <p class="small muted">Esta es una traducción por comodidad. Si difiere de la <a href="/privacy" hreflang="en">versión en inglés</a>, se aplica la versión en inglés.</p>
-  <p class="lead">En resumen: FreeAITokens no recopila nada sobre ti.</p>
+  <p class="lead">En resumen: FreeAITokens no recopila nada sobre ti. La sincronización opcional de pago solo guarda datos cifrados que no puede leer.</p>
 
   <h2>Este sitio web</h2>
   <ul>
@@ -14,11 +14,23 @@
   <h2>La app y el comando</h2>
   <ul>
     <li><b>Tus claves</b> se quedan en tu ordenador, en su llavero cuando lo tiene, y solo se envían al proveedor al que pertenecen.</li>
-    <li><b>Tus mensajes y las respuestas</b> van directamente entre tu ordenador y el proveedor de IA. Nunca pasan por un servidor de FreeAITokens. Lo que cada proveedor hace con ellos lo fija su propia política de privacidad; los proveedores que pueden usarlos para entrenamiento están marcados.</li>
+    <li><b>Tus mensajes y las respuestas</b> van directamente entre tu ordenador y el proveedor de IA. Nunca pasan por un servidor de FreeAITokens. Lo que cada proveedor hace con ellos lo fija su propia política de privacidad; los proveedores que pueden usarlos para entrenamiento están marcados. Si activas la sincronización, tus chats guardados también se guardan cifrados, como se explica más abajo.</li>
     <li><b>La lista de proveedores</b> se descarga varias veces al día desde un servicio de FreeAITokens en Cloudflare. Esa solicitud no contiene nada sobre ti ni sobre tu uso; como cualquier solicitud web, revela tu dirección IP a Cloudflare.</li>
     <li><b>Sin telemetría.</b> La app no informa de uso, errores ni nada más.</li>
     <li>La dirección local solo escucha en tu propio ordenador y requiere un token, así que otros dispositivos y sitios web no pueden usarla.</li>
   </ul>
+
+  <h2>Sincronización (opcional, de pago)</h2>
+  <p>Si compras la sincronización, un servidor de FreeAITokens en Cloudflare guarda:</p>
+  <ul>
+    <li><b>Tus chats y claves, cifrados</b> en tu ordenador antes de enviarse. El servidor nunca tiene tu frase de contraseña ni la clave que los abre, así que no puede leerlos.</li>
+    <li>Para cada elemento sincronizado: un id aleatorio, su tamaño, un número de versión y cuándo cambió.</li>
+    <li>Una forma ilegible (un hash) de tu clave de sincronización, nunca la clave en sí.</li>
+    <li>Una forma ilegible (un hash con clave) del correo con el que pagaste, solo para que el formulario "envíame mi clave" encuentre tu clave. El correo en sí no se guarda.</li>
+    <li>Tu plan, cuándo termina y los identificadores de Stripe de tu pago y tu ficha de cliente.</li>
+    <li>Si usas el formulario «envíame mi clave», se guardan una forma cifrada de la dirección que escribes y tu dirección IP durante un máximo de dos días, solo para evitar que se abuse del formulario.</li>
+  </ul>
+  <p>Stripe vende la sincronización y cobra el pago, así que tus datos de pago y tu correo van a Stripe según <a href="https://stripe.com/privacy">su política de privacidad</a>. Cuando un plan termina, o un pago se reembolsa o se reclama, tus datos cifrados se borran 90 días después.</p>
 
   <h2>Preguntas</h2>
   <p>Pregunta en <a href="{{repoUrl}}/issues">GitHub</a>, o informa de un problema de seguridad <a href="{{repoUrl}}/security/policy">en privado</a>.</p>

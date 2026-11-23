@@ -1,0 +1,58 @@
+<!-- title: Synchronisation | description: Gardez les mêmes conversations et clés de fournisseurs FreeAITokens sur tous vos ordinateurs, chiffrées de bout en bout, pour 10 $ par an ou 49 $ une fois. -->
+<div class="page">
+  <h1>Synchronisation</h1>
+  <p class="lead">Gardez les mêmes conversations et clés de fournisseurs sur tous vos ordinateurs. Tout est chiffré sur votre ordinateur avant de partir, et seule votre phrase secrète l'ouvre.</p>
+
+  <div class="cards">
+    <div class="card">
+      <h3>Un an</h3>
+      <p class="price"><b>10 $</b> par an</p>
+      <p>Se renouvelle chaque année. Résiliez quand vous voulez depuis l'app.</p>
+      <p><a class="btn small-btn" href="https://sync.{{domain}}/buy?plan=year">Synchroniser pendant un an</a></p>
+    </div>
+    <div class="card">
+      <h3>À vie</h3>
+      <p class="offer">Offre de lancement limitée</p>
+      <p class="price"><b>49 $</b> une fois</p>
+      <p>Un seul paiement, sans renouvellement.</p>
+      <p><a class="btn small-btn" href="https://sync.{{domain}}/buy?plan=life">Synchroniser à vie</a></p>
+    </div>
+  </div>
+  <p class="small muted">Prix en dollars américains. Stripe vend la synchronisation et s'occupe du paiement et des taxes.</p>
+
+  <h2>Ce que fait la synchronisation</h2>
+  <ul>
+    <li>Vos conversations enregistrées et vos clés de fournisseurs apparaissent sur chaque ordinateur où vous activez la synchronisation.</li>
+    <li>Un changement sur un ordinateur arrive sur les autres en une minute environ.</li>
+    <li>Elle fonctionne dans l'app FreeAITokens pour Mac, Windows et Linux. L'outil en ligne de commande ne synchronise pas.</li>
+    <li>Accès anticipé aux nouvelles versions de l'app : tant que votre plan de synchronisation est actif, l'app vous propose les nouvelles versions avant de les proposer à tout le monde.</li>
+  </ul>
+
+  <h2>Ce qu'elle ne fait pas</h2>
+  <ul>
+    <li><b>Le serveur de synchronisation ne peut pas lire vos données.</b> Les conversations et les clés sont chiffrées sur votre ordinateur avec une clé que seule votre phrase secrète ouvre. Le serveur garde des données illisibles, leur taille et leur date de modification.</li>
+    <li><b>Personne ne peut réinitialiser votre phrase secrète.</b> À l'activation, vous recevez un code de récupération. Si vous oubliez la phrase secrète et perdez le code, vos données synchronisées ne peuvent plus être ouvertes. Ce qui est sur vos ordinateurs y reste.</li>
+    <li>Les images que vous créez restent sur l'ordinateur qui les a faites. Leurs conversations se synchronisent, pas les fichiers image.</li>
+    <li>La synchronisation ne donne pas accès à l'IA. Vous utilisez toujours vos propres comptes gratuits, un par fournisseur.</li>
+  </ul>
+
+  <h2>Pour commencer</h2>
+  <ol>
+    <li>Dans l'app, ouvrez Réglages › Synchronisation et choisissez une formule. L'app récupère votre clé toute seule.</li>
+    <li>Choisissez une phrase secrète et gardez le code de récupération affiché.</li>
+    <li>Sur vos autres ordinateurs, choisissez « J'ai déjà une clé » et saisissez la clé et la phrase secrète.</li>
+  </ol>
+
+  <h2>Si votre formule se termine</h2>
+  <p>La synchronisation s'arrête, et rien ne change sur vos ordinateurs. Vos données chiffrées restent 90 jours sur le serveur, donc un renouvellement reprend là où vous en étiez ; ensuite elles sont supprimées. Un paiement remboursé ou contesté arrête la synchronisation immédiatement, avec les mêmes 90 jours.</p>
+
+  <h2 id="key">Envoyez-moi ma clé</h2>
+  <p>Clé de synchronisation perdue, ou achetée sur ce site ? Saisissez l'e-mail utilisé pour payer et nous enverrons toutes les clés achetées avec.</p>
+  <form id="resend" class="resend" action="https://sync.{{domain}}/resend" method="post">
+    <input type="hidden" name="lang" value="fr">
+    <label for="resend-email">E-mail</label>
+    <input id="resend-email" name="email" type="email" required autocomplete="email">
+    <button class="btn small-btn" type="submit">Envoyer ma clé</button>
+  </form>
+  <p id="resend-done" class="small muted" role="status" hidden>Si cette adresse a acheté la synchronisation, la clé est en route. Regardez votre boîte de réception dans quelques minutes.</p>
+</div>

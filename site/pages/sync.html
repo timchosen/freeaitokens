@@ -1,0 +1,57 @@
+<!-- title: Sync | description: Keep your FreeAITokens chats and provider keys the same on all your computers, end-to-end encrypted, for $10 a year or $49 once. -->
+<div class="page">
+  <h1>Sync</h1>
+  <p class="lead">Keep your chats and provider keys the same on all your computers. Everything is encrypted on your computer before it leaves, and only your passphrase opens it.</p>
+
+  <div class="cards">
+    <div class="card">
+      <h3>One year</h3>
+      <p class="price"><b>$10</b> a year</p>
+      <p>Renews each year. Cancel any time from the app.</p>
+      <p><a class="btn small-btn" href="https://sync.{{domain}}/buy?plan=year">Get sync for a year</a></p>
+    </div>
+    <div class="card">
+      <h3>Lifetime</h3>
+      <p class="offer">Limited launch offer</p>
+      <p class="price"><b>$49</b> once</p>
+      <p>One payment, no renewals.</p>
+      <p><a class="btn small-btn" href="https://sync.{{domain}}/buy?plan=life">Get sync for life</a></p>
+    </div>
+  </div>
+  <p class="small muted">Prices in US dollars. Stripe sells sync and handles the payment and any sales tax.</p>
+
+  <h2>What sync does</h2>
+  <ul>
+    <li>Your saved chats and provider keys appear on every computer where you turn on sync.</li>
+    <li>A change on one computer reaches the others within about a minute.</li>
+    <li>It works in the FreeAITokens app for Mac, Windows and Linux. The command-line tool doesn't sync.</li>
+    <li>Early access to new versions of the app: while a sync plan is active, the app offers new versions to you before it offers them to everyone.</li>
+  </ul>
+
+  <h2>What it doesn't do</h2>
+  <ul>
+    <li><b>The sync server can't read your data.</b> Chats and keys are encrypted on your computer with a key only your passphrase opens. The server stores scrambled data, its size and when it changed.</li>
+    <li><b>Nobody can reset your passphrase.</b> When you set up sync you get a recovery code. If you forget the passphrase and lose the recovery code, your synced data can't be opened. What's on your computers stays.</li>
+    <li>Pictures you create stay on the computer that made them. Their chats sync; the image files don't.</li>
+    <li>Sync doesn't give you AI access. You still use your own free accounts, one per provider.</li>
+  </ul>
+
+  <h2>How to start</h2>
+  <ol>
+    <li>In the app, open Settings › Sync and choose a plan. The app picks up your key by itself.</li>
+    <li>Choose a passphrase and save the recovery code it shows.</li>
+    <li>On your other computers, choose "I already have a key" and enter the key and the passphrase.</li>
+  </ol>
+
+  <h2>If your plan ends</h2>
+  <p>Sync stops, and nothing on your computers changes. Your encrypted data stays on the server for 90 days, so renewing picks up where you left off; after that it's deleted. A refunded or disputed payment stops sync at once, with the same 90 days.</p>
+
+  <h2 id="key">Send me my key</h2>
+  <p>Lost your sync key, or bought it on this website? Enter the email you paid with and we'll send every key bought with it.</p>
+  <form id="resend" class="resend" action="https://sync.{{domain}}/resend" method="post">
+    <label for="resend-email">Email</label>
+    <input id="resend-email" name="email" type="email" required autocomplete="email">
+    <button class="btn small-btn" type="submit">Send my key</button>
+  </form>
+  <p id="resend-done" class="small muted" role="status" hidden>If that address bought sync, the key is on its way. Check your inbox in a few minutes.</p>
+</div>

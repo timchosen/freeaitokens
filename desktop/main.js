@@ -17,8 +17,11 @@ import { validateKey, keySteps, connectOpenRouter } from 'freeaitokens/dist/node
 import { launchSpec, LAUNCH_TOOLS } from 'freeaitokens/dist/node/harness.js';
 import { route, NoCapacityError } from 'freeaitokens/dist/core/orchestrator.js';
 import { routeMedia, NoProviderError } from 'freeaitokens/dist/core/media.js';
-import { allowedUrl, choices, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType, privateAddress, mediaOptions, guessKind, sortedKind, audioType, pcmToWav } from './logic.js';
+import { allowedUrl, choices, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType, privateAddress, mediaOptions, guessKind, sortedKind, audioType, pcmToWav, pickRelease } from './logic.js';
 import './t.js';
+import { openChatStore, cleanChat, migrateChats } from './chats.js';
+import { createSyncService } from './syncsvc.js';
+import * as syncEngine from 'freeaitokens/dist/node/sync/engine.js';
 import { needsAccount, joinAccount } from 'freeaitokens/dist/core/catalogue.js';
 
 const here = (f) => fileURLToPath(new URL(f, import.meta.url));
@@ -97,7 +100,7 @@ ipcMain.handle('save', async (_e, id, key, account) => {
   const stored = needsAccount(prov) ? joinAccount(typeof account === 'string' ? account : '', key) : key.trim();
   if (!stored) return { ok: false, reason: t('err_account') };
   const v = await validateKey(prov, stored, fetch);
-  if (v.ok) keys.set(prov.id, stored);
+  if (v.ok) { keys.set(prov.id, stored); sync?.nudge(); }
   return v;
 });
 ipcMain.handle('connect', async (_e, id) => {
@@ -105,6 +108,7 @@ ipcMain.handle('connect', async (_e, id) => {
   if (!prov) return { ok: false, reason: 'not a connect provider' };
   try {
     keys.set(prov.id, await connectOpenRouter(fetch, (u) => void shell.openExternal(u)));
+    sync?.nudge();
     return { ok: true };
   } catch (e) {
     return { ok: false, reason: e.message };
@@ -154,9 +158,12 @@ ipcMain.handle('app:usage', (_e, days) => usageSummary((srv.reused ? loadState()
 ipcMain.handle('app:login', (_e, on) => { app.setLoginItemSettings({ openAtLogin: on === true }); refresh(); return app.getLoginItemSettings().openAtLogin; });
 ipcMain.handle('app:updates', async () => {
   try {
-    const r = await fetch('https://api.github.com/repos/timchosen/freeaitokens/releases/latest', { headers: { accept: 'application/vnd.github+json' }, signal: AbortSignal.timeout(10_000) });
-    const j = await r.json();
-    return { ok: true, latest: String(j.tag_name ?? ''), newer: newerVersion(app.getVersion(), String(j.tag_name ?? '')) };
+    // Pre-releases are offered first to people with an active sync plan (early access), then to everyone once marked latest.
+    const early = sync?.status().state === 'on';
+    const r = await fetch('https://api.github.com/repos/timchosen/freeaitokens/releases?per_page=20', { headers: { accept: 'application/vnd.github+json' }, signal: AbortSignal.timeout(10_000) });
+    const rel = pickRelease(await r.json(), app.getVersion(), early);
+    const url = rel?.url.startsWith('https://github.com/timchosen/freeaitokens/releases/') ? rel.url : undefined;
+    return { ok: true, latest: rel?.tag ?? '', newer: !!rel, early: !!rel?.early, url };
   } catch (e) {
     return { ok: false, reason: e.message };
   }
@@ -391,6 +398,50 @@ ipcMain.handle('app:transcribe', async () => {
   }
 });
 
+// Saved chats live in the state folder (not window storage) so sync can reach them.
+let chatStore;
+const chatsNow = () => (chatStore ??= openChatStore(join(stateDir(), 'chats.json'), syncEngine.mergeChat));
+ipcMain.handle('chats:list', () => chatsNow().list());
+ipcMain.handle('chats:put', (_e, c) => { const clean = cleanChat(c); if (clean && !clean.deleted) chatsNow().save(clean); return !!clean; });
+ipcMain.handle('chats:remove', (_e, id) => { if (typeof id === 'string') chatsNow().remove(id); });
+// The chats from window storage, once: ignored when the store already has chats.
+ipcMain.handle('chats:migrate', (_e, list) => {
+  if (!chatsNow().all().length) for (const c of migrateChats(list)) chatsNow().put(c);
+  return chatsNow().list();
+});
+
+// Sync: chats and provider keys, end-to-end encrypted, across this person's computers.
+const SYNC_BASE = 'https://sync.freeaitokens.co';
+let sync;
+const send = (ch, v) => mainWindow?.webContents.send(ch, v);
+function startSync() {
+  sync = createSyncService({
+    base: SYNC_BASE, keys, chats: chatsNow(), stateFile: join(stateDir(), 'sync.json'), fetch, engine: syncEngine,
+    providers: () => deps.catalogue.filter((p) => !p.keyless).map((p) => p.id),
+    onStatus: (s) => send('sync:status', s),
+    onPulled: () => { send('chats:changed'); refresh(); },
+  });
+  sync.start();
+}
+// Errors the person can act on get their own words; anything else is shown as it is.
+const syncError = (e) => ({ ok: false, error:
+  e instanceof syncEngine.WrongPassphraseError ? t('sync_wrong_pass')
+  : e?.code === 'bad_key' ? t('sync_bad_key')
+  : e?.code === 'bad_passphrase' ? t('sync_pass_hint')
+  : /recovery code/.test(e?.message ?? '') ? t('sync_bad_code')
+  : t('err_generic', { reason: e?.message ?? String(e) }) });
+const syncCall = (fn) => async (_e, ...a) => { try { return { ok: true, ...(await fn(...a)) }; } catch (e) { return syncError(e); } };
+ipcMain.handle('sync:status', () => sync.status());
+ipcMain.handle('sync:buy', syncCall(async (plan) => { await shell.openExternal(await sync.buy(plan === 'life' ? 'life' : 'year')); }));
+ipcMain.handle('sync:cancel', () => sync.cancelClaim());
+ipcMain.handle('sync:setup', syncCall((key, pass, confirmed) => sync.setup(key, pass, confirmed !== false)));
+ipcMain.handle('sync:now', syncCall(async () => { const r = await sync.syncNow(); return r.ok ? {} : { result: r }; }));
+ipcMain.handle('sync:recovery', () => sync.recovery());
+ipcMain.handle('sync:pass', syncCall((pass) => sync.changePassphrase(pass)));
+ipcMain.handle('sync:recover', syncCall((code, pass, key) => sync.recover(code, pass, typeof key === 'string' && key ? key.trim().toUpperCase() : undefined)));
+ipcMain.handle('sync:billing', syncCall(async () => { await shell.openExternal(await sync.billingUrl()); }));
+ipcMain.handle('sync:off', () => sync.turnOff());
+
 // Both windows ask for their strings; Settings changes the language and reloads them.
 ipcMain.handle('strings', () => ({
   lang: locale.lang, dir: locale.dir, strings,
@@ -435,7 +486,7 @@ app.on('window-all-closed', () => {}); // closing the add window must not quit t
 app.on('second-instance', () => openMain());
 app.on('activate', () => openMain());
 // A second copy quits before it has loaded anything, so there may be nothing to save.
-app.on('before-quit', async () => { if (deps) saveState(deps.tracker.state); await srv?.close(); });
+app.on('before-quit', async () => { sync?.stop(); if (deps) saveState(deps.tracker.state); await srv?.close(); });
 
 app.whenReady().then(async () => {
   app.dock?.hide();
@@ -454,6 +505,7 @@ app.whenReady().then(async () => {
     return;
   }
   refresh();
+  startSync();
   if (process.platform !== 'darwin') tray.on('click', openMain);
   if (!app.getLoginItemSettings().wasOpenedAtLogin) openMain();
 });

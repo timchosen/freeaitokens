@@ -301,3 +301,26 @@ test('mobile apps are shown as coming soon on the home and download pages in eve
   assert.match(readFileSync(join(out, 'de', 'download.html'), 'utf8'), /<li id="mobile">.*href="\/de\/#mobile"/);
   assert.match(readFileSync(join(out, 'ja', 'index.html'), 'utf8'), /近日公開/);
 });
+
+test('sync pages exist in every language, buy both plans from the sync Worker, and privacy and terms cover sync', () => {
+  const out = mkdtempSync(join(tmpdir(), 'site-'));
+  build(out);
+  for (const l of locales) {
+    const dir = l.code === 'en' ? out : join(out, l.code);
+    const sync = readFileSync(join(dir, 'sync.html'), 'utf8');
+    for (const plan of ['year', 'life']) assert.ok(sync.includes(`href="https://sync.freeaitokens.co/buy?plan=${plan}"`), `${l.code} buys ${plan}`);
+    assert.match(sync, /<form[^>]*id="resend"/, `${l.code} has the send-my-key form`);
+    if (l.code !== 'en') assert.ok(sync.includes(`<input type="hidden" name="lang" value="${l.code}">`), `${l.code} form says its language, for the no-JavaScript return`);
+    assert.ok(existsSync(join(dir, 'sync-thanks.html')), `${l.code} thanks page`);
+    assert.ok(readFileSync(join(dir, 'index.html'), 'utf8').includes(`href="${l.code === 'en' ? '' : `/${l.code}`}/sync"`), `${l.code} footer links to sync`);
+  }
+  assert.match(readFileSync(join(out, 'privacy.html'), 'utf8'), /90 days/);
+  assert.match(readFileSync(join(out, 'terms.html'), 'utf8'), /refund/i);
+  const headers = readFileSync(join(out, '_headers'), 'utf8');
+  assert.match(headers, /connect-src[^;]*https:\/\/sync\.freeaitokens\.co/);
+  assert.match(headers, /form-action https:\/\/sync\.freeaitokens\.co/, 'the send-my-key form also posts without JavaScript');
+});
+
+test('the Worker sends buyers back to the thanks page that exists', () => {
+  assert.match(readFileSync(new URL('../sync/src/billing.ts', import.meta.url), 'utf8'), /success_url: `\$\{env\.SITE_URL\}\/sync-thanks`/);
+});

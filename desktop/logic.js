@@ -123,6 +123,18 @@ export function newerVersion(current, tag) {
   return false;
 }
 
+// The newest published release that is newer than `current`. Pre-releases count only with early access
+// (an active sync plan): new versions go out as pre-releases first and become "latest" for everyone later.
+export function pickRelease(list, current, early) {
+  if (!Array.isArray(list)) return null;
+  let best = null;
+  for (const r of list) {
+    if (!r || r.draft || (r.prerelease && !early) || typeof r.tag_name !== 'string') continue;
+    if (newerVersion(best?.tag ?? current, r.tag_name)) best = { tag: r.tag_name, url: String(r.html_url ?? ''), early: !!r.prerelease };
+  }
+  return best;
+}
+
 // The Usage page: the last `days` days (empty days included), totals, and providers by requests.
 export function usageSummary(usage, days, catalogue, now = Date.now()) {
   const list = [];

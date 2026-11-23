@@ -103,11 +103,20 @@ for (const b of document.querySelectorAll('[data-copy]')) {
 $('addTop').addEventListener('click', () => api.add());
 $('addProv').addEventListener('click', () => api.add());
 
-// Playground: chats are saved in this window's storage, on this computer only.
-const STORE = 'freeaitokens.chats';
-const load = () => { try { return JSON.parse(localStorage.getItem(STORE)) ?? []; } catch { return []; } };
-const save = () => { try { localStorage.setItem(STORE, JSON.stringify(chats.slice(0, 100))); } catch { /* storage full or blocked */ } };
-let chats = load();
+// Playground: chats are saved by the main process in the app's state folder.
+const OLD_STORE = 'freeaitokens.chats'; // where chats lived before sync; moved once
+let chats = [];
+async function loadChats() {
+  let old = null;
+  try { old = localStorage.getItem(OLD_STORE); } catch { /* storage blocked */ }
+  if (old) {
+    try {
+      chats = await api.chats.migrate(JSON.parse(old));
+      try { localStorage.removeItem(OLD_STORE); } catch { /* storage blocked */ }
+    } catch { chats = await api.chats.list(); } // kept in window storage, so the next start tries again
+  } else chats = await api.chats.list();
+}
+const save = (c) => api.chats.put(c);
 let current = null; // the open chat, or null for a new one
 
 // A small drawn icon (16×16, stroked with the text colour).
@@ -132,7 +141,7 @@ function listChats() {
     x.setAttribute('aria-label', t('delete_chat', { title: c.title }));
     x.addEventListener('click', () => {
       api.dropImages(c.messages.flatMap((m) => [m.image, m.audio]).filter(Boolean));
-      chats = chats.filter((y) => y !== c); save(); if (current === c) openChat(null); else listChats();
+      chats = chats.filter((y) => y !== c); api.chats.remove(c.id); if (current === c) openChat(null); else listChats();
     });
     li.append(b, x);
     return li;
@@ -215,7 +224,7 @@ function speakButton(m, box) {
     if (!r.ok) { box.append(el('p', 'status err-line', r.reason)); return; }
     audioSrcs.set(r.audio, r.src);
     m.audio = r.audio;
-    save();
+    if (current) { current.updated = Date.now(); save(current); }
     b.remove();
     box.querySelector('.meta').before(player(m));
     box.querySelector('audio').play().catch(() => {});
@@ -260,9 +269,9 @@ $('chat').addEventListener('click', (e) => {
 async function send() {
   const text = $('prompt').value.trim();
   if (!text || $('send').disabled) return;
-  if (!current) { current = { id: Date.now(), title: text.slice(0, 60), model: $('model').value, mode, messages: [], updated: Date.now() }; chats.unshift(current); }
+  if (!current) { current = { id: crypto.randomUUID(), title: text.slice(0, 60), model: $('model').value, mode, messages: [], updated: Date.now() }; chats.unshift(current); }
   const chat = current, asking = mode, model = $('model').value; // read before waiting: the person may switch chats
-  const asked = { role: 'user', content: text };
+  const asked = { id: crypto.randomUUID(), at: Date.now(), role: 'user', content: text };
   chat.messages.push(asked);
   bubble(asked);
   $('prompt').value = '';
@@ -283,16 +292,24 @@ async function send() {
   if (r.ok && r.image) srcs.set(r.image, r.src);
   if (r.ok && r.audio) audioSrcs.set(r.audio, r.src);
   const meta = r.ok ? { provider: r.provider, model: r.model, ms: r.ms, ...(r.tokens ? { tokens: r.tokens } : {}), ...(auto && auto !== 'chat' ? { auto } : {}) } : null;
-  chat.messages.push(!r.ok ? { role: 'assistant', content: r.reason, error: true }
-    : r.image ? { role: 'assistant', content: '', image: r.image, prompt: text, meta }
-    : r.audio ? { role: 'assistant', kind: 'speech', content: r.text ?? '', audio: r.audio, meta }
-    : { role: 'assistant', content: r.text, meta });
+  const stamp = { id: crypto.randomUUID(), at: Date.now() };
+  chat.messages.push(!r.ok ? { ...stamp, role: 'assistant', content: r.reason, error: true }
+    : r.image ? { ...stamp, role: 'assistant', content: '', image: r.image, prompt: text, meta }
+    : r.audio ? { ...stamp, role: 'assistant', kind: 'speech', content: r.text ?? '', audio: r.audio, meta }
+    : { ...stamp, role: 'assistant', content: r.text, meta });
   chat.model = model;
   chat.mode = asking;
   chat.updated = Date.now();
-  chats = [chat, ...chats.filter((c) => c !== chat)];
-  save();
+  chats = [chat, ...chats.filter((c) => c.id !== chat.id)]; // by id: sync may have swapped in a fresh copy meanwhile
+  const saved = await save(chat);
   if (current === chat) bubble(chat.messages.at(-1));
+  if (!saved && current === chat) bubble({ role: 'assistant', content: t('chat_too_long'), error: true }); // shown, not stored
+  else if (current?.id === chat.id) {
+    // Sync refreshed this chat while we waited: show the stored copy, which now holds both sides.
+    chats = await api.chats.list();
+    current = chats.find((c) => c.id === chat.id) ?? null;
+    if (current) openChat(current);
+  }
   listChats();
   refresh();
 }
@@ -309,13 +326,14 @@ $('attach').addEventListener('click', async () => {
   $('attach').disabled = busy = false;
   fillModels();
   if (r.canceled) return;
-  if (!current) { current = { id: Date.now(), title: t('transcribe_file', { name: r.name ?? '' }).slice(0, 60), model: $('model').value, mode, messages: [], updated: Date.now() }; chats.unshift(current); }
+  if (!current) { current = { id: crypto.randomUUID(), title: t('transcribe_file', { name: r.name ?? '' }).slice(0, 60), model: $('model').value, mode, messages: [], updated: Date.now() }; chats.unshift(current); }
   const chat = current;
-  chat.messages.push({ role: 'user', content: t('transcribe_file', { name: r.name ?? '' }), kind: 'file' },
-    r.ok ? { role: 'assistant', content: r.text, meta: { provider: r.provider, model: r.model, ms: r.ms } } : { role: 'assistant', content: r.reason, error: true });
+  const at = Date.now();
+  chat.messages.push({ id: crypto.randomUUID(), at, role: 'user', content: t('transcribe_file', { name: r.name ?? '' }), kind: 'file' },
+    { id: crypto.randomUUID(), at, ...(r.ok ? { role: 'assistant', content: r.text, meta: { provider: r.provider, model: r.model, ms: r.ms } } : { role: 'assistant', content: r.reason, error: true }) });
   chat.updated = Date.now();
-  chats = [chat, ...chats.filter((c) => c !== chat)];
-  save();
+  chats = [chat, ...chats.filter((c) => c.id !== chat.id)];
+  save(chat);
   if (current === chat) { bubble(chat.messages.at(-2)); bubble(chat.messages.at(-1)); }
   listChats();
   refresh();
@@ -405,24 +423,127 @@ $('checkUpd').addEventListener('click', async () => {
   $('checkUpd').disabled = false;
   if (!r.ok) { $('updText').textContent = t('upd_failed', { reason: r.reason }); return; }
   if (!r.newer) { $('updText').textContent = t('upd_latest', { v: version }); return; }
-  $('updText').textContent = `${t('upd_out', { v: r.latest })} `;
+  $('updText').textContent = `${t('upd_out', { v: r.latest })} ${r.early ? `${t('upd_early')} ` : ''}`;
   const a = el('a', '', t('upd_download'));
-  a.href = 'https://freeaitokens.co/download';
+  a.href = r.early && r.url ? r.url : 'https://freeaitokens.co/download'; // a pre-release isn't on the download page yet
   a.addEventListener('click', (e) => { e.preventDefault(); api.open(a.href); });
   $('updText').append(a);
 });
 $('clearChats').addEventListener('click', () => {
   if (!confirm(t('confirm_delete'))) return;
+  for (const c of chats) api.chats.remove(c.id);
   chats = [];
   api.dropImages('all');
-  save();
   openChat(null);
 });
 $('lang').addEventListener('change', () => api.lang($('lang').value)); // the main process reloads this window
 $('theme').addEventListener('change', async () => { $('theme').value = await api.theme($('theme').value); });
 
-applyStrings().then(() => {
+// Settings › Sync. The main process does the work; this shows which of its states we are in.
+let syncStatus = { state: 'off' }, syncForm = null; // form: 'new' | 'have' | 'recover' | 'change'
+const SYNC_PANELS = ['syncOff', 'syncWait', 'syncForm', 'syncCodeView', 'syncOn', 'syncEnded'];
+const showPanel = (id) => { for (const p of SYNC_PANELS) $(p).hidden = p !== id; };
+const syncSay = (text, bad = false) => { $('syncMsg').textContent = text ?? ''; $('syncMsg').classList.toggle('bad', bad); };
+function fmtSize(bytes = 0) {
+  const mb = bytes >= 1_000_000;
+  return new Intl.NumberFormat(tag, { style: 'unit', unit: mb ? 'megabyte' : 'kilobyte', maximumFractionDigits: 1 }).format(mb ? bytes / 1_000_000 : Math.max(bytes / 1000, bytes ? 0.1 : 0));
+}
+function renderSync() {
+  if (syncForm || !$('syncCodeView').hidden) return; // the person is in the middle of something
+  const s = syncStatus;
+  if (s.key) return openSyncForm('new', s.key);
+  if (s.state === 'waiting') return showPanel('syncWait');
+  if (s.state === 'off') return showPanel('syncOff');
+  if (s.state === 'expired' || s.state === 'revoked') {
+    $('syncEndedText').textContent = t(s.state === 'expired' ? 'sync_expired' : 'sync_revoked');
+    $('syncRenew').hidden = $('syncUpgrade').hidden = s.state === 'revoked';
+    return showPanel('syncEnded');
+  }
+  const when = s.last ? t('sync_last', { time: new Date(s.last).toLocaleString(tag) }) : t('sync_never');
+  const plan = s.plan === 'life' ? t('sync_plan_life') : s.paidUntil ? t('sync_plan_year', { date: new Date(s.paidUntil).toLocaleDateString(tag) }) : '';
+  $('syncInfo').textContent = [when, s.items != null ? t('sync_usage', { items: s.items, size: fmtSize(s.bytes) }) : '', plan].filter(Boolean).join(' · ');
+  $('syncManage').hidden = $('syncUpgradeOn').hidden = s.plan !== 'year';
+  showPanel('syncOn');
+  if (s.state === 'error') syncSay(s.reason === 'offline' ? t('sync_offline') : s.reason === 'full' ? t('sync_full') : t('sync_failed', { reason: s.detail ?? s.reason ?? '' }), true);
+}
+function openSyncForm(kind, key = '') {
+  syncForm = kind;
+  $('syncGot').hidden = kind !== 'new';
+  $('syncKeyRow').hidden = kind === 'change';
+  $('syncKey').value = key;
+  $('syncKey').readOnly = kind === 'new';
+  $('syncCodeRow').hidden = kind !== 'recover';
+  $('syncPass2Row').hidden = kind === 'have';
+  $('syncForgot').hidden = kind !== 'have';
+  $('syncGo').textContent = t(kind === 'change' || kind === 'recover' ? 'sync_use_code' : 'sync_start');
+  if (kind === 'change') $('syncGo').textContent = t('sync_change_pass');
+  $('syncPass').value = $('syncPass2').value = $('syncCode').value = '';
+  syncSay('');
+  showPanel('syncForm');
+  (kind === 'have' ? $('syncKey') : kind === 'recover' ? $('syncCode') : $('syncPass')).focus();
+}
+function showCode(code) {
+  $('syncCodeText').textContent = code;
+  showPanel('syncCodeView');
+}
+async function syncDo(btn, fn) {
+  btn.disabled = true;
+  syncSay(t('sync_working'));
+  try {
+    const r = await fn();
+    if (r && r.ok === false) { syncSay(r.error, true); return null; }
+    syncSay('');
+    return r;
+  } finally { btn.disabled = false; }
+}
+const refreshSync = async () => { syncStatus = await api.sync.status(); renderSync(); };
+api.onSync((s) => { syncStatus = s; renderSync(); });
+api.onChats(async () => {
+  const id = current?.id;
+  chats = await api.chats.list();
+  current = chats.find((c) => c.id === id) ?? null;
+  if (current) openChat(current); else listChats();
+});
+$('syncYear').addEventListener('click', (e) => syncDo(e.currentTarget, () => api.sync.buy('year')));
+$('syncLife').addEventListener('click', (e) => syncDo(e.currentTarget, () => api.sync.buy('life')));
+$('syncRenew').addEventListener('click', (e) => syncDo(e.currentTarget, () => api.sync.buy('year')));
+$('syncUpgrade').addEventListener('click', (e) => syncDo(e.currentTarget, () => api.sync.buy('life')));
+$('syncUpgradeOn').addEventListener('click', (e) => syncDo(e.currentTarget, () => api.sync.buy('life')));
+$('syncHave').addEventListener('click', () => openSyncForm('have'));
+$('syncCancel').addEventListener('click', () => api.sync.cancel());
+$('syncBack').addEventListener('click', () => { syncForm = null; refreshSync(); });
+$('syncForgot').addEventListener('click', () => openSyncForm('recover', $('syncKey').value));
+$('syncForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const kind = syncForm, pass = $('syncPass').value;
+  if (!$('syncPass2Row').hidden && pass !== $('syncPass2').value) return syncSay(t('sync_pass_mismatch'), true);
+  const r = await syncDo($('syncGo'), () =>
+    kind === 'change' ? api.sync.pass(pass)
+    : kind === 'recover' ? api.sync.recover($('syncCode').value, pass, $('syncKey').value)
+    : api.sync.setup($('syncKey').value, pass, !$('syncPass2Row').hidden));
+  if (!r) return;
+  if (r.confirm) { // a key with no account yet: its first passphrase is typed twice
+    $('syncPass2Row').hidden = false;
+    syncSay(t('sync_confirm_new'));
+    return $('syncPass2').focus();
+  }
+  syncForm = null;
+  $('syncPass').value = $('syncPass2').value = '';
+  if (r.recovery) return showCode(r.recovery);
+  await refreshSync();
+  if (kind === 'change' || kind === 'recover') syncSay(t('sync_pass_changed'));
+});
+$('syncCodeCopy').addEventListener('click', () => navigator.clipboard.writeText($('syncCodeText').textContent));
+$('syncCodeDone').addEventListener('click', () => { $('syncCodeText').textContent = ''; showPanel(null); refreshSync(); });
+$('syncNow').addEventListener('click', async (e) => { await syncDo(e.currentTarget, () => api.sync.now()); refreshSync(); });
+$('syncShow').addEventListener('click', async () => { const c = await api.sync.recovery(); if (c) showCode(c); });
+$('syncPassBtn').addEventListener('click', () => openSyncForm('change'));
+$('syncManage').addEventListener('click', (e) => syncDo(e.currentTarget, () => api.sync.billing()));
+for (const id of ['syncOffBtn', 'syncOffBtn2']) $(id).addEventListener('click', () => { if (confirm(t('sync_confirm_off'))) api.sync.off(); });
+
+applyStrings().then(loadChats).then(() => {
   listChats();
+  refreshSync();
   refresh();
   setInterval(() => { if (document.hidden) return; refresh(); if (!$('usage').hidden) showUsage(); }, 15_000);
   window.addEventListener('focus', refresh);

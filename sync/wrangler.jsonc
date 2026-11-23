@@ -1,0 +1,14 @@
+// sync.freeaitokens.co: the encrypted sync server. Setup steps are in sync/README.md.
+{
+  "name": "freeaitokens-sync",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-15",
+  "routes": [{ "pattern": "sync.freeaitokens.co", "custom_domain": true }],
+  // database_id comes from `wrangler d1 create freeaitokens-sync` (owner step).
+  "d1_databases": [{ "binding": "SYNC_DB", "database_name": "freeaitokens-sync", "database_id": "SET_AFTER_D1_CREATE" }],
+  "r2_buckets": [{ "binding": "SYNC_BLOBS", "bucket_name": "freeaitokens-sync" }],
+  "send_email": [{ "name": "EMAIL" }],
+  "triggers": { "crons": ["17 3 * * *"] },
+  "vars": { "SITE_URL": "https://freeaitokens.co" }
+  // Secrets (wrangler secret put): STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, LICENSE_SECRET, EMAIL_SECRET, STRIPE_PRICE_YEAR, STRIPE_PRICE_LIFE
+}

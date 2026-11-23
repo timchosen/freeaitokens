@@ -1,0 +1,58 @@
+<!-- title: Synchronisierung | description: Dieselben FreeAITokens-Chats und Anbieterschlüssel auf all deinen Computern, Ende-zu-Ende-verschlüsselt, für 10 $ im Jahr oder einmalig 49 $. -->
+<div class="page">
+  <h1>Synchronisierung</h1>
+  <p class="lead">Dieselben Chats und Anbieterschlüssel auf all deinen Computern. Alles wird auf deinem Computer verschlüsselt, bevor es ihn verlässt, und nur deine Passphrase öffnet es.</p>
+
+  <div class="cards">
+    <div class="card">
+      <h3>Ein Jahr</h3>
+      <p class="price"><b>10 $</b> im Jahr</p>
+      <p>Verlängert sich jedes Jahr. Jederzeit in der App kündbar.</p>
+      <p><a class="btn small-btn" href="https://sync.{{domain}}/buy?plan=year">Ein Jahr synchronisieren</a></p>
+    </div>
+    <div class="card">
+      <h3>Dauerhaft</h3>
+      <p class="offer">Begrenztes Einführungsangebot</p>
+      <p class="price"><b>49 $</b> einmalig</p>
+      <p>Eine Zahlung, keine Verlängerungen.</p>
+      <p><a class="btn small-btn" href="https://sync.{{domain}}/buy?plan=life">Dauerhaft synchronisieren</a></p>
+    </div>
+  </div>
+  <p class="small muted">Preise in US-Dollar. Stripe verkauft die Synchronisierung und kümmert sich um Zahlung und Steuern.</p>
+
+  <h2>Was die Synchronisierung tut</h2>
+  <ul>
+    <li>Deine gespeicherten Chats und Anbieterschlüssel erscheinen auf jedem Computer, auf dem du die Synchronisierung einschaltest.</li>
+    <li>Eine Änderung auf einem Computer erreicht die anderen in etwa einer Minute.</li>
+    <li>Sie läuft in der FreeAITokens-App für Mac, Windows und Linux. Das Kommandozeilenwerkzeug synchronisiert nicht.</li>
+    <li>Früher Zugang zu neuen App-Versionen: Solange dein Synchronisierungstarif aktiv ist, bietet dir die App neue Versionen an, bevor sie allen angeboten werden.</li>
+  </ul>
+
+  <h2>Was sie nicht tut</h2>
+  <ul>
+    <li><b>Der Synchronisierungsserver kann deine Daten nicht lesen.</b> Chats und Schlüssel werden auf deinem Computer mit einem Schlüssel verschlüsselt, den nur deine Passphrase öffnet. Der Server speichert unlesbare Daten, ihre Größe und wann sie sich geändert haben.</li>
+    <li><b>Niemand kann deine Passphrase zurücksetzen.</b> Beim Einrichten bekommst du einen Wiederherstellungscode. Vergisst du die Passphrase und verlierst den Code, lassen sich deine synchronisierten Daten nicht mehr öffnen. Was auf deinen Computern liegt, bleibt dort.</li>
+    <li>Bilder, die du erstellst, bleiben auf dem Computer, der sie gemacht hat. Ihre Chats werden synchronisiert, die Bilddateien nicht.</li>
+    <li>Die Synchronisierung gibt dir keinen KI-Zugang. Du nutzt weiterhin deine eigenen kostenlosen Konten, eines pro Anbieter.</li>
+  </ul>
+
+  <h2>So fängst du an</h2>
+  <ol>
+    <li>Öffne in der App Einstellungen › Synchronisierung und wähle einen Tarif. Die App holt deinen Schlüssel von selbst ab.</li>
+    <li>Wähle eine Passphrase und bewahre den angezeigten Wiederherstellungscode auf.</li>
+    <li>Wähle auf deinen anderen Computern „Ich habe schon einen Schlüssel“ und gib Schlüssel und Passphrase ein.</li>
+  </ol>
+
+  <h2>Wenn dein Tarif endet</h2>
+  <p>Die Synchronisierung stoppt, und auf deinen Computern ändert sich nichts. Deine verschlüsselten Daten bleiben 90 Tage auf dem Server, sodass eine Verlängerung dort weitermacht, wo du aufgehört hast; danach werden sie gelöscht. Eine erstattete oder angefochtene Zahlung stoppt die Synchronisierung sofort, mit denselben 90 Tagen.</p>
+
+  <h2 id="key">Schick mir meinen Schlüssel</h2>
+  <p>Schlüssel verloren oder auf dieser Website gekauft? Gib die E-Mail-Adresse ein, mit der du bezahlt hast, und wir schicken dir alle damit gekauften Schlüssel.</p>
+  <form id="resend" class="resend" action="https://sync.{{domain}}/resend" method="post">
+    <input type="hidden" name="lang" value="de">
+    <label for="resend-email">E-Mail</label>
+    <input id="resend-email" name="email" type="email" required autocomplete="email">
+    <button class="btn small-btn" type="submit">Schlüssel senden</button>
+  </form>
+  <p id="resend-done" class="small muted" role="status" hidden>Wenn mit dieser Adresse die Synchronisierung gekauft wurde, ist der Schlüssel unterwegs. Schau in ein paar Minuten in dein Postfach.</p>
+</div>

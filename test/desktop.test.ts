@@ -1,7 +1,8 @@
 import { test } from 'node:test';
+import { randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
 // @ts-ignore plain JS module
-import { allowedUrl, choices, menuLine, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType, privateAddress, guessKind, sortedKind, audioType, mediaOptions, pcmToWav } from '../desktop/logic.js';
+import { allowedUrl, choices, menuLine, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType, privateAddress, guessKind, sortedKind, audioType, mediaOptions, pcmToWav, pickRelease } from '../desktop/logic.js';
 import { readFileSync as readText } from 'node:fs';
 import vm from 'node:vm';
 
@@ -315,4 +316,330 @@ test('pcmToWav gives raw PCM speech a WAV header from its content type, and leav
   assert.equal(v.getUint32(40, true), 8);
   assert.equal(pcmToWav(pcm, 'audio/mpeg'), pcm);
   assert.equal(pcmToWav(pcm, null), pcm);
+});
+
+// Task 8: chats kept in the app's state folder
+// @ts-ignore plain JS module
+import { migrateChats, openChatStore, cleanChat } from '../desktop/chats.js';
+import { mkdtempSync, statSync, readFileSync as readF, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join as pjoin } from 'node:path';
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+test('migrateChats gives every chat and message an id and a time, keeping order and content', () => {
+  const old = [
+    { id: 1700000000000, title: 'b', model: 'free', mode: 'chat', updated: 2000, messages: [{ role: 'user', content: 'hi' }, { role: 'assistant', content: 'yo', meta: { provider: 'Groq', model: 'x', ms: 3 } }] },
+    { title: 'a', model: 'free', updated: 1000, messages: [{ role: 'user', content: 'pic', kind: 'image' }, { role: 'assistant', content: '', image: '0b5c7a3e-1f2d-4c5b-9a8e-7d6c5b4a3f21.png', prompt: 'pic' }] },
+  ];
+  const out = migrateChats(old);
+  assert.equal(out.length, 2);
+  assert.deepEqual(out.map((c: any) => c.title), ['b', 'a']);
+  for (const c of out) {
+    assert.match(c.id, UUID);
+    for (const m of c.messages) assert.match(m.id, UUID);
+    const at = c.messages.map((m: any) => m.at);
+    assert.deepEqual([...at].sort((x, y) => x - y), at, 'times keep message order');
+    assert.ok(at.at(-1) <= c.updated);
+  }
+  assert.equal(out[0].messages[1].content, 'yo');
+  assert.deepEqual(out[0].messages[1].meta, { provider: 'Groq', model: 'x', ms: 3 });
+  assert.equal(out[1].messages[1].image, '0b5c7a3e-1f2d-4c5b-9a8e-7d6c5b4a3f21.png');
+  assert.equal(out[0].mode, 'chat');
+  assert.deepEqual(migrateChats('junk'), []);
+  assert.deepEqual(migrateChats([null, 5, { title: 'x' }]), []);
+});
+
+test('cleanChat refuses oversized or malformed chats', () => {
+  const ok = migrateChats([{ title: 't', model: 'free', updated: 1, messages: [{ role: 'user', content: 'hi' }] }])[0];
+  assert.ok(cleanChat(ok));
+  assert.equal(cleanChat({ ...ok, id: 'not-a-uuid' }), null);
+  assert.equal(cleanChat({ ...ok, messages: [{ ...ok.messages[0], role: 'system' }] }), null);
+  assert.equal(cleanChat({ ...ok, messages: [{ ...ok.messages[0], content: 'x'.repeat(100_001) }] }), null);
+  assert.equal(cleanChat({ ...ok, messages: [{ ...ok.messages[0], image: '../../etc/passwd' }] }), null);
+});
+
+test('chat store round-trips through its file, owner-only, and remove leaves a hidden tombstone', () => {
+  const file = pjoin(mkdtempSync(pjoin(tmpdir(), 'fat-chats-')), 'chats.json');
+  const s = openChatStore(file);
+  const [a, b] = migrateChats([{ title: 'a', model: 'free', updated: 1, messages: [] }, { title: 'b', model: 'free', updated: 2, messages: [] }]);
+  const seen: string[] = [];
+  s.onChange((id: string) => seen.push(id));
+  s.put(a); s.put(b);
+  assert.deepEqual(openChatStore(file).list().map((c: any) => c.title), ['b', 'a'], 'newest first, from disk');
+  if (process.platform !== 'win32') assert.equal(statSync(file).mode & 0o777, 0o600);
+  s.remove(a.id);
+  assert.deepEqual(s.list().map((c: any) => c.title), ['b']);
+  const raw = JSON.parse(readF(file, 'utf8'));
+  const stub = raw.chats.find((c: any) => c.id === a.id);
+  assert.ok(stub.deleted && stub.messages.length === 0);
+  assert.equal(stub.updated, 1, 'the stub keeps the removed copy\'s time, so edits it never saw still win');
+  assert.deepEqual(seen, [a.id, b.id, a.id]);
+});
+
+// Task 9: the desktop sync service against the real Worker
+// @ts-ignore plain JS module
+import { createSyncService } from '../desktop/syncsvc.js';
+import worker from '../sync/src/index.ts';
+import { licenseKey } from '../sync/src/license.ts';
+import { makeEnv, addLicense } from './helpers/sync-env.ts';
+
+function fakeKeys() {
+  const m = new Map<string, string>();
+  return { backend: 'keychain', get: (k: string) => m.get(k) ?? null, set: (k: string, v: string) => { m.set(k, v); }, remove: (k: string) => { m.delete(k); } };
+}
+
+test('sync service: buy and claim a key, set up, a second computer pulls chats and keys, turning off forgets only sync', async () => {
+  const { env, db } = makeEnv();
+  const wctx = { waitUntil() {}, passThroughOnException() {} } as any;
+  const f = (async (u: any, i?: any) => worker.fetch(new Request(u, i), env, wctx)) as typeof fetch;
+  const engine = await import('../src/node/sync/engine.ts');
+  const mk = () => {
+    const dir = mkdtempSync(pjoin(tmpdir(), 'fat-sync-'));
+    const keys = fakeKeys();
+    const chats = openChatStore(pjoin(dir, 'chats.json'));
+    const svc = createSyncService({ base: 'https://sync.test', keys, chats, stateFile: pjoin(dir, 'sync.json'), fetch: f, engine, providers: () => ['groq', 'cf'] });
+    return { keys, chats, svc };
+  };
+  const A = mk();
+  A.keys.set('groq', 'gsk_1');
+  const [c] = migrateChats([{ title: 'hi', model: 'free', updated: 5, messages: [{ role: 'user', content: 'yo' }] }]);
+  A.chats.put(c);
+  assert.equal(A.svc.status().state, 'off');
+
+  const url = await A.svc.buy('year');
+  assert.match(url, /^https:\/\/sync\.test\/buy\?plan=year&claim=[0-9a-f]{64}$/);
+  assert.equal(A.svc.status().state, 'waiting');
+  assert.equal(await A.svc.pollClaim(), null, 'nothing paid yet');
+  const key = await licenseKey('lic-secret', 'cs_t1');
+  await addLicense(db, key, { session: 'cs_t1' });
+  db.prepare('INSERT INTO claims (claim_hash, session, expires) VALUES (?, ?, ?)').run(url.split('claim=')[1], 'cs_t1', Date.now() + 60_000);
+  assert.equal(await A.svc.pollClaim(), key);
+  assert.equal(A.svc.status().key, key, 'the key is shown until a passphrase is set');
+
+  await assert.rejects(A.svc.setup('FAT-nope', 'a long passphrase'), /key/);
+  await assert.rejects(A.svc.setup(key, 'short'), /passphrase/);
+  const { recovery } = await A.svc.setup(key, 'a long passphrase');
+  assert.match(recovery, /^[A-Z2-7]{4}-/);
+  assert.equal(A.svc.recovery(), recovery);
+  assert.equal(A.svc.status().state, 'on');
+  assert.equal(A.svc.status().plan, 'year');
+  assert.equal(A.keys.get('sync:license'), key);
+
+  const B = mk();
+  B.keys.set('cf', 'acct:cf_2');
+  await assert.rejects(B.svc.setup(key, 'the wrong passphrase'), engine.WrongPassphraseError);
+  assert.deepEqual(await B.svc.setup(key, 'a long passphrase'), {});
+  assert.deepEqual(B.chats.list().map((x: any) => x.title), ['hi']);
+  assert.equal(B.keys.get('groq'), 'gsk_1');
+
+  // A change on B reaches A.
+  B.chats.put({ ...B.chats.list()[0], title: 'renamed', updated: 10 });
+  assert.equal((await B.svc.syncNow()).ok, true);
+  assert.equal((await A.svc.syncNow()).ok, true);
+  assert.deepEqual(A.chats.list().map((x: any) => x.title), ['renamed']);
+  assert.equal(A.keys.get('cf'), 'acct:cf_2');
+
+  B.svc.turnOff();
+  assert.equal(B.keys.get('sync:license'), null);
+  assert.equal(B.keys.get('sync:datakey'), null);
+  assert.equal(B.keys.get('groq'), 'gsk_1');
+  assert.equal(B.chats.list().length, 1);
+  assert.equal(B.svc.status().state, 'off');
+});
+
+test('sync service: synced keys touch only known providers, and only sync or Stripe pages are opened', async () => {
+  const engine = await import('../src/node/sync/engine.ts');
+  const keys = fakeKeys();
+  keys.set('sync:license', 'FAT-AAAAA-AAAAA-AAAAA-AAAAA-AAAAA');
+  keys.set('sync:datakey', Buffer.alloc(32, 1).toString('base64'));
+  const dir = mkdtempSync(pjoin(tmpdir(), 'fat-sync-'));
+  let reply: any = {};
+  const f = (async () => new Response(JSON.stringify(reply), { status: 200 })) as unknown as typeof fetch;
+  // An engine that brings back a bundle naming a sync secret and an unknown provider.
+  const fakeEngine = { ...engine, SyncEngine: class { o: any; constructor(o: any) { this.o = o; } async run() {
+    for (const [p, k] of [['sync:license', 'FAT-EVILX-EVILX-EVILX-EVILX-EVILX'], ['nope', 'x'], ['groq', 'gsk_ok']]) this.o.store.setKey(p, k);
+    return { ok: true, pulled: 1, pushed: 0 };
+  } } };
+  const svc = createSyncService({ base: 'https://sync.test', keys, chats: openChatStore(pjoin(dir, 'c.json')), stateFile: pjoin(dir, 's.json'), fetch: f, engine: fakeEngine, providers: () => ['groq'] });
+  await svc.syncNow();
+  assert.equal(keys.get('sync:license'), 'FAT-AAAAA-AAAAA-AAAAA-AAAAA-AAAAA');
+  assert.equal(keys.get('nope'), null);
+  assert.equal(keys.get('groq'), 'gsk_ok');
+  for (const url of ['file:///etc/passwd', 'http://checkout.stripe.com/x', 'https://evil.example/pay', 'javascript:alert(1)']) {
+    reply = { url };
+    await assert.rejects(svc.buy('year'), /not a payment page/, url);
+    await assert.rejects(svc.billingUrl(), /not a payment page/, url);
+  }
+  reply = { url: 'https://checkout.stripe.com/c/pay/cs_1' };
+  assert.equal(await svc.buy('life'), 'https://checkout.stripe.com/c/pay/cs_1');
+  reply = { url: 'https://billing.stripe.com/p/session/x' };
+  assert.equal(await svc.billingUrl(), 'https://billing.stripe.com/p/session/x');
+});
+
+// Two computers on one sync key, with a switch that takes the network away.
+async function twoComputers(opts: { aKeys?: Record<string, string>; bKeys?: Record<string, string> } = {}) {
+  const { env, db } = makeEnv();
+  const wctx = { waitUntil() {}, passThroughOnException() {} } as any;
+  const net: { down: boolean; hook?: (url: string, init?: any) => Response | Error | undefined } = { down: false };
+  const f = (async (u: any, i?: any) => {
+    if (net.down) throw new TypeError('fetch failed');
+    const hit = net.hook?.(String(u), i);
+    if (hit instanceof Error) throw hit;
+    return hit ?? worker.fetch(new Request(u, i), env, wctx);
+  }) as typeof fetch;
+  const engine = await import('../src/node/sync/engine.ts');
+  const key = await licenseKey('lic-secret', 'cs_two');
+  await addLicense(db, key, { session: 'cs_two' });
+  const mk = (preset: Record<string, string> = {}) => {
+    const dir = mkdtempSync(pjoin(tmpdir(), 'fat-sync-'));
+    const keys = fakeKeys();
+    for (const [p, k] of Object.entries(preset)) keys.set(p, k);
+    const chats = openChatStore(pjoin(dir, 'chats.json'));
+    const svc = createSyncService({ base: 'https://sync.test', keys, chats, stateFile: pjoin(dir, 'sync.json'), fetch: f, engine, providers: () => ['groq', 'cf'] });
+    svc.start(); svc.stop(); // started, so edits are marked for the next push, but no timers left running
+    return { keys, chats, svc };
+  };
+  const A = mk(opts.aKeys);
+  await A.svc.setup(key, 'a long passphrase');
+  const B = mk(opts.bKeys);
+  await B.svc.setup(key, 'a long passphrase');
+  return { A, B, net, key, db, env };
+}
+
+test('sync service: a chat edited while offline is pushed once the network is back', async () => {
+  const { A, B, net } = await twoComputers();
+  const [c] = migrateChats([{ title: 'plane', model: 'free', updated: 5, messages: [{ role: 'user', content: 'yo' }] }]);
+  net.down = true;
+  B.chats.put(c);
+  assert.equal((await B.svc.syncNow()).ok, false, 'offline');
+  net.down = false;
+  assert.equal((await B.svc.syncNow()).ok, true);
+  await A.svc.syncNow();
+  assert.deepEqual(A.chats.list().map((x: any) => x.title), ['plane']);
+});
+
+test('sync service: joining with an old copy of a key keeps the account\'s current key, and adds keys only the new computer has', async () => {
+  const { A, B } = await twoComputers({ aKeys: { groq: 'gsk_current' }, bKeys: { groq: 'gsk_old', cf: 'acct:cf_b' } });
+  assert.equal(B.keys.get('groq'), 'gsk_current');
+  await A.svc.syncNow();
+  assert.equal(A.keys.get('groq'), 'gsk_current');
+  assert.equal(A.keys.get('cf'), 'acct:cf_b');
+});
+
+test('sync service: a keychain item that cannot be read is left alone, never synced as a removal', async () => {
+  const { A, B } = await twoComputers({ aKeys: { groq: 'gsk_1' } });
+  assert.equal(B.keys.get('groq'), 'gsk_1');
+  // As after an app update when the person clicks Deny: the plain read says "no key", the strict one throws.
+  const plainGet = B.keys.get;
+  (B.keys as any).get = (k: string) => (k === 'groq' ? null : plainGet(k));
+  (B.keys as any).read = (k: string) => { if (k === 'groq') throw new Error('User interaction is not allowed.'); return null; };
+  assert.equal((await B.svc.syncNow()).ok, true);
+  await A.svc.syncNow();
+  assert.equal(A.keys.get('groq'), 'gsk_1');
+});
+
+test('chat store: saving an old copy of a chat (the window held it while sync pulled) keeps the messages sync brought in', async () => {
+  const { mergeChat } = await import('../src/node/sync/engine.ts');
+  const s = openChatStore(pjoin(mkdtempSync(pjoin(tmpdir(), 'fat-chats-')), 'chats.json'), mergeChat);
+  const [c] = migrateChats([{ title: 'a', model: 'free', updated: 5, messages: [{ role: 'user', content: 'one' }] }]);
+  s.put(c);
+  const pulled = { ...c, updated: 6, messages: [...c.messages, { id: randomUUID(), at: 6, role: 'assistant', content: 'from the laptop' }] };
+  s.put(pulled); // what sync wrote
+  s.save({ ...c, updated: 7, messages: [...c.messages, { id: randomUUID(), at: 7, role: 'user', content: 'two' }] }); // the window's stale copy
+  assert.deepEqual(s.list()[0].messages.map((m: any) => m.content), ['one', 'from the laptop', 'two']);
+});
+
+test('sync service: a pulled chat older than this computer\'s copy is merged into it, not skipped', async () => {
+  const engine = await import('../src/node/sync/engine.ts');
+  const keys = fakeKeys();
+  keys.set('sync:license', 'FAT-AAAAA-AAAAA-AAAAA-AAAAA-AAAAA');
+  keys.set('sync:datakey', Buffer.alloc(32, 1).toString('base64'));
+  const dir = mkdtempSync(pjoin(tmpdir(), 'fat-sync-'));
+  const chats = openChatStore(pjoin(dir, 'c.json'), engine.mergeChat);
+  const [c] = migrateChats([{ title: 'a', model: 'free', updated: 10, messages: [{ role: 'user', content: 'here' }] }]);
+  chats.put(c);
+  const f = (async () => new Response('{}', { status: 200 })) as unknown as typeof fetch;
+  const fakeEngine = { ...engine, SyncEngine: class { o: any; constructor(o: any) { this.o = o; } async run() {
+    this.o.store.putChat({ ...c, updated: 5, messages: [{ id: randomUUID(), at: 4, role: 'assistant', content: 'there' }] });
+    return { ok: true, pulled: 1, pushed: 0 };
+  } } };
+  const svc = createSyncService({ base: 'https://sync.test', keys, chats, stateFile: pjoin(dir, 's.json'), fetch: f, engine: fakeEngine, providers: () => [] });
+  await svc.syncNow();
+  assert.deepEqual(chats.list()[0].messages.map((m: any) => m.content).sort(), ['here', 'there']);
+});
+
+test('sync service: a picked-up key waits in the keychain, not in the state file', async () => {
+  const { env, db } = makeEnv();
+  const wctx = { waitUntil() {}, passThroughOnException() {} } as any;
+  const f = (async (u: any, i?: any) => worker.fetch(new Request(u, i), env, wctx)) as typeof fetch;
+  const dir = mkdtempSync(pjoin(tmpdir(), 'fat-sync-'));
+  const keys = fakeKeys();
+  const svc = createSyncService({ base: 'https://sync.test', keys, chats: openChatStore(pjoin(dir, 'c.json')), stateFile: pjoin(dir, 's.json'), fetch: f, engine: await import('../src/node/sync/engine.ts'), providers: () => [] });
+  const url = await svc.buy('life');
+  const key = await licenseKey('lic-secret', 'cs_claimed');
+  await addLicense(db, key, { session: 'cs_claimed' });
+  db.prepare('INSERT INTO claims (claim_hash, session, expires) VALUES (?, ?, ?)').run(url.split('claim=')[1], 'cs_claimed', Date.now() + 60_000);
+  assert.equal(await svc.pollClaim(), key);
+  assert.equal(svc.status().key, key);
+  assert.ok(!readF(pjoin(dir, 's.json'), 'utf8').includes(key), 'not on disk in plain text');
+  await svc.setup(key, 'a long passphrase');
+  assert.equal(keys.get('sync:claimed'), null, 'gone once set up');
+});
+
+test('sync service: a key with no account yet asks for the new passphrase twice, even through "I already have a key"', async () => {
+  const { env, db } = makeEnv();
+  const wctx = { waitUntil() {}, passThroughOnException() {} } as any;
+  const f = (async (u: any, i?: any) => worker.fetch(new Request(u, i), env, wctx)) as typeof fetch;
+  const key = await licenseKey('lic-secret', 'cs_site');
+  await addLicense(db, key, { session: 'cs_site' });
+  const dir = mkdtempSync(pjoin(tmpdir(), 'fat-sync-'));
+  const keys = fakeKeys();
+  const svc = createSyncService({ base: 'https://sync.test', keys, chats: openChatStore(pjoin(dir, 'c.json')), stateFile: pjoin(dir, 's.json'), fetch: f, engine: await import('../src/node/sync/engine.ts'), providers: () => [] });
+  assert.deepEqual(await svc.setup(key, 'a long passphrase', false), { confirm: true });
+  assert.equal(svc.status().state, 'off', 'nothing set up yet');
+  assert.match((await svc.setup(key, 'a long passphrase', true)).recovery, /^[A-Z2-7]{4}-/);
+});
+
+test('sync service: "too many writes" keeps sync on, and a failed usage check does not fail a good run', async () => {
+  const { A, net } = await twoComputers();
+  const [c] = migrateChats([{ title: 'x', model: 'free', updated: 5, messages: [{ role: 'user', content: 'yo' }] }]);
+  A.chats.put(c);
+  net.hook = (_u, i) => (i?.method === 'PUT' ? new Response('{"error":"too many writes"}', { status: 429 }) : undefined);
+  assert.equal((await A.svc.syncNow() as any).reason, 'busy');
+  assert.equal(A.svc.status().state, 'on', 'not shown as an error; it carries on next time');
+  net.hook = (u) => (u.endsWith('/v1/usage') ? new TypeError('fetch failed') : undefined);
+  assert.equal((await A.svc.syncNow()).ok, true);
+  assert.equal(A.svc.status().state, 'on');
+});
+
+test('chat store drops removed-chat stubs older than 90 days when it opens', () => {
+  const file = pjoin(mkdtempSync(pjoin(tmpdir(), 'fat-chats-')), 'chats.json');
+  const day = 86_400_000, now = Date.now();
+  const stub = (deleted: number) => ({ id: randomUUID(), title: '', model: '', updated: 1, deleted, messages: [] });
+  const [old, fresh] = [stub(now - 91 * day), stub(now - 10 * day)];
+  writeFileSync(file, JSON.stringify({ chats: [old, fresh] }));
+  assert.deepEqual(openChatStore(file).all().map((c: any) => c.id), [fresh.id]);
+});
+
+test('cleanChat keeps spoken answers, transcribed files and Auto mode', () => {
+  const [c] = migrateChats([{ title: 't', model: 'free', mode: 'auto', updated: 5000, messages: [
+    { role: 'user', content: 'Transcribe: a.mp3', kind: 'file' },
+    { role: 'assistant', kind: 'speech', content: '', audio: '0b5c7a3e-1f2d-4c5b-9a8e-7d6c5b4a3f21.mp3', meta: { provider: 'Groq', model: 'x', ms: 3, auto: 'speech' } },
+  ] }]);
+  assert.equal(c.mode, 'auto');
+  assert.deepEqual(c.messages.map((m: any) => [m.kind, m.audio]), [['file', undefined], ['speech', '0b5c7a3e-1f2d-4c5b-9a8e-7d6c5b4a3f21.mp3']]);
+  assert.equal(cleanChat({ ...c, messages: [{ ...c.messages[1], audio: '../x.mp3' }] }), null);
+});
+
+test('pickRelease offers pre-releases only to early access, never drafts, only newer versions', () => {
+  const list = [
+    { tag_name: 'v0.4.0', prerelease: true, draft: false, html_url: 'https://github.com/x/releases/tag/v0.4.0' },
+    { tag_name: 'v0.5.0', prerelease: false, draft: true, html_url: 'https://github.com/x/releases/tag/v0.5.0' },
+    { tag_name: 'v0.3.11', prerelease: false, draft: false, html_url: 'https://github.com/x/releases/tag/v0.3.11' },
+  ];
+  assert.deepEqual(pickRelease(list, '0.3.10', true), { tag: 'v0.4.0', url: 'https://github.com/x/releases/tag/v0.4.0', early: true });
+  assert.deepEqual(pickRelease(list, '0.3.10', false), { tag: 'v0.3.11', url: 'https://github.com/x/releases/tag/v0.3.11', early: false });
+  assert.equal(pickRelease(list, '0.4.0', true), null);
+  assert.equal(pickRelease('junk', '0.1.0', true), null);
 });

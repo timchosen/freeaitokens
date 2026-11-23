@@ -2,7 +2,7 @@
 <div class="page">
   <h1>Confidentialité</h1>
   <p class="small muted">Ceci est une traduction fournie par commodité. En cas de différence avec la <a href="/privacy" hreflang="en">version anglaise</a>, la version anglaise prévaut.</p>
-  <p class="lead">En bref : FreeAITokens ne collecte rien sur vous.</p>
+  <p class="lead">En bref : FreeAITokens ne collecte rien sur vous. La synchronisation facultative et payante ne conserve que des données chiffrées qu'elle ne peut pas lire.</p>
 
   <h2>Ce site web</h2>
   <ul>
@@ -14,11 +14,23 @@
   <h2>L'app et la commande</h2>
   <ul>
     <li><b>Vos clés</b> restent sur votre ordinateur, dans son trousseau quand il en a un, et ne sont envoyées qu'au fournisseur auquel elles appartiennent.</li>
-    <li><b>Vos requêtes et les réponses</b> vont directement entre votre ordinateur et le fournisseur d'IA. Elles ne passent jamais par un serveur FreeAITokens. Ce que chaque fournisseur en fait dépend de sa propre politique de confidentialité ; ceux qui peuvent les utiliser pour entraîner leurs modèles sont signalés.</li>
+    <li><b>Vos requêtes et les réponses</b> vont directement entre votre ordinateur et le fournisseur d'IA. Elles ne passent jamais par un serveur FreeAITokens. Ce que chaque fournisseur en fait dépend de sa propre politique de confidentialité ; ceux qui peuvent les utiliser pour entraîner leurs modèles sont signalés. Si vous activez la synchronisation, vos conversations enregistrées sont aussi conservées chiffrées, comme expliqué plus bas.</li>
     <li><b>La liste des fournisseurs</b> est téléchargée plusieurs fois par jour depuis un service FreeAITokens hébergé chez Cloudflare. Cette requête ne contient rien sur vous ni sur votre usage ; comme toute requête web, elle révèle votre adresse IP à Cloudflare.</li>
     <li><b>Aucune télémétrie.</b> L'app ne transmet ni usage, ni erreurs, ni quoi que ce soit d'autre.</li>
     <li>L'adresse locale n'écoute que sur votre propre ordinateur et exige un jeton, donc les autres appareils et sites web ne peuvent pas l'utiliser.</li>
   </ul>
+
+  <h2>Synchronisation (facultative, payante)</h2>
+  <p>Si vous achetez la synchronisation, un serveur FreeAITokens chez Cloudflare conserve :</p>
+  <ul>
+    <li><b>Vos conversations et clés, chiffrées</b> sur votre ordinateur avant l'envoi. Le serveur n'a jamais votre phrase secrète ni la clé qui les ouvre, il ne peut donc pas les lire.</li>
+    <li>Pour chaque élément synchronisé : un identifiant aléatoire, sa taille, un numéro de version et sa date de modification.</li>
+    <li>Une forme illisible (une empreinte) de votre clé de synchronisation, jamais la clé elle-même.</li>
+    <li>Une forme illisible (une empreinte avec clé) de l'e-mail utilisé pour payer, uniquement pour que le formulaire « envoyez-moi ma clé » retrouve votre clé. L'e-mail lui-même n'est pas conservé.</li>
+    <li>Votre formule, sa date de fin et les identifiants Stripe de votre paiement et de votre fiche client.</li>
+    <li>Si vous utilisez le formulaire « m'envoyer ma clé », une forme brouillée de l'adresse saisie et votre adresse IP sont conservées deux jours au plus, uniquement pour empêcher les abus du formulaire.</li>
+  </ul>
+  <p>Stripe vend la synchronisation et encaisse le paiement : vos informations de paiement et votre e-mail vont donc à Stripe selon <a href="https://stripe.com/privacy">sa politique de confidentialité</a>. Quand une formule se termine, ou qu'un paiement est remboursé ou contesté, vos données chiffrées sont supprimées 90 jours plus tard.</p>
 
   <h2>Questions</h2>
   <p>Posez-les sur <a href="{{repoUrl}}/issues">GitHub</a>, ou signalez un problème de sécurité <a href="{{repoUrl}}/security/policy">en privé</a>.</p>
