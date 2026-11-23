@@ -93,7 +93,8 @@ test('desktop build names every release file without a version', async () => {
   const wf = readFileSync(new URL('../.github/workflows/desktop.yml', import.meta.url), 'utf8');
   // Signing variables are only set on the Mac job and only when the certificate exists: an empty CSC_LINK breaks the build.
   assert.doesNotMatch(wf, /^\s+CSC_LINK:/m);
-  assert.match(wf, /if: runner\.os == 'macOS' && env\.MAC_CERT != ''/);
+  assert.match(wf, /if: runner\.os == 'macOS' && env\.HAS_MAC_CERT == 'true'/);
+  assert.doesNotMatch(wf, /^ {6}MAC_CERT: \$\{\{ secrets/m, 'the certificate is not in job-level env');
   assert.match(wf, /notarize:true/);
   assert.match(readFileSync(new URL('../site/static/install', import.meta.url), 'utf8'), /xattr -dr com\.apple\.quarantine/);
   assert.match(readFileSync(new URL('../.github/workflows/desktop.yml', import.meta.url), 'utf8'), /keyring-darwin-x64@[\d.]+ @napi-rs\/keyring-darwin-arm64@/);

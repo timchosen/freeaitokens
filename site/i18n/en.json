@@ -29,7 +29,6 @@
   "foot_disclaimer": "Disclaimer",
   "foot_licence": "MIT licence",
   "foot_note": "For personal use. Each provider's terms apply. Never share your endpoint or keys. Not affiliated with any AI provider.",
-
   "about_n": "about {n}",
   "kind_chat": "Chat",
   "kind_embedding": "Embeddings",
@@ -62,7 +61,6 @@
   "th_context": "Context",
   "th_tools": "Tools",
   "th_images": "Images",
-
   "keyless_text": "No account or key needed: FreeAITokens uses {name} straight away.",
   "openrouter_connect": "Easiest: in the FreeAITokens app choose <b>Add a provider…</b> → OpenRouter and approve the connection in your browser. No copying needed.",
   "signup": "Sign up or log in",
@@ -74,19 +72,16 @@
   "model_count": "{n} models",
   "free_limit": "Free limit: {limit}",
   "details": "Details and models",
-
   "providers_title": "Providers",
   "providers_desc": "All {n} free AI providers FreeAITokens works with, their free limits, and how to get a free key for each.",
   "providers_lead": "FreeAITokens works with {n} AI providers. {k} need no account; for the rest, a free key takes a minute. Each one adds to your free total.",
   "browse_models": "Browse all {n} models",
   "read_notes": "Read each provider's notes before you sign up:",
   "provider_terms_link": "provider terms",
-
   "provider_desc": "{name} on FreeAITokens: {n} models, its free limits, and how to get a free API key.",
   "get_free_key": "Get a free key",
   "get_named_key": "Get a free {name} key",
   "models_h": "Models",
-
   "f_tools": "Tool calling",
   "f_images": "Reads images",
   "f_access": "Access",
@@ -95,16 +90,14 @@
   "use_chat": "You don't pick chat models: FreeAITokens chooses the best free model that fits each request and moves to another when one runs out. This one is used when it fits and has free capacity.",
   "use_media": "Send <code>{model}</code> as the model to always use this one; otherwise FreeAITokens picks a free model of this type for you. See <a href=\"/docs#media\">Not only chat</a>.",
   "model_desc": "{id} from {name}: context, features and free limits on FreeAITokens.",
-
-  "models_title": "Models",
+  "models_title": "Models you get for free",
   "models_desc": "All {n} free AI models FreeAITokens can use, with filters for provider, type, tool calling, images and context size.",
-  "models_lead": "Every free model FreeAITokens can use. You don't have to choose: it picks the best one for each request. This list is for the curious.",
+  "models_lead": "Chat, transcription, text to speech, images and embeddings, from the model families you already know.",
   "filter_label": "Filter models",
   "search": "Search",
   "search_ph": "Model or provider",
   "all": "All",
   "any": "Any",
-
   "js_download_any": "Download for your computer",
   "js_download_os": "Download for {os}",
   "js_also": "Also for {list} · free and open source",
@@ -112,5 +105,9 @@
   "js_copy": "Copy",
   "js_copied": "Copied",
   "js_select": "Select and copy",
-  "js_count": "{n} of {total} models"
+  "js_count": "{n} of {total} models",
+  "hero_tokens": "free tokens every month",
+  "hero_models": "AI models",
+  "hero_providers": "providers",
+  "models_all": "See every model"
 }

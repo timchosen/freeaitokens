@@ -258,3 +258,20 @@ test('the in-page script strings match en.json', () => {
   assert.equal(downloadFor('mac', false, { js_download_os: 'Descargar para {os}' }).label, 'Descargar para Mac');
 });
 
+
+test('home hero leads with monthly tokens, model count and model types, and lists model families in every language', async () => {
+  const { kindCounts, families } = await import('../site/build.mjs');
+  const cat = [{ id: 'a', models: [{ id: 'qwen3-32b' }, { id: 'llama-3.3-70b' }], media: [{ id: 'whisper-large-v3', kind: 'transcription' }, { id: 'flux-1', kind: 'image' }] }];
+  assert.deepEqual(kindCounts(cat), { chat: 2, transcription: 1, image: 1 });
+  assert.deepEqual(families(cat).map((f: any) => f.name).sort(), ['FLUX', 'Llama', 'Qwen', 'Whisper']);
+  assert.equal(stats(cat).models, 4, 'media models count as models');
+  const out = mkdtempSync(join(tmpdir(), 'site-hero-'));
+  build(out);
+  const en = readFileSync(join(out, 'index.html'), 'utf8');
+  assert.match(en, /class="hs-big"><b>[\d.]+[KMBT]<\/b><span>free tokens every month/);
+  assert.match(en, /Transcription <b>\d+/);
+  assert.match(en, /id="models"[\s\S]*class="tool fam" href="\/models"/);
+  const es = readFileSync(join(out, 'es', 'index.html'), 'utf8');
+  assert.match(es, /tokens gratis cada mes/);
+  assert.match(es, /class="tool fam" href="\/es\/models"/);
+});

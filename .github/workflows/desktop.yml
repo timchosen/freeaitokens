@@ -13,7 +13,7 @@ jobs:
         os: [macos-latest, windows-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
     env:
-      MAC_CERT: ${{ secrets.MAC_CERT_P12_BASE64 }} # read by the signing step's condition
+      HAS_MAC_CERT: ${{ secrets.MAC_CERT_P12_BASE64 != '' }} # true/false only; the certificate itself stays in the signing step
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -28,7 +28,7 @@ jobs:
         working-directory: desktop
       # With an Apple Developer ID in the repo secrets, the Mac app is signed and notarized, so macOS
       # opens it with no warning. Without them nothing is set and it stays ad-hoc signed, as before.
-      - if: runner.os == 'macOS' && env.MAC_CERT != ''
+      - if: runner.os == 'macOS' && env.HAS_MAC_CERT == 'true'
         run: |
           node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json'));delete p.build.mac.identity;Object.assign(p.build.mac,{hardenedRuntime:true,notarize:true});fs.writeFileSync('package.json',JSON.stringify(p,null,2))"
           {
@@ -40,6 +40,7 @@ jobs:
           } >> "$GITHUB_ENV"
         working-directory: desktop
         env:
+          MAC_CERT: ${{ secrets.MAC_CERT_P12_BASE64 }}
           MAC_CERT_PASSWORD: ${{ secrets.MAC_CERT_PASSWORD }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}

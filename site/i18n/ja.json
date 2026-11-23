@@ -29,7 +29,6 @@
   "foot_disclaimer": "免責事項",
   "foot_licence": "MITライセンス",
   "foot_note": "個人利用向けです。各プロバイダーの規約が適用されます。エンドポイントやキーは他の人に教えないでください。どのAIプロバイダーとも提携していません。",
-
   "about_n": "約{n}",
   "kind_chat": "チャット",
   "kind_embedding": "埋め込み",
@@ -62,7 +61,6 @@
   "th_context": "コンテキスト",
   "th_tools": "ツール呼び出し",
   "th_images": "画像",
-
   "keyless_text": "アカウントもキーも不要です。FreeAITokensはすぐに{name}を使えます。",
   "openrouter_connect": "いちばん簡単な方法: FreeAITokensアプリで <b>Add a provider…</b>（プロバイダーを追加）→ OpenRouter を選び、ブラウザーで接続を承認してください。コピーは不要です。",
   "signup": "登録またはログイン",
@@ -74,19 +72,16 @@
   "model_count": "{n}モデル",
   "free_limit": "無料の上限: {limit}",
   "details": "詳細とモデル",
-
   "providers_title": "プロバイダー",
   "providers_desc": "FreeAITokensが対応する{n}社の無料AIプロバイダーについて、無料の上限と無料キーの取り方をまとめています。",
   "providers_lead": "FreeAITokensは{n}社のAIプロバイダーに対応しています。そのうち{k}社はアカウント不要で、残りも無料キーは1分ほどで取得できます。増やすほど、使える無料枠の合計が増えます。",
   "browse_models": "{n}個のモデルをすべて見る",
   "read_notes": "登録する前に、各プロバイダーの注意事項をお読みください:",
   "provider_terms_link": "プロバイダーの規約",
-
   "provider_desc": "FreeAITokensで使える{name}: {n}モデル、無料の上限、無料APIキーの取り方。",
   "get_free_key": "無料キーを取得",
   "get_named_key": "{name}の無料キーを取得",
   "models_h": "モデル",
-
   "f_tools": "ツール呼び出し",
   "f_images": "画像の読み取り",
   "f_access": "利用方法",
@@ -95,16 +90,14 @@
   "use_chat": "チャット用のモデルを自分で選ぶ必要はありません。FreeAITokensがリクエストごとに最適な無料モデルを選び、枠が尽きたら別のモデルに切り替えます。このモデルは、条件に合い、無料の枠が残っているときに使われます。",
   "use_media": "<code>{model}</code> をモデルとして指定すると、いつもこのモデルを使います。指定しない場合は、FreeAITokensがこの種類の無料モデルを自動で選びます。<a href=\"/docs#media\">チャット以外</a>もご覧ください。",
   "model_desc": "{name}の{id}: FreeAITokensでのコンテキスト、機能、無料の上限。",
-
-  "models_title": "モデル",
+  "models_title": "無料で使えるモデル",
   "models_desc": "FreeAITokensが使えるすべての無料AIモデル{n}個を、プロバイダー、種類、ツール呼び出し、画像、コンテキストの大きさで絞り込めます。",
-  "models_lead": "FreeAITokensが使えるすべての無料モデルです。選ぶ必要はありません。リクエストごとに最適なモデルが自動で選ばれます。この一覧は、気になる方のためのものです。",
+  "models_lead": "チャット、文字起こし、音声合成、画像、埋め込み。おなじみのモデルファミリーから。",
   "filter_label": "モデルを絞り込む",
   "search": "検索",
   "search_ph": "モデルまたはプロバイダー",
   "all": "すべて",
   "any": "指定なし",
-
   "js_download_any": "お使いのパソコン用をダウンロード",
   "js_download_os": "{os}用をダウンロード",
   "js_also": "{list}にも対応 · 無料のオープンソース",
@@ -112,5 +105,9 @@
   "js_copy": "コピー",
   "js_copied": "コピーしました",
   "js_select": "選択してコピー",
-  "js_count": "{total}個中{n}個のモデル"
+  "js_count": "{total}個中{n}個のモデル",
+  "hero_tokens": "毎月の無料トークン",
+  "hero_models": "AIモデル",
+  "hero_providers": "プロバイダー",
+  "models_all": "すべてのモデルを見る"
 }

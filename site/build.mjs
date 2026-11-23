@@ -41,10 +41,54 @@ export function stats(cat) {
   }
   return {
     providers: cat.length,
-    models: cat.reduce((n, p) => n + p.models.length, 0),
+    models: cat.reduce((n, p) => n + p.models.length + (p.media?.length ?? 0), 0),
     keyless: cat.filter((p) => p.keyless).length,
     monthlyTokens: daily * 30,
   };
+}
+
+// Model families people recognise, counted across every provider (chat and media models).
+const FAMILIES = [
+  ['Qwen', /qwen/i], ['DeepSeek', /deepseek/i], ['GPT-OSS', /gpt-oss/i], ['Gemma', /gemma/i], ['Gemini', /gemini/i],
+  ['Llama', /llama/i], ['Mistral', /mistral|codestral|leanstral|cydonia/i], ['Nemotron', /nemotron/i], ['GLM', /glm/i],
+  ['Kimi', /kimi/i], ['MiniMax', /minimax/i], ['Whisper', /whisper/i], ['FLUX', /flux/i], ['BGE', /bge/i],
+];
+export function kindCounts(cat) {
+  const n = {};
+  for (const p of cat) for (const m of [...p.models, ...(p.media ?? [])]) n[m.kind ?? 'chat'] = (n[m.kind ?? 'chat'] ?? 0) + 1;
+  return n;
+}
+export function families(cat) {
+  const all = cat.flatMap((p) => [...p.models, ...(p.media ?? [])].map((m) => ({ id: m.id, kind: m.kind ?? 'chat' })));
+  return FAMILIES.map(([name, re]) => {
+    const mine = all.filter((m) => re.test(m.id));
+    return { name, count: mine.length, kinds: [...new Set(mine.map((m) => m.kind))] };
+  }).filter((f) => f.count).sort((a, b) => b.count - a.count);
+}
+const KIND_ORDER = ['chat', 'transcription', 'speech', 'image', 'video', 'embedding']; // completion models are chat models too
+function heroStats(cat, s, t, lang) {
+  const big = new Intl.NumberFormat(lang, { notation: 'compact', maximumFractionDigits: 1 });
+  const counts = kindCounts(cat);
+  const kinds = KIND_ORDER.filter((k) => counts[k]).map((k) => `<li>${esc(t[`kind_${k}`])} <b>${counts[k].toLocaleString(lang)}</b></li>`).join('');
+  return `<div class="hero-stats">
+  <div class="hs-big"><b>${big.format(s.monthlyTokens)}</b><span>${esc(t.hero_tokens)}</span></div>
+  <div><b>${s.models.toLocaleString(lang)}</b><span>${esc(t.hero_models)}</span></div>
+  <div><b>${s.providers.toLocaleString(lang)}</b><span>${esc(t.hero_providers)}</span></div>
+</div>
+<ul class="kinds" aria-label="${esc(t.hero_models)}">${kinds}</ul>`;
+}
+function modelsSection(cat, t, lang, code) {
+  // Filled in after render(), so links get the language prefix here.
+  const href = `${code === 'en' ? '' : `/${code}`}/models`;
+  const boxes = families(cat).map((f) => `<li><a class="tool fam" href="${href}"><b>${f.count.toLocaleString(lang)}</b><span>${esc(f.name)}</span><small>${esc(f.kinds.map((k) => t[`kind_${k}`]).join(' · '))}</small></a></li>`).join('\n    ');
+  return `<section class="section center" id="models">
+  <h2>${esc(t.models_title)}</h2>
+  <p class="muted">${esc(t.models_lead)}</p>
+  <ul class="tools">
+    ${boxes}
+  </ul>
+  <p class="small"><a href="${href}">${esc(t.models_all)}</a></p>
+</section>`;
 }
 
 export function render(body, { title, description, path, url = path, code = 'en' }) {
@@ -211,7 +255,7 @@ export function build(outDir = join(here, 'dist')) {
   const files = readdirSync(pagesDir).filter((f) => f.endsWith('.html'));
   for (const l of locales) {
     const t = strings(l.code);
-    const fill = { ...base, monthly: approx(s.monthlyTokens, t, l.lang), providerTable: providerTable(catalogue, t, l.lang), providerTerms: providerTerms(catalogue, t) };
+    const fill = { ...base, monthly: approx(s.monthlyTokens, t, l.lang), heroStats: heroStats(catalogue, s, t, l.lang), modelsSection: modelsSection(catalogue, t, l.lang, l.code), providerTable: providerTable(catalogue, t, l.lang), providerTerms: providerTerms(catalogue, t) };
     const out = l.code === 'en' ? outDir : join(outDir, l.code);
     mkdirSync(out, { recursive: true });
     for (const f of files) {

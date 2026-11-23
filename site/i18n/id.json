@@ -29,7 +29,6 @@
   "foot_disclaimer": "Sanggahan",
   "foot_licence": "Lisensi MIT",
   "foot_note": "Untuk penggunaan pribadi. Ketentuan tiap penyedia tetap berlaku. Jangan pernah membagikan endpoint atau kunci milikmu. Tidak berafiliasi dengan penyedia AI mana pun.",
-
   "about_n": "sekitar {n}",
   "kind_chat": "Obrolan",
   "kind_embedding": "Embedding",
@@ -62,7 +61,6 @@
   "th_context": "Konteks",
   "th_tools": "Alat",
   "th_images": "Gambar",
-
   "keyless_text": "Tanpa akun atau kunci: FreeAITokens langsung memakai {name}.",
   "openrouter_connect": "Paling mudah: di aplikasi FreeAITokens pilih <b>Add a provider…</b> → OpenRouter, lalu setujui sambungannya di browser. Tidak perlu menyalin apa pun.",
   "signup": "Daftar atau masuk",
@@ -74,19 +72,16 @@
   "model_count": "{n} model",
   "free_limit": "Batas gratis: {limit}",
   "details": "Detail dan model",
-
   "providers_title": "Penyedia",
   "providers_desc": "Semua {n} penyedia AI gratis yang bisa dipakai FreeAITokens, batas gratisnya, dan cara mendapatkan kunci gratis untuk masing-masing.",
   "providers_lead": "FreeAITokens bekerja dengan {n} penyedia AI. {k} di antaranya tidak perlu akun; untuk sisanya, kunci gratis hanya butuh semenit. Setiap penyedia menambah total gratismu.",
   "browse_models": "Lihat semua {n} model",
   "read_notes": "Baca catatan tiap penyedia sebelum mendaftar:",
   "provider_terms_link": "ketentuan penyedia",
-
   "provider_desc": "{name} di FreeAITokens: {n} model, batas gratisnya, dan cara mendapatkan kunci API gratis.",
   "get_free_key": "Dapatkan kunci gratis",
   "get_named_key": "Dapatkan kunci {name} gratis",
   "models_h": "Model",
-
   "f_tools": "Pemanggilan alat",
   "f_images": "Bisa membaca gambar",
   "f_access": "Akses",
@@ -95,16 +90,14 @@
   "use_chat": "Kamu tidak perlu memilih model obrolan: FreeAITokens memilih model gratis terbaik untuk tiap permintaan dan pindah ke yang lain saat satu habis. Model ini dipakai kalau cocok dan masih punya jatah gratis.",
   "use_media": "Kirim <code>{model}</code> sebagai model agar selalu memakai yang ini; kalau tidak, FreeAITokens memilihkan model gratis dengan jenis yang sama untukmu. Lihat <a href=\"/docs#media\">Bukan hanya obrolan</a>.",
   "model_desc": "{id} dari {name}: konteks, fitur, dan batas gratis di FreeAITokens.",
-
-  "models_title": "Model",
+  "models_title": "Model yang Anda dapat gratis",
   "models_desc": "Semua {n} model AI gratis yang bisa dipakai FreeAITokens, dengan filter untuk penyedia, jenis, pemanggilan alat, gambar, dan ukuran konteks.",
-  "models_lead": "Semua model gratis yang bisa dipakai FreeAITokens. Kamu tidak perlu memilih: ia memilihkan yang terbaik untuk tiap permintaan. Daftar ini untuk yang penasaran.",
+  "models_lead": "Chat, transkripsi, teks ke suara, gambar, dan embedding, dari keluarga model yang sudah Anda kenal.",
   "filter_label": "Filter model",
   "search": "Cari",
   "search_ph": "Model atau penyedia",
   "all": "Semua",
   "any": "Apa saja",
-
   "js_download_any": "Unduh untuk komputermu",
   "js_download_os": "Unduh untuk {os}",
   "js_also": "Juga untuk {list} · gratis dan open source",
@@ -112,5 +105,9 @@
   "js_copy": "Salin",
   "js_copied": "Tersalin",
   "js_select": "Pilih lalu salin",
-  "js_count": "{n} dari {total} model"
+  "js_count": "{n} dari {total} model",
+  "hero_tokens": "token gratis setiap bulan",
+  "hero_models": "model AI",
+  "hero_providers": "penyedia",
+  "models_all": "Lihat semua model"
 }

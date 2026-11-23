@@ -29,7 +29,6 @@
   "foot_disclaimer": "Haftungsausschluss",
   "foot_licence": "MIT-Lizenz",
   "foot_note": "Für den persönlichen Gebrauch. Es gelten die Bedingungen des jeweiligen Anbieters. Gib deinen Endpunkt und deine Schlüssel nie weiter. Keine Verbindung zu einem KI-Anbieter.",
-
   "about_n": "etwa {n}",
   "kind_chat": "Chat",
   "kind_embedding": "Embeddings",
@@ -62,7 +61,6 @@
   "th_context": "Kontext",
   "th_tools": "Tools",
   "th_images": "Bilder",
-
   "keyless_text": "Kein Konto und kein Schlüssel nötig: FreeAITokens nutzt {name} sofort.",
   "openrouter_connect": "Am einfachsten: Wähle in der FreeAITokens-App <b>Add a provider…</b> (Anbieter hinzufügen) → OpenRouter und bestätige die Verbindung in deinem Browser. Kopieren ist nicht nötig.",
   "signup": "Registrieren oder anmelden",
@@ -74,19 +72,16 @@
   "model_count": "{n} Modelle",
   "free_limit": "Kostenloses Limit: {limit}",
   "details": "Details und Modelle",
-
   "providers_title": "Anbieter",
   "providers_desc": "Alle {n} kostenlosen KI-Anbieter, mit denen FreeAITokens arbeitet, ihre kostenlosen Limits und wie du für jeden einen kostenlosen Schlüssel bekommst.",
   "providers_lead": "FreeAITokens arbeitet mit {n} KI-Anbietern. {k} brauchen kein Konto; bei den übrigen dauert ein kostenloser Schlüssel eine Minute. Jeder Anbieter erhöht dein kostenloses Gesamtkontingent.",
   "browse_models": "Alle {n} Modelle ansehen",
   "read_notes": "Lies die Hinweise zu jedem Anbieter, bevor du dich registrierst:",
   "provider_terms_link": "Bedingungen der Anbieter",
-
   "provider_desc": "{name} bei FreeAITokens: {n} Modelle, die kostenlosen Limits und wie du einen kostenlosen API-Schlüssel bekommst.",
   "get_free_key": "Kostenlosen Schlüssel holen",
   "get_named_key": "Kostenlosen {name}-Schlüssel holen",
   "models_h": "Modelle",
-
   "f_tools": "Tool-Aufrufe",
   "f_images": "Versteht Bilder",
   "f_access": "Zugang",
@@ -95,16 +90,14 @@
   "use_chat": "Chat-Modelle musst du nicht auswählen: FreeAITokens wählt für jede Anfrage das beste kostenlose Modell, das passt, und wechselt zu einem anderen, wenn eines aufgebraucht ist. Dieses hier wird genutzt, wenn es passt und noch kostenloses Kontingent hat.",
   "use_media": "Sende <code>{model}</code> als Modell, um immer dieses zu verwenden; sonst wählt FreeAITokens selbst ein kostenloses Modell dieser Art für dich aus. Siehe <a href=\"/docs#media\">Nicht nur Chat</a>.",
   "model_desc": "{id} von {name}: Kontext, Funktionen und kostenlose Limits bei FreeAITokens.",
-
-  "models_title": "Modelle",
+  "models_title": "Modelle, die du kostenlos bekommst",
   "models_desc": "Alle {n} kostenlosen KI-Modelle, die FreeAITokens nutzen kann, mit Filtern für Anbieter, Art, Tool-Aufrufe, Bilder und Kontextgröße.",
-  "models_lead": "Jedes kostenlose Modell, das FreeAITokens nutzen kann. Du musst nichts auswählen: Es nimmt für jede Anfrage das beste. Diese Liste ist für Neugierige.",
+  "models_lead": "Chat, Transkription, Sprachausgabe, Bilder und Embeddings, aus den Modellfamilien, die du schon kennst.",
   "filter_label": "Modelle filtern",
   "search": "Suchen",
   "search_ph": "Modell oder Anbieter",
   "all": "Alle",
   "any": "Beliebig",
-
   "js_download_any": "Für deinen Computer herunterladen",
   "js_download_os": "Für {os} herunterladen",
   "js_also": "Auch für {list} · kostenlos und Open Source",
@@ -112,5 +105,9 @@
   "js_copy": "Kopieren",
   "js_copied": "Kopiert",
   "js_select": "Auswählen und kopieren",
-  "js_count": "{n} von {total} Modellen"
+  "js_count": "{n} von {total} Modellen",
+  "hero_tokens": "kostenlose Tokens jeden Monat",
+  "hero_models": "KI-Modelle",
+  "hero_providers": "Anbieter",
+  "models_all": "Alle Modelle ansehen"
 }

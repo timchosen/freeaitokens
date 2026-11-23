@@ -29,7 +29,6 @@
   "foot_disclaimer": "Aviso legal",
   "foot_licence": "Licencia MIT",
   "foot_note": "Para uso personal. Se aplican los términos de cada proveedor. Nunca compartas tu dirección local ni tus claves. Sin afiliación con ningún proveedor de IA.",
-
   "about_n": "unos {n}",
   "kind_chat": "Chat",
   "kind_embedding": "Embeddings",
@@ -62,7 +61,6 @@
   "th_context": "Contexto",
   "th_tools": "Herramientas",
   "th_images": "Imágenes",
-
   "keyless_text": "No necesitas cuenta ni clave: FreeAITokens usa {name} de inmediato.",
   "openrouter_connect": "Lo más fácil: en la app de FreeAITokens elige <b>Add a provider…</b> (Añadir un proveedor) → OpenRouter y aprueba la conexión en tu navegador. Sin copiar nada.",
   "signup": "Regístrate o inicia sesión",
@@ -74,19 +72,16 @@
   "model_count": "{n} modelos",
   "free_limit": "Límite gratis: {limit}",
   "details": "Detalles y modelos",
-
   "providers_title": "Proveedores",
   "providers_desc": "Los {n} proveedores de IA gratis con los que funciona FreeAITokens, sus límites gratuitos y cómo conseguir una clave gratis de cada uno.",
   "providers_lead": "FreeAITokens funciona con {n} proveedores de IA. {k} no necesitan cuenta; para el resto, una clave gratis tarda un minuto. Cada uno suma a tu total gratuito.",
   "browse_models": "Ver los {n} modelos",
   "read_notes": "Lee las notas de cada proveedor antes de registrarte:",
   "provider_terms_link": "términos de los proveedores",
-
   "provider_desc": "{name} en FreeAITokens: {n} modelos, sus límites gratuitos y cómo conseguir una clave de API gratis.",
   "get_free_key": "Consigue una clave gratis",
   "get_named_key": "Consigue una clave gratis de {name}",
   "models_h": "Modelos",
-
   "f_tools": "Uso de herramientas",
   "f_images": "Lee imágenes",
   "f_access": "Acceso",
@@ -95,16 +90,14 @@
   "use_chat": "No eliges los modelos de chat: FreeAITokens elige el mejor modelo gratuito para cada solicitud y pasa a otro cuando uno se agota. Este se usa cuando encaja y tiene capacidad gratuita.",
   "use_media": "Envía <code>{model}</code> como modelo para usar siempre este; si no, FreeAITokens elige por ti un modelo gratuito de este tipo. Mira <a href=\"/docs#media\">Más allá del chat</a>.",
   "model_desc": "{id} de {name}: contexto, funciones y límites gratuitos en FreeAITokens.",
-
-  "models_title": "Modelos",
+  "models_title": "Modelos que tienes gratis",
   "models_desc": "Los {n} modelos de IA gratis que FreeAITokens puede usar, con filtros por proveedor, tipo, uso de herramientas, imágenes y tamaño de contexto.",
-  "models_lead": "Todos los modelos gratuitos que FreeAITokens puede usar. No tienes que elegir: él escoge el mejor para cada solicitud. Esta lista es para los curiosos.",
+  "models_lead": "Chat, transcripción, texto a voz, imágenes y embeddings, de las familias de modelos que ya conoces.",
   "filter_label": "Filtrar modelos",
   "search": "Buscar",
   "search_ph": "Modelo o proveedor",
   "all": "Todos",
   "any": "Cualquiera",
-
   "js_download_any": "Descargar para tu ordenador",
   "js_download_os": "Descargar para {os}",
   "js_also": "También para {list} · gratis y de código abierto",
@@ -112,5 +105,9 @@
   "js_copy": "Copiar",
   "js_copied": "Copiado",
   "js_select": "Seleccionar y copiar",
-  "js_count": "{n} de {total} modelos"
+  "js_count": "{n} de {total} modelos",
+  "hero_tokens": "tokens gratis cada mes",
+  "hero_models": "modelos de IA",
+  "hero_providers": "proveedores",
+  "models_all": "Ver todos los modelos"
 }

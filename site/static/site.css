@@ -177,3 +177,16 @@ td a { overflow-wrap: anywhere; }
   .stack td:first-child { display: block; text-align: start; font-size: 17px; font-weight: 600; padding-bottom: 6px; }
   .stack td:first-child::before { display: none; }
 }
+
+/* Hero numbers: the monthly tokens lead, then models, providers and what kinds of model. */
+.hero-stats { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; margin: 0 auto 16px; max-width: 640px; }
+.hero-stats > div { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 14px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.hero-stats b { font-family: var(--serif, Georgia, serif); font-weight: 400; font-size: clamp(28px, 5vw, 40px); line-height: 1.1; color: var(--coral-text); }
+.hero-stats .hs-big b { font-size: clamp(44px, 9vw, 72px); }
+.hero-stats span { font-size: 14px; color: var(--muted, inherit); }
+.kinds { list-style: none; padding: 0; margin: 0 auto 28px; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.kinds li { background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 4px 12px; font-size: 14px; }
+.kinds b { color: var(--coral-text); margin-inline-start: 4px; }
+.tool.fam b { font-family: var(--serif); font-weight: 400; font-size: 30px; line-height: 1; color: var(--coral-text); }
+.tool.fam small { font-weight: 400; font-size: 12px; color: var(--muted, inherit); }
+@media (max-width: 640px) { .hero-stats { grid-template-columns: 1fr 1fr; } .hero-stats .hs-big { grid-column: 1 / -1; } }
