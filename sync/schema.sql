@@ -9,12 +9,14 @@ CREATE TABLE IF NOT EXISTS licenses (
   email_hash TEXT,
   paid_until INTEGER,
   revoked INTEGER,
-  revoked_by TEXT,
   created INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS licenses_email ON licenses(email_hash);
 CREATE INDEX IF NOT EXISTS licenses_ref ON licenses(stripe_ref);
 CREATE INDEX IF NOT EXISTS licenses_customer ON licenses(stripe_customer);
+
+-- Each charge that revoked a license; refund = 1 rows are permanent, a won dispute removes its own row.
+CREATE TABLE IF NOT EXISTS revocations (key_hash TEXT NOT NULL, charge TEXT NOT NULL, refund INTEGER NOT NULL, PRIMARY KEY (key_hash, charge));
 
 CREATE TABLE IF NOT EXISTS vaults (key_hash TEXT PRIMARY KEY, version INTEGER NOT NULL, body TEXT NOT NULL);
 

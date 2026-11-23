@@ -88,15 +88,23 @@ async function completed(env: Env, s: any, now: number): Promise<void> {
   if (res[1] && res[1].meta.changes === 0) console.warn('claim already taken for session', s.id);
 }
 
-// A charge maps to a lifetime license by payment intent, or to a yearly one by customer. The first charge
-// that revokes is remembered, so only winning the dispute on that same charge lifts it.
-async function setRevoked(env: Env, charge: any, at: number | null): Promise<void> {
-  const match = "(stripe_ref = ?2 OR (plan = 'year' AND stripe_customer = ?3))";
-  const q = at == null
-    ? `UPDATE licenses SET revoked = NULL, revoked_by = NULL WHERE revoked_by = ?1 AND ${match}`
-    : `UPDATE licenses SET revoked = ?4, revoked_by = ?1 WHERE revoked IS NULL AND ${match}`;
-  const binds = [charge.id ?? null, charge.payment_intent ?? null, charge.customer ?? null];
-  await env.SYNC_DB.prepare(q).bind(...(at == null ? binds : [...binds, at])).run();
+// A charge maps to a lifetime license by payment intent, or to a yearly one by customer. Every charge that
+// revokes is recorded; a won dispute removes only its own dispute record, never a refund, and the license
+// comes back only when no record is left.
+const MATCH = "(stripe_ref = ?1 OR (plan = 'year' AND stripe_customer = ?2))";
+async function revoke(env: Env, charge: any, at: number, refund: boolean): Promise<void> {
+  const ids = [charge.payment_intent ?? null, charge.customer ?? null];
+  await env.SYNC_DB.batch([
+    env.SYNC_DB.prepare(`INSERT INTO revocations (key_hash, charge, refund) SELECT key_hash, ?3, ?4 FROM licenses WHERE ${MATCH} ON CONFLICT(key_hash, charge) DO UPDATE SET refund = MAX(refund, excluded.refund)`).bind(...ids, charge.id ?? '?', refund ? 1 : 0),
+    env.SYNC_DB.prepare(`UPDATE licenses SET revoked = COALESCE(revoked, ?3) WHERE ${MATCH}`).bind(...ids, at),
+  ]);
+}
+async function disputeWon(env: Env, charge: any): Promise<void> {
+  const ids = [charge.payment_intent ?? null, charge.customer ?? null];
+  await env.SYNC_DB.batch([
+    env.SYNC_DB.prepare(`DELETE FROM revocations WHERE charge = ?3 AND refund = 0 AND key_hash IN (SELECT key_hash FROM licenses WHERE ${MATCH})`).bind(...ids, charge.id ?? '?'),
+    env.SYNC_DB.prepare(`UPDATE licenses SET revoked = NULL WHERE ${MATCH} AND NOT EXISTS (SELECT 1 FROM revocations r WHERE r.key_hash = licenses.key_hash)`).bind(...ids),
+  ]);
 }
 
 async function handle(env: Env, type: string, o: any, now: number): Promise<void> {
@@ -121,12 +129,12 @@ async function handle(env: Env, type: string, o: any, now: number): Promise<void
       return;
     }
     case 'charge.refunded':
-      if (o.refunded) await setRevoked(env, o, now);
+      if (o.refunded) await revoke(env, o, now, true);
       return;
     case 'charge.dispute.created':
-      return setRevoked(env, await stripe(env, 'GET', `/v1/charges/${o.charge}`), now);
+      return revoke(env, await stripe(env, 'GET', `/v1/charges/${o.charge}`), now, false);
     case 'charge.dispute.closed':
-      if (o.status === 'won') await setRevoked(env, await stripe(env, 'GET', `/v1/charges/${o.charge}`), null);
+      if (o.status === 'won') await disputeWon(env, await stripe(env, 'GET', `/v1/charges/${o.charge}`));
       return;
   }
 }
