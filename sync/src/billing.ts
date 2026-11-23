@@ -100,10 +100,12 @@ async function revoke(env: Env, charge: any, at: number, refund: boolean): Promi
   ]);
 }
 async function disputeWon(env: Env, charge: any): Promise<void> {
-  const ids = [charge.payment_intent ?? null, charge.customer ?? null];
+  const ids = [charge.payment_intent ?? null, charge.customer ?? null, charge.id ?? '?'];
+  const mine = 'r.charge = ?3 AND r.refund = 0';
   await env.SYNC_DB.batch([
-    env.SYNC_DB.prepare(`DELETE FROM revocations WHERE charge = ?3 AND refund = 0 AND key_hash IN (SELECT key_hash FROM licenses WHERE ${MATCH})`).bind(...ids, charge.id ?? '?'),
-    env.SYNC_DB.prepare(`UPDATE licenses SET revoked = NULL WHERE ${MATCH} AND NOT EXISTS (SELECT 1 FROM revocations r WHERE r.key_hash = licenses.key_hash)`).bind(...ids),
+    // Only a license this dispute revoked, and only when nothing else revoked it too.
+    env.SYNC_DB.prepare(`UPDATE licenses SET revoked = NULL WHERE ${MATCH} AND EXISTS (SELECT 1 FROM revocations r WHERE r.key_hash = licenses.key_hash AND ${mine}) AND NOT EXISTS (SELECT 1 FROM revocations r WHERE r.key_hash = licenses.key_hash AND NOT (${mine}))`).bind(...ids),
+    env.SYNC_DB.prepare(`DELETE FROM revocations AS r WHERE ${mine} AND key_hash IN (SELECT key_hash FROM licenses WHERE ${MATCH})`).bind(...ids),
   ]);
 }
 

@@ -350,3 +350,15 @@ test('webhook: a won dispute never lifts a revocation that a refund (of any char
   assert.deepEqual(await (await call(env, '/v1/usage', { key })).json(), { error: 'revoked' }, 'refund of ch_2 still stands');
   globalThis.fetch = realFetch;
 });
+
+test('webhook: a won dispute does not lift a revocation that has no record of that dispute', async () => {
+  stubStripe();
+  stripeReply = () => ({ id: 'ch_9', payment_intent: 'pi_1', customer: 'cus_1' });
+  const { env, db } = makeEnv();
+  await hook(env, 'checkout.session.completed', completed());
+  db.prepare('UPDATE licenses SET revoked = 1').run(); // revoked by hand, no revocations row
+  const key = await (await import('../sync/src/license.ts')).licenseKey('lic-secret', 'cs_life_1');
+  await hook(env, 'charge.dispute.closed', { id: 'dp_9', charge: 'ch_9', status: 'won' });
+  assert.deepEqual(await (await call(env, '/v1/usage', { key })).json(), { error: 'revoked' });
+  globalThis.fetch = realFetch;
+});
