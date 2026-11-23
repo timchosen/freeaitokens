@@ -3,7 +3,8 @@ import { app, Tray, Menu, BrowserWindow, ipcMain, clipboard, nativeImage, shell,
 import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
-import { lookup } from 'node:dns/promises';
+import { lookup as dnsLookup } from 'node:dns';
+import { get as httpsGet } from 'node:https';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadCatalogue, makeDeps, parseArgs } from 'freeaitokens/dist/node/cli.js';
@@ -178,18 +179,37 @@ const IMAGE_FILE = /^[0-9a-f-]{36}\.(png|jpg|webp)$/;
 const MIME = { png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp' };
 const imagesDir = () => join(stateDir(), 'images');
 const dataUrl = (type, bytes) => `data:${MIME[type]};base64,${bytes.toString('base64')}`;
-// A provider's image link: https only, every redirect checked by hand, and never a local or private address.
+// A provider's image link: https only, every redirect checked by hand, and the connection made only to
+// an address that was checked (the check runs inside the connection's own name lookup).
+function safeLookup(host, opts, cb) {
+  dnsLookup(host, opts, (err, address, family) => {
+    if (err) return cb(err);
+    const list = Array.isArray(address) ? address : [{ address, family }];
+    if (!list.length || list.some((a) => privateAddress(a.address))) return cb(new Error('image address is not public'));
+    return Array.isArray(address) ? cb(null, address) : cb(null, address, family);
+  });
+}
+function getOnce(url) {
+  return new Promise((ok, fail) => {
+    const req = httpsGet(url, { lookup: safeLookup, timeout: 60_000 }, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) { res.resume(); return ok({ next: new URL(res.headers.location, url).href }); }
+      if (res.statusCode !== 200 || Number(res.headers['content-length'] ?? 0) > MAX_IMAGE) { res.resume(); return ok({ bytes: null }); }
+      const parts = [];
+      let size = 0;
+      res.on('data', (c) => { size += c.length; if (size > MAX_IMAGE) req.destroy(new Error('too big')); else parts.push(c); });
+      res.on('end', () => ok({ bytes: Buffer.concat(parts) }));
+      res.on('error', fail);
+    });
+    req.on('timeout', () => req.destroy(new Error('timed out')));
+    req.on('error', fail);
+  });
+}
 async function download(url) {
   for (let hop = 0; hop < 5; hop++) {
-    const u = new URL(url);
-    if (u.protocol !== 'https:') return null;
-    const addrs = await lookup(u.hostname, { all: true }).catch(() => []);
-    if (!addrs.length || addrs.some((a) => privateAddress(a.address))) return null;
-    const r = await fetch(u, { signal: AbortSignal.timeout(60_000), redirect: 'manual' });
-    if (r.status >= 300 && r.status < 400 && r.headers.get('location')) { url = new URL(r.headers.get('location'), u).href; continue; }
-    if (!r.ok || Number(r.headers.get('content-length') ?? 0) > MAX_IMAGE) return null;
-    const bytes = Buffer.from(await r.arrayBuffer());
-    return bytes.length <= MAX_IMAGE ? bytes : null;
+    if (new URL(url).protocol !== 'https:') return null;
+    const r = await getOnce(url);
+    if (r.next) { url = r.next; continue; }
+    return r.bytes;
   }
   return null;
 }

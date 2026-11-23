@@ -1,3 +1,4 @@
+import { BlockList, isIP } from 'node:net';
 // Pure helpers for the tray app, kept out of main.js so they can be tested without Electron.
 
 // The add window may only open pages the provider list names, never a URL a page hands it.
@@ -170,13 +171,21 @@ export function imageType(u8) {
 }
 
 // True for addresses on this computer or a private network: image downloads must never reach them.
+// IPv4-mapped addresses are checked as the IPv4 inside; other IPv6 forms that carry an IPv4 address
+// (NAT64, 6to4, IPv4-compatible) are blocked whole.
+const V4 = new BlockList(), V6 = new BlockList();
+for (const [net, bits] of [['0.0.0.0', 8], ['10.0.0.0', 8], ['100.64.0.0', 10], ['127.0.0.0', 8], ['169.254.0.0', 16], ['172.16.0.0', 12],
+  ['192.0.0.0', 24], ['192.168.0.0', 16], ['198.18.0.0', 15], ['224.0.0.0', 3]]) V4.addSubnet(net, bits, 'ipv4');
+for (const [net, bits] of [['::', 96], ['64:ff9b::', 96], ['64:ff9b:1::', 48], ['2002::', 16], ['fc00::', 7], ['fe80::', 10],
+  ['fec0::', 10], ['ff00::', 8]]) V6.addSubnet(net, bits, 'ipv6');
 export function privateAddress(ip) {
-  const v4 = /^(?:::ffff:)?(\d+)\.(\d+)\.(\d+)\.(\d+)$/i.exec(ip);
-  if (v4) {
-    const [a, b] = [Number(v4[1]), Number(v4[2])];
-    return a === 0 || a === 10 || a === 127 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31)
-      || (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127) || a >= 224;
+  const mapped = /^::ffff:(?:(\d+\.\d+\.\d+\.\d+)|([0-9a-f]{1,4}):([0-9a-f]{1,4}))$/i.exec(ip);
+  if (mapped) {
+    const v4 = mapped[1] ?? [parseInt(mapped[2], 16) >> 8, parseInt(mapped[2], 16) & 255, parseInt(mapped[3], 16) >> 8, parseInt(mapped[3], 16) & 255].join('.');
+    return privateAddress(v4);
   }
-  const x = ip.toLowerCase();
-  return x === '::' || x === '::1' || /^f[cd]/.test(x) || /^fe[89ab]/.test(x) || x.startsWith('::ffff:');
+  const type = isIP(ip);
+  if (type === 4) return V4.check(ip, 'ipv4');
+  if (type === 6) return /^::ffff:/i.test(ip) || V6.check(ip, 'ipv6');
+  return true;
 }
