@@ -142,7 +142,54 @@ test('the footer links to Terms, Privacy and Disclaimer, and the disclaimer list
   const out = mkdtempSync(join(tmpdir(), 'site-'));
   build(out);
   const home = readFileSync(join(out, 'index.html'), 'utf8');
-  for (const href of ['/terms', '/privacy', '/disclaimer', '/docs#providers']) assert.ok(home.includes(`href="${href}"`), href);
+  for (const href of ['/terms', '/privacy', '/disclaimer', '/providers', '/models']) assert.ok(home.includes(`href="${href}"`), href);
   const disc = readFileSync(join(out, 'disclaimer.html'), 'utf8');
   for (const p of catalogue) assert.ok(disc.includes(p.name.replace(/&/g, '&amp;')), p.name);
+});
+
+// @ts-ignore plain JS module
+import { slug, modelRows } from '../site/build.mjs';
+// @ts-ignore plain JS module
+import { filterModels } from '../site/static/site.js';
+
+test('every provider gets a page with sign-up and key links, and every model gets its own page', () => {
+  const out = mkdtempSync(join(tmpdir(), 'site-'));
+  build(out);
+  const list = readFileSync(join(out, 'providers.html'), 'utf8');
+  for (const p of catalogue) {
+    assert.ok(list.includes(`href="/providers/${p.id}"`), p.id);
+    const page = readFileSync(join(out, 'providers', `${p.id}.html`), 'utf8');
+    if (p.keyUrl) assert.ok(page.includes(p.keyUrl.replace(/&/g, '&amp;')), `${p.id} key link`);
+    for (const m of modelRows(catalogue).filter((r: any) => r.provider === p.id)) {
+      const href = `/models/${p.id}/${m.slug}`;
+      assert.ok(page.includes(`href="${href}"`), href);
+      assert.match(readFileSync(join(out, `${href.slice(1)}.html`), 'utf8'), new RegExp(`/providers/${p.id}`));
+    }
+  }
+  const models = readFileSync(join(out, 'models.html'), 'utf8');
+  assert.equal((models.match(/data-model /g) ?? []).length, modelRows(catalogue).length);
+});
+
+test('model slugs are safe and unique within a provider', () => {
+  assert.equal(slug('meta-llama/Llama-3.3-70B:free'), 'meta-llama-llama-3-3-70b-free');
+  assert.equal(slug('@cf/zai-org/glm-4.7-flash'), 'cf-zai-org-glm-4-7-flash');
+  for (const p of catalogue) {
+    const s = modelRows(catalogue).filter((r: any) => r.provider === p.id).map((r: any) => r.slug);
+    assert.equal(new Set(s).size, s.length, p.id);
+  }
+});
+
+test('filterModels matches search, provider, kind, features and context', () => {
+  const rows = [
+    { provider: 'groq', kind: 'chat', name: 'gpt-oss-120b', tools: true, images: false, keyless: false, context: 131072 },
+    { provider: 'kilo', kind: 'chat', name: 'nemotron', tools: false, images: true, keyless: true, context: 32000 },
+    { provider: 'groq', kind: 'speech', name: 'playai-tts', tools: false, images: false, keyless: false, context: 0 },
+  ];
+  const f = (q: object) => filterModels(rows, { q: '', provider: '', kind: '', tools: false, images: false, keyless: false, minContext: 0, ...q }).map((r: any) => r.name);
+  assert.deepEqual(f({}), ['gpt-oss-120b', 'nemotron', 'playai-tts']);
+  assert.deepEqual(f({ q: 'NEMO' }), ['nemotron']);
+  assert.deepEqual(f({ provider: 'groq', kind: 'chat' }), ['gpt-oss-120b']);
+  assert.deepEqual(f({ tools: true }), ['gpt-oss-120b']);
+  assert.deepEqual(f({ images: true, keyless: true }), ['nemotron']);
+  assert.deepEqual(f({ minContext: 100000 }), ['gpt-oss-120b']);
 });

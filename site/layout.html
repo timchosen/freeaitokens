@@ -6,16 +6,19 @@
 <title>{{title}}</title>
 <meta name="description" content="{{description}}">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="/site.css">
 <script type="module" src="/site.js"></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <header class="top">
-  <a href="/" class="brand">FreeAITokens</a>
+  <a href="/" class="brand"><img src="/logo.svg" alt="" width="30" height="30">FreeAITokens</a>
   <nav aria-label="Main">
     <a href="/download">Download</a>
     <a href="/setup">Setup</a>
+    <a href="/providers">Providers</a>
+    <a href="/models">Models</a>
     <a href="/docs">Docs</a>
     <a href="/about">About</a>
     <a href="/support" class="accent">Support us</a>
@@ -28,7 +31,7 @@
 <footer class="foot">
   <div class="foot-grid">
     <div class="foot-brand">
-      <a href="/" class="brand">FreeAITokens</a>
+      <a href="/" class="brand"><img src="/logo.svg" alt="" width="30" height="30">FreeAITokens</a>
       <p>Free AI from {{providers}} providers, on your own computer. Open source, single-user, no accounts.</p>
       <p class="foot-buttons"><a class="btn small-btn" href="/download">Download</a> <a class="btn quiet small-btn" href="{{repoUrl}}">GitHub</a></p>
     </div>
@@ -41,7 +44,8 @@
     </nav>
     <nav aria-label="Providers">
       <h2>Providers</h2>
-      <a href="/docs#providers">All {{providers}} providers</a>
+      <a href="/providers">All {{providers}} providers</a>
+      <a href="/models">All models</a>
       <a href="/docs#media">Images, speech and more</a>
       <a href="/disclaimer#providers">Provider terms</a>
       <a href="{{repoUrl}}/issues">Suggest a provider</a>

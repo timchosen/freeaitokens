@@ -23,6 +23,28 @@ export function starsLabel(n) {
   return `★ ${n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, '')}k` : n}`;
 }
 
+export function filterModels(rows, f) {
+  const q = f.q.trim().toLowerCase();
+  return rows.filter((r) => (!q || r.name.toLowerCase().includes(q))
+    && (!f.provider || r.provider === f.provider) && (!f.kind || r.kind === f.kind)
+    && (!f.tools || r.tools) && (!f.images || r.images) && (!f.keyless || r.keyless)
+    && r.context >= f.minContext);
+}
+
+function wireFilters(form) {
+  const trs = [...document.querySelectorAll('tr[data-model]')];
+  const rows = trs.map((tr) => ({ tr, provider: tr.dataset.provider, kind: tr.dataset.kind, name: tr.dataset.name, tools: tr.dataset.tools === 'true', images: tr.dataset.images === 'true', keyless: tr.dataset.keyless === 'true', context: Number(tr.dataset.context) }));
+  const count = document.querySelector('[data-count]');
+  const apply = () => {
+    const e = form.elements;
+    const shown = new Set(filterModels(rows, { q: e.q.value, provider: e.provider.value, kind: e.kind.value, minContext: Number(e.minContext.value), tools: e.tools.checked, images: e.images.checked, keyless: e.keyless.checked }));
+    for (const r of rows) r.tr.hidden = !shown.has(r);
+    count.textContent = `${shown.size} of ${rows.length} models`;
+  };
+  form.addEventListener('input', apply);
+  form.addEventListener('submit', (e) => e.preventDefault());
+}
+
 function wire() {
   const touch = navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform) ? ':touch' : '';
   const os = detectOS(navigator.userAgent, navigator.platform + touch);
@@ -83,6 +105,9 @@ function wire() {
       setTimeout(() => { b.textContent = 'Copy'; }, 2000);
     });
   }
+
+  const filters = document.querySelector('form.filters');
+  if (filters) wireFilters(filters);
 
   const stars = document.querySelectorAll('[data-stars]');
   if (stars.length) {
