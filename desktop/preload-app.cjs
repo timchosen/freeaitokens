@@ -12,7 +12,7 @@ contextBridge.exposeInMainWorld('freeaitokens', {
   saveImage: (what) => ipcRenderer.invoke('app:saveImage', what),
   dropImages: (list) => ipcRenderer.invoke('app:dropImages', list),
   sort: (text) => ipcRenderer.invoke('app:sort', text),
-  speech: (text) => ipcRenderer.invoke('app:speech', text),
+  speech: (text, write) => ipcRenderer.invoke('app:speech', text, write),
   audioData: (audio) => ipcRenderer.invoke('app:audioData', audio),
   saveAudio: (audio) => ipcRenderer.invoke('app:saveAudio', audio),
   transcribe: () => ipcRenderer.invoke('app:transcribe'),

@@ -55,7 +55,8 @@
         <label for="prompt" class="sr" data-i18n="your_message">Your message</label>
         <textarea id="prompt" rows="2" data-i18n-placeholder="prompt_placeholder" placeholder="Write a message… (⌘/Ctrl + Enter to send)"></textarea>
         <div class="bar">
-          <div class="range" role="group" data-i18n-label="mode_label" aria-label="Mode"><button type="button" data-mode="chat" aria-pressed="true" data-i18n="mode_chat">Chat</button><button type="button" data-mode="image" aria-pressed="false" data-i18n="mode_image">Image</button></div>
+          <button class="icon-btn" id="attach" type="button" data-i18n-label="attach_audio" data-i18n-title="attach_audio" aria-label="Transcribe an audio file" title="Transcribe an audio file"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M10.5 4.5 5.8 9.2a1.6 1.6 0 0 0 2.3 2.3l5-5a3 3 0 0 0-4.3-4.3l-5 5a4.4 4.4 0 0 0 6.2 6.2l4-4"/></svg></button>
+          <div class="range" role="group" data-i18n-label="mode_label" aria-label="Mode"><button type="button" data-mode="auto" aria-pressed="true" data-i18n="mode_auto">Auto</button><button type="button" data-mode="chat" aria-pressed="false" data-i18n="mode_chat">Chat</button><button type="button" data-mode="image" aria-pressed="false" data-i18n="mode_image">Image</button></div>
           <label class="pick"><span class="sr" data-i18n="model">Model</span><select id="model"></select></label>
           <button class="btn" id="send" type="submit" data-i18n="send">Send</button>
         </div>

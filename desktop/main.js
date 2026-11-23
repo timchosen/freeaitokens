@@ -311,12 +311,24 @@ const AUDIO_FILE = /^[0-9a-f-]{36}\.(mp3|wav|ogg|flac|m4a|webm)$/;
 const AUDIO_MIME = { mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg', flac: 'audio/flac', m4a: 'audio/mp4', webm: 'audio/webm' };
 const audioDir = () => join(stateDir(), 'audio');
 const audioUrl = (type, bytes) => `data:${AUDIO_MIME[type]};base64,${bytes.toString('base64')}`;
-ipcMain.handle('app:speech', async (_e, text) => {
+// A request like "read a short poem about rain" first has a chat model write the words to speak;
+// if that fails, the request itself is spoken.
+const SAY_PROMPT = 'Write only the exact words that should be spoken aloud for this request: no notes, no markdown, no quotes around them.';
+async function wordsToSay(request) {
+  try {
+    const { response } = await route({ messages: [{ role: 'system', content: SAY_PROMPT }, { role: 'user', content: request }], max_tokens: 2048 }, deps);
+    if (response.status !== 200) return request;
+    const words = String((await response.json())?.choices?.[0]?.message?.content ?? '').trim();
+    return words && words.length <= 4000 ? words : request;
+  } catch { return request; }
+}
+ipcMain.handle('app:speech', async (_e, text, write = false) => {
   if (typeof text !== 'string' || !text.trim() || text.length > 4000) return { ok: false, reason: t('err_send') };
   if (!mediaOptions(deps.catalogue, keys, 'speech').length) return { ok: false, reason: t('no_speech_providers') };
   const start = Date.now();
   try {
-    const { response, candidate } = await routeMedia('speech', { json: { input: text.trim() } }, deps);
+    const words = write === true ? await wordsToSay(text.trim()) : text.trim();
+    const { response, candidate } = await routeMedia('speech', { json: { input: words } }, deps);
     if (response.status !== 200) return { ok: false, reason: t('err_said_no', { name: candidate.provider.name, text: (await response.text()).slice(0, 300) }) };
     const bytes = Buffer.from(pcmToWav(new Uint8Array(await response.arrayBuffer()), response.headers.get('content-type')));
     const type = bytes.length <= MAX_AUDIO ? audioType(bytes) : null;
@@ -324,7 +336,7 @@ ipcMain.handle('app:speech', async (_e, text) => {
     const audio = `${randomUUID()}.${type}`;
     mkdirSync(audioDir(), { recursive: true, mode: 0o700 });
     writeFileSync(join(audioDir(), audio), bytes, { mode: 0o600 });
-    return { ok: true, audio, src: audioUrl(type, bytes), ms: Date.now() - start, provider: candidate.provider.name, model: candidate.model.id };
+    return { ok: true, audio, src: audioUrl(type, bytes), text: write === true ? words : '', ms: Date.now() - start, provider: candidate.provider.name, model: candidate.model.id };
   } catch (e) {
     return { ok: false, reason: e instanceof NoProviderError ? t('no_speech_providers') : t('err_generic', { reason: e.message }) };
   } finally {

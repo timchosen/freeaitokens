@@ -176,3 +176,16 @@ section.play:not([hidden]) { flex: 1; min-height: 0; max-width: none; display: g
 @media (max-height: 640px) {
   .composer textarea { min-height: 36px; }
 }
+
+/* Smart routing: attach and speaker icon buttons, the audio player, the Auto label. */
+.icon-btn { flex: none; display: inline-grid; place-items: center; width: 30px; height: 30px; padding: 0; border: 1px solid transparent; border-radius: 999px; background: none; color: var(--muted); cursor: pointer; }
+.icon-btn svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.icon-btn:hover { color: var(--ink); background: var(--chip); }
+.icon-btn:focus-visible { outline: 2px solid var(--coral); outline-offset: 1px; }
+.icon-btn:disabled { opacity: .45; cursor: progress; }
+.meta .speak { width: 24px; height: 24px; margin-inline-start: 2px; }
+.sound { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: .6em 0 0; }
+.sound audio { height: 36px; max-width: 100%; flex: 1 1 260px; }
+.msg:has(> .sound) { min-width: min(420px, 100%); }
+.chip.auto { color: var(--coral); background: color-mix(in srgb, var(--coral) 12%, var(--chip)); }
+.err-line { color: var(--bad); font-size: 13px; margin: .5em 0 0; }

@@ -15,6 +15,7 @@ async function applyStrings() {
   for (const e of document.querySelectorAll('[data-i18n]')) e.textContent = t(e.dataset.i18n);
   for (const e of document.querySelectorAll('[data-i18n-html]')) e.innerHTML = t(e.dataset.i18nHtml); // our own packaged strings
   for (const e of document.querySelectorAll('[data-i18n-label]')) e.setAttribute('aria-label', t(e.dataset.i18nLabel));
+  for (const e of document.querySelectorAll('[data-i18n-title]')) e.title = t(e.dataset.i18nTitle);
   for (const e of document.querySelectorAll('[data-i18n-placeholder]')) e.placeholder = t(e.dataset.i18nPlaceholder);
   $('lang').replaceChildren(Object.assign(el('option', '', t('lang_system')), { value: 'system' }), ...s.languages.map((l) => Object.assign(el('option', '', l.name), { value: l.code })));
   $('lang').value = s.chosen;
@@ -56,7 +57,7 @@ async function refresh() {
   if (!version) $('updText').textContent = t('set_version', { v: s.version });
   version = s.version;
   $('login').checked = s.startAtLogin;
-  lists = { chat: s.models, image: s.images };
+  lists = { auto: s.models, chat: s.models, image: s.images };
   fillModels();
   const usable = s.providers.filter((p) => p.status !== 'add');
   $('s-ready').textContent = num(usable.length);
@@ -129,7 +130,7 @@ function listChats() {
     x.append(icon('M4 4l8 8M12 4l-8 8'));
     x.setAttribute('aria-label', t('delete_chat', { title: c.title }));
     x.addEventListener('click', () => {
-      api.dropImages(c.messages.filter((m) => m.image).map((m) => m.image));
+      api.dropImages(c.messages.flatMap((m) => [m.image, m.audio]).filter(Boolean));
       chats = chats.filter((y) => y !== c); save(); if (current === c) openChat(null); else listChats();
     });
     li.append(b, x);
@@ -144,10 +145,13 @@ function bubble(m) {
     box.innerHTML = renderMarkdown(m.content); // renderMarkdown escapes everything it does not create itself
     previewSvgs(box);
   } else box.textContent = m.content;
+  if (m.audio) box.append(player(m));
   if (m.meta) {
     const meta = el('div', 'meta');
+    if (m.meta.auto) meta.append(el('span', 'chip auto', t('auto_kind', { kind: t(`kind_${m.meta.auto}`) })));
     meta.append(el('span', 'chip who', m.meta.provider), el('span', 'chip', m.meta.model), el('span', 'chip', t('seconds', { n: (m.meta.ms / 1000).toFixed(1) })));
     if (m.meta.tokens) meta.append(el('span', 'chip', t('tokens', { n: m.meta.tokens })));
+    if (m.content && !m.audio && !m.image) meta.append(speakButton(m, box));
     box.append(meta);
   }
   $('empty').hidden = true;
@@ -173,6 +177,43 @@ function picture(m) {
   bar.append(save, copy);
   fig.append(img, bar);
   return fig;
+}
+// Speech: an audio player from the file the main process saved, with Save.
+const audioSrcs = new Map();
+function player(m) {
+  const fig = el('figure', 'sound');
+  const audio = Object.assign(el('audio'), { controls: true, preload: 'metadata' });
+  if (audioSrcs.has(m.audio)) audio.src = audioSrcs.get(m.audio);
+  else api.audioData(m.audio).then((src) => { if (src) audio.src = src; else fig.replaceChildren(el('p', 'status', t('image_gone'))); });
+  const save = el('button', 'copy', t('save'));
+  save.type = 'button';
+  save.addEventListener('click', () => api.saveAudio(m.audio));
+  fig.append(audio, save);
+  return fig;
+}
+// The speaker button under an answer reads it aloud; the sound is kept with that answer.
+function speakButton(m, box) {
+  const b = el('button', 'icon-btn speak');
+  b.type = 'button';
+  b.title = t('read_aloud');
+  b.setAttribute('aria-label', t('read_aloud'));
+  b.append(icon('M2.5 6v4h2.5l3.5 3V3L5 6zM11 5.5a3.5 3.5 0 0 1 0 5M12.8 3.5a6 6 0 0 1 0 9'));
+  b.addEventListener('click', async () => {
+    if (b.disabled) return;
+    b.disabled = true;
+    b.title = t('speaking');
+    const r = await api.speech(m.content.replace(/[*_`#>|]/g, '').slice(0, 4000));
+    b.disabled = false;
+    b.title = t('read_aloud');
+    if (!r.ok) { box.append(el('p', 'status err-line', r.reason)); return; }
+    audioSrcs.set(r.audio, r.src);
+    m.audio = r.audio;
+    save();
+    b.remove();
+    box.querySelector('.meta').before(player(m));
+    box.querySelector('audio').play().catch(() => {});
+  });
+  return b;
 }
 // A shown picture redrawn as PNG, for the clipboard and for saving SVG previews.
 function asPng(img, width = img.naturalWidth || 1600) {
@@ -201,7 +242,7 @@ function openChat(c) {
   current = c;
   $('chat').replaceChildren($('empty'));
   $('empty').hidden = false;
-  if (c) { setMode(c.mode ?? 'chat'); for (const m of c.messages) bubble(m); if ([...$('model').options].some((o) => o.value === c.model)) $('model').value = chosen[mode] = c.model; }
+  if (c) { setMode(c.mode ?? 'auto'); for (const m of c.messages) bubble(m); if ([...$('model').options].some((o) => o.value === c.model)) $('model').value = chosen[mode] = c.model; }
   listChats();
   $('prompt').focus();
 }
@@ -214,22 +255,32 @@ async function send() {
   if (!text || $('send').disabled) return;
   if (!current) { current = { id: Date.now(), title: text.slice(0, 60), model: $('model').value, mode, messages: [], updated: Date.now() }; chats.unshift(current); }
   const chat = current;
-  const making = mode === 'image';
-  chat.messages.push({ role: 'user', content: text, ...(making ? { kind: 'image' } : {}) });
-  bubble(chat.messages.at(-1));
+  const asked = { role: 'user', content: text };
+  chat.messages.push(asked);
+  bubble(asked);
   $('prompt').value = '';
   $('send').disabled = busy = true;
-  const wait = bubble({ role: 'assistant', content: `_${t(making ? 'creating' : 'thinking')}_` });
-  // Image turns are not conversation: chat models only see the chat turns.
-  const history = chat.messages.filter((m) => !m.error && !m.image && m.kind !== 'image').map(({ role, content }) => ({ role, content }));
-  const r = making ? await api.image(text, $('model').value) : await api.chat(history, $('model').value);
+  const wait = bubble({ role: 'assistant', content: `_${t(mode === 'image' ? 'creating' : 'thinking')}_` });
+  // Auto: a free model (or the word rules) decides between chat, a picture and speech.
+  const auto = mode === 'auto' ? (await api.sort(text)).kind : null;
+  const kind = auto ?? mode;
+  if (kind !== 'chat') { asked.kind = kind; wait.innerHTML = renderMarkdown(`_${t(kind === 'image' ? 'creating' : 'speaking')}_`); }
+  // Picture and speech turns are not conversation: chat models only see the chat turns.
+  const history = chat.messages.filter((m) => !m.error && !m.image && !m.audio && m.kind !== 'image' && m.kind !== 'speech').map(({ role, content }) => ({ role, content }));
+  const model = $('model').value;
+  const r = kind === 'image' ? await api.image(text, mode === 'image' ? model : 'free')
+    : kind === 'speech' ? await api.speech(text, true)
+    : await api.chat(history, model);
   wait.remove();
   busy = false;
   fillModels();
   if (r.ok && r.image) srcs.set(r.image, r.src);
+  if (r.ok && r.audio) audioSrcs.set(r.audio, r.src);
+  const meta = r.ok ? { provider: r.provider, model: r.model, ms: r.ms, ...(r.tokens ? { tokens: r.tokens } : {}), ...(auto && auto !== 'chat' ? { auto } : {}) } : null;
   chat.messages.push(!r.ok ? { role: 'assistant', content: r.reason, error: true }
-    : r.image ? { role: 'assistant', content: '', image: r.image, prompt: text, meta: { provider: r.provider, model: r.model, ms: r.ms } }
-    : { role: 'assistant', content: r.text, meta: { provider: r.provider, model: r.model, ms: r.ms, tokens: r.tokens } });
+    : r.image ? { role: 'assistant', content: '', image: r.image, prompt: text, meta }
+    : r.audio ? { role: 'assistant', content: r.text ?? '', audio: r.audio, meta }
+    : { role: 'assistant', content: r.text, meta });
   chat.model = $('model').value;
   chat.mode = mode;
   chat.updated = Date.now();
@@ -242,10 +293,29 @@ async function send() {
 $('ask').addEventListener('submit', (e) => { e.preventDefault(); send(); });
 $('prompt').addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); send(); } });
 $('newChat').addEventListener('click', () => openChat(null));
+// Attach: the person picks an audio file in the system dialog; its transcript joins the chat.
+$('attach').addEventListener('click', async () => {
+  if (busy) return;
+  $('send').disabled = $('attach').disabled = busy = true;
+  const r = await api.transcribe();
+  $('attach').disabled = busy = false;
+  fillModels();
+  if (r.canceled) return;
+  if (!current) { current = { id: Date.now(), title: t('transcribe_file', { name: r.name ?? '' }).slice(0, 60), model: $('model').value, mode, messages: [], updated: Date.now() }; chats.unshift(current); }
+  const chat = current;
+  chat.messages.push({ role: 'user', content: t('transcribe_file', { name: r.name ?? '' }), kind: 'file' },
+    r.ok ? { role: 'assistant', content: r.text, meta: { provider: r.provider, model: r.model, ms: r.ms } } : { role: 'assistant', content: r.reason, error: true });
+  chat.updated = Date.now();
+  chats = [chat, ...chats.filter((c) => c !== chat)];
+  save();
+  if (current === chat) { bubble(chat.messages.at(-2)); bubble(chat.messages.at(-1)); }
+  listChats();
+  refresh();
+});
 
 // Chat or Image: which models the picker lists, and what the box and button say.
-let mode = 'chat', lists = { chat: [], image: [] }, busy = false;
-const chosen = { chat: 'free', image: 'free' };
+let mode = 'auto', lists = { auto: [], chat: [], image: [] }, busy = false;
+const chosen = { auto: 'free', chat: 'free', image: 'free' };
 function setMode(m) {
   mode = m;
   for (const b of document.querySelectorAll('[data-mode]')) b.setAttribute('aria-pressed', String(b.dataset.mode === m));
