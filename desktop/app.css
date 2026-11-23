@@ -46,11 +46,6 @@ section { max-width: 820px; }
 .row code { flex: 1; }
 .copy { font: inherit; font-size: 13px; font-weight: 600; color: var(--coral-ink); background: none; border: 1px solid var(--line); border-radius: 8px; padding: 4px 10px; cursor: pointer; }
 
-.chat { display: flex; flex-direction: column; gap: 12px; margin-bottom: 14px; }
-.msg { max-width: 92%; padding: 10px 14px; border-radius: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
-.msg.user { align-self: flex-end; background: var(--coral); color: #fff; border-end-end-radius: 4px; }
-.msg.ai { align-self: flex-start; background: var(--card); border: 1px solid var(--line); border-end-start-radius: 4px; }
-.msg.err { align-self: flex-start; color: var(--bad); background: var(--card); border: 1px solid var(--bad); }
 .meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; white-space: normal; }
 .chip { font-size: 12px; background: var(--chip); color: var(--muted); border-radius: 999px; padding: 2px 9px; }
 .chip.who { color: var(--ink); font-weight: 600; }
@@ -73,18 +68,6 @@ textarea { width: 100%; font: inherit; color: var(--ink); background: var(--card
 .badge.keyless { background: var(--chip); color: var(--ink); }
 .badge.add { background: none; border: 1px solid var(--line); color: var(--muted); }
 
-/* Playground: saved chats on the left, the conversation on the right. */
-section.play:not([hidden]) { display: grid; grid-template-columns: 200px 1fr; gap: 24px; max-width: 1100px; }
-.history { display: flex; flex-direction: column; gap: 10px; position: sticky; top: 0; align-self: start; max-height: calc(100vh - 68px); }
-.history ul { list-style: none; margin: 0; padding: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
-.history li { display: flex; align-items: center; border-radius: 8px; }
-.history li:hover { background: var(--chip); }
-.history li button { font: inherit; font-size: 13px; color: var(--muted); background: none; border: 0; padding: 7px 8px; cursor: pointer; text-align: start; }
-.history li button:first-child { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.history li button.on { color: var(--ink); font-weight: 600; }
-.history .del { opacity: 0; font-size: 16px; }
-.history li:hover .del, .history .del:focus-visible { opacity: 1; }
-.convo { min-width: 0; }
 .convo-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .pick { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
 select { font: inherit; font-size: 13px; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; max-width: 320px; }
@@ -132,27 +115,64 @@ select { font: inherit; font-size: 13px; color: var(--ink); background: var(--ca
 .pic img { display: block; max-width: 100%; max-height: 480px; border-radius: 10px; background: var(--chip); }
 .pic .actions { margin: 8px 0 0; }
 .msg:has(> .pic) { width: min(560px, 92%); }
-.convo-head > .pick { flex-wrap: wrap; }
-select { max-width: 100%; }
-/* Narrow windows: saved chats above the conversation instead of beside it. */
+
+/* Browser surfaces in the app's colours */
+::selection { background: color-mix(in srgb, var(--coral) 26%, transparent); }
+textarea, input { caret-color: var(--coral); }
+* { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--muted) 35%, transparent) transparent; }
+
+/* Playground: saved chats in a panel, then one reading column; only the messages scroll. */
+main:has(> #play:not([hidden])) { display: flex; flex-direction: column; overflow: hidden; padding: 0; }
+section.play:not([hidden]) { flex: 1; min-height: 0; max-width: none; display: grid; grid-template-columns: 232px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+#play .history { display: flex; flex-direction: column; gap: 12px; min-height: 0; padding: 20px 12px; background: color-mix(in srgb, var(--side) 55%, var(--bg)); border-inline-end: 1px solid var(--line); }
+.new { display: flex; align-items: center; gap: 8px; font: inherit; font-size: 14px; font-weight: 600; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; cursor: pointer; box-shadow: 0 1px 2px rgba(43, 37, 32, .05); transition: border-color .15s ease-out, box-shadow .15s ease-out; }
+.new:hover { border-color: color-mix(in srgb, var(--coral) 45%, var(--line)); box-shadow: 0 2px 8px rgba(43, 37, 32, .08); }
+.new svg, .del svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; flex: none; }
+.new svg { color: var(--coral-ink); }
+#chats { list-style: none; margin: 0; padding: 0; overflow-y: auto; min-height: 0; display: flex; flex-direction: column; gap: 1px; }
+#chats li { display: flex; align-items: center; border-radius: 8px; transition: background-color .15s ease-out; }
+#chats li:hover { background: var(--chip); }
+#chats li:has(.on) { background: var(--card); box-shadow: 0 1px 2px rgba(43, 37, 32, .07); }
+#chats li button { font: inherit; color: var(--muted); background: none; border: 0; cursor: pointer; }
+#chats li button:first-child { flex: 1; min-width: 0; text-align: start; font-size: 13.5px; padding: 7px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#chats li:hover button:first-child, #chats li button.on { color: var(--ink); }
+#chats li button.on { font-weight: 600; }
+.del { display: grid; place-items: center; width: 26px; height: 26px; margin-inline-end: 3px; border-radius: 6px; opacity: 0; }
+#chats li:hover .del, .del:focus-visible { opacity: 1; }
+.del:hover { color: var(--bad); background: color-mix(in srgb, var(--bad) 10%, transparent); }
+
+#play .convo { display: flex; flex-direction: column; min-height: 0; min-width: 0; padding: 16px 28px 20px; }
+#play .convo-head h1 { font-size: 22px; margin: 0 0 4px; }
+#play .chat { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; padding-block: 12px 24px; padding-inline: max(4px, calc((100% - 760px) / 2)); mask-image: linear-gradient(to bottom, transparent, #000 20px, #000 calc(100% - 14px), transparent); }
+.msg { max-width: 85%; padding: 10px 14px; border-radius: 16px; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; }
+.msg.user { align-self: flex-end; background: color-mix(in srgb, var(--coral) 13%, var(--card)); border-end-end-radius: 6px; }
+.msg.ai { align-self: stretch; max-width: none; padding: 0 2px; }
+.msg.err { align-self: flex-start; color: var(--bad); background: color-mix(in srgb, var(--bad) 7%, var(--card)); border: 1px solid color-mix(in srgb, var(--bad) 35%, transparent); }
+.msg .meta { margin-top: 10px; }
+.empty { margin: auto; max-width: 380px; text-align: center; color: var(--muted); }
+.empty img { display: block; margin: 0 auto 14px; opacity: .9; }
+.empty p { margin: 0; text-wrap: balance; }
+#imgNote { width: min(100%, 760px); margin: 0 auto 8px; font-size: 13px; }
+
+.composer { flex: none; width: min(100%, 760px); margin-inline: auto; background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 10px; padding-inline-start: 14px; box-shadow: 0 2px 10px rgba(43, 37, 32, .06); transition: border-color .15s ease-out, box-shadow .15s ease-out; }
+.composer:focus-within { border-color: color-mix(in srgb, var(--coral) 55%, var(--line)); box-shadow: 0 3px 14px rgba(196, 81, 43, .12); }
+.composer textarea { display: block; border: 0; background: none; padding: 4px 2px; resize: none; field-sizing: content; min-height: 52px; max-height: 30vh; }
+.composer textarea:focus-visible { outline: none; }
+.composer .bar { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.composer .pick { min-width: 0; }
+.composer select { max-width: 220px; background: var(--chip); border-color: transparent; border-radius: 999px; padding: 5px 10px; }
+.composer select:hover { border-color: var(--line); }
+.composer .btn { margin-inline-start: auto; padding: 7px 18px; }
+
+/* Narrow windows: saved chats above the conversation. */
 @media (max-width: 900px) {
-  section.play:not([hidden]) { grid-template-columns: 1fr; }
-  .history { position: static; max-height: 30vh; }
+  section.play:not([hidden]) { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+  #play .history { flex-direction: row; align-items: center; min-width: 0; padding: 10px 16px; border-inline-end: 0; border-block-end: 1px solid var(--line); }
+  #play .new { flex: none; }
+  #chats { flex-direction: row; overflow-x: auto; overflow-y: hidden; gap: 4px; }
+  #chats li { flex: none; max-width: 220px; }
+  #play .convo { padding: 12px 16px 16px; }
 }
-/* Playground: the header and message box stay put; only the conversation scrolls. */
-main:has(> #play:not([hidden])) { display: flex; flex-direction: column; overflow: hidden; padding-bottom: 20px; }
-section.play:not([hidden]) { flex: 1; min-height: 0; width: 100%; grid-template-rows: minmax(0, 1fr); }
-#play .history { position: static; max-height: none; min-height: 0; }
-#play .history ul { min-height: 0; }
-#play .convo { display: flex; flex-direction: column; min-height: 0; }
-#play .chat { flex: 1; min-height: 0; overflow-y: auto; margin-bottom: 14px; padding-inline-end: 4px; }
-@media (max-width: 900px) {
-  section.play:not([hidden]) { grid-template-rows: auto minmax(0, 1fr); gap: 12px; }
-  #play .history { max-height: 22vh; }
-}
-/* Keep the mode switch and model picker on one line; short windows get a smaller message box. */
-#play .convo-head select { width: 240px; }
 @media (max-height: 640px) {
-  #play textarea { height: 64px; }
-  #play .history { max-height: 18vh; }
+  .composer textarea { min-height: 36px; }
 }

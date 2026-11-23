@@ -108,6 +108,15 @@ const save = () => { try { localStorage.setItem(STORE, JSON.stringify(chats.slic
 let chats = load();
 let current = null; // the open chat, or null for a new one
 
+// A small drawn icon (16×16, stroked with the text colour).
+function icon(d) {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 16 16'); svg.setAttribute('width', '16'); svg.setAttribute('height', '16'); svg.setAttribute('aria-hidden', 'true');
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', d);
+  svg.append(path);
+  return svg;
+}
 function listChats() {
   $('chats').replaceChildren(...chats.map((c) => {
     const li = el('li');
@@ -115,8 +124,9 @@ function listChats() {
     b.type = 'button';
     b.title = new Date(c.updated).toLocaleString();
     b.addEventListener('click', () => openChat(c));
-    const x = el('button', 'del', '×');
+    const x = el('button', 'del');
     x.type = 'button';
+    x.append(icon('M4 4l8 8M12 4l-8 8'));
     x.setAttribute('aria-label', t('delete_chat', { title: c.title }));
     x.addEventListener('click', () => {
       api.dropImages(c.messages.filter((m) => m.image).map((m) => m.image));

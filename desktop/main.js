@@ -1,5 +1,5 @@
 // freeaitokens tray app: runs the same local endpoint as the CLI, from the menu bar / system tray.
-import { app, Tray, Menu, BrowserWindow, ipcMain, clipboard, nativeImage, shell, dialog } from 'electron';
+import { app, Tray, Menu, BrowserWindow, ipcMain, clipboard, ClipboardItem, nativeImage, shell, dialog } from 'electron';
 import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
@@ -249,7 +249,12 @@ ipcMain.handle('app:imageData', (_e, image) => {
 });
 // The window sends a PNG it drew from the picture: the clipboard cannot take WebP files.
 const pngData = (s) => typeof s === 'string' && s.length < MAX_IMAGE * 1.4 && /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(s);
-ipcMain.handle('app:copyImage', (_e, png) => { if (pngData(png)) clipboard.writeImage(nativeImage.createFromDataURL(png)); });
+ipcMain.handle('app:copyImage', async (_e, png) => {
+  if (!pngData(png)) return false;
+  const blob = new Blob([Buffer.from(png.slice(png.indexOf(',') + 1), 'base64')], { type: 'image/png' });
+  await clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+  return true;
+});
 // Save a playground image, or a PNG the window drew from an SVG preview, where the person picks.
 ipcMain.handle('app:saveImage', async (_e, what) => {
   let bytes, ext;

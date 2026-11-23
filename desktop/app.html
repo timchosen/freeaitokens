@@ -42,23 +42,23 @@
 
   <section role="tabpanel" id="play" aria-labelledby="t-play" class="play" hidden>
     <div class="history">
-      <button class="btn" id="newChat" type="button" data-i18n="new_chat">New chat</button>
+      <button class="new" id="newChat" type="button"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg><span data-i18n="new_chat">New chat</span></button>
       <ul id="chats" data-i18n-label="saved_chats" aria-label="Saved chats"></ul>
     </div>
     <div class="convo">
       <div class="convo-head">
         <h1 data-i18n="play_title">Playground</h1>
-        <div class="pick">
-          <div class="range" role="group" data-i18n-label="mode_label" aria-label="Mode"><button type="button" data-mode="chat" aria-pressed="true" data-i18n="mode_chat">Chat</button><button type="button" data-mode="image" aria-pressed="false" data-i18n="mode_image">Image</button></div>
-          <label class="pick"><span data-i18n="model">Model</span> <select id="model"></select></label>
-        </div>
       </div>
+      <div class="chat" id="chat" aria-live="polite"><div class="empty" id="empty"><img src="icons/logo.svg" alt="" width="40" height="40"><p data-i18n="play_empty">Ask anything. Each answer shows which provider and model gave it, and how long it took.</p></div></div>
       <p class="status" id="imgNote" hidden><span data-i18n="no_image_providers">To create images, add Cloudflare or OpenRouter. Both are free.</span> <button class="copy" id="addImg" type="button" data-i18n="btn_add">Add a free provider</button></p>
-      <div class="chat" id="chat" aria-live="polite"><p class="lead" id="empty" data-i18n="play_empty">Ask anything. Each answer shows which provider and model gave it, and how long it took.</p></div>
-      <form id="ask">
+      <form id="ask" class="composer">
         <label for="prompt" class="sr" data-i18n="your_message">Your message</label>
-        <textarea id="prompt" rows="3" data-i18n-placeholder="prompt_placeholder" placeholder="Write a message… (⌘/Ctrl + Enter to send)"></textarea>
-        <div class="actions"><button class="btn" id="send" type="submit" data-i18n="send">Send</button></div>
+        <textarea id="prompt" rows="2" data-i18n-placeholder="prompt_placeholder" placeholder="Write a message… (⌘/Ctrl + Enter to send)"></textarea>
+        <div class="bar">
+          <div class="range" role="group" data-i18n-label="mode_label" aria-label="Mode"><button type="button" data-mode="chat" aria-pressed="true" data-i18n="mode_chat">Chat</button><button type="button" data-mode="image" aria-pressed="false" data-i18n="mode_image">Image</button></div>
+          <label class="pick"><span class="sr" data-i18n="model">Model</span><select id="model"></select></label>
+          <button class="btn" id="send" type="submit" data-i18n="send">Send</button>
+        </div>
       </form>
     </div>
   </section>
