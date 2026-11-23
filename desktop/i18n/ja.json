@@ -8,7 +8,6 @@
   "tab_settings": "設定",
   "running": "ポート{port}で実行中",
   "running_reused": "ポート{port}のFreeAITokensを使用中",
-
   "home_title": "あなたのパソコンで動く無料AI",
   "home_lead": "AIツールは、ひとつのローカルアドレスを通して、たくさんのプロバイダーの無料モデルを使えます。FreeAITokensがリクエストごとにモデルを選び、上限に達したら次へ切り替えます。",
   "stat_ready": "社のプロバイダーが利用可能",
@@ -24,7 +23,6 @@
   "row_model": "モデル",
   "copy": "コピー",
   "copied": "コピーしました",
-
   "new_chat": "新しいチャット",
   "saved_chats": "保存したチャット",
   "play_title": "プレイグラウンド",
@@ -39,7 +37,6 @@
   "seconds": "{n}秒",
   "tokens_one": "{n}トークン",
   "tokens_other": "{n}トークン",
-
   "tools_title": "ツール",
   "tools_lead": "コーディングツールを新しいターミナルウィンドウで開きます。無料モデルを使うよう設定済みです。ツール自体の設定は変わりません。",
   "other_apps": "その他のアプリ",
@@ -54,7 +51,6 @@
   "note_qwen": "Qwenのコーディングエージェント",
   "note_kilo": "オープンソースのコーディングエージェント",
   "note_aider": "ターミナルでペアプログラミング",
-
   "prov_title": "プロバイダー",
   "prov_lead": "プロバイダーを追加するほど、無料で使える量が増えます。キーはパソコンのキーチェーンに保存されます。",
   "status_ready": "利用可能",
@@ -72,7 +68,6 @@
   "kind_image": "画像",
   "kind_video": "動画",
   "kind_embedding": "埋め込み",
-
   "usage_title": "使用状況",
   "range_label": "期間",
   "range_1": "24時間",
@@ -92,7 +87,6 @@
   "failed": "失敗",
   "prov_usage": "成功{ok}件 · 失敗{fail}件 · {tokens}トークン",
   "no_requests": "この期間のリクエストはまだありません。",
-
   "settings_title": "設定",
   "set_lang": "言語",
   "set_lang_text": "FreeAITokensで使う言語です。",
@@ -111,14 +105,12 @@
   "delete_chats": "すべてのチャットを削除",
   "confirm_delete": "保存したチャットをすべて削除しますか？ この操作は取り消せません。",
   "set_key_text": "アプリが使うローカルトークンです。",
-
   "err_send": "そのメッセージを送信できませんでした。",
   "err_model": "そのモデルは使えません。別のモデルを選んでください。",
   "err_said_no": "{name}に断られました: {text}",
   "err_generic": "問題が発生しました: {reason}",
   "err_nothing": "保存するものがありません",
   "err_account": "アカウントIDがないか、正しくありません",
-
   "menu_open": "FreeAITokensを開く",
   "menu_reused": "ポート{port}で実行中のエンドポイントを使用中",
   "menu_running": "{url}で実行中",
@@ -127,7 +119,6 @@
   "menu_add": "プロバイダーを追加…",
   "menu_quit": "FreeAITokensを終了",
   "quit": "終了",
-
   "add_title": "無料のプロバイダーを追加",
   "add_lead": "ご自身のアカウントを、プロバイダーごとに1つ使います。キーは確認後、システムのキーチェーンに保存されます。",
   "add_provider": "プロバイダー",
@@ -155,5 +146,17 @@
   "svg_preview": "下のSVGコードのプレビュー",
   "save_png": "PNGとして保存",
   "no_image_providers": "画像を作成するには、CloudflareかOpenRouterを追加してください。どちらも無料です。",
-  "err_image": "画像が返ってきませんでした。もう一度試すか、別のモデルを選んでください。"
+  "err_image": "画像が返ってきませんでした。もう一度試すか、別のモデルを選んでください。",
+  "mode_auto": "自動",
+  "auto_kind": "自動: {kind}",
+  "read_aloud": "読み上げ",
+  "speaking": "音声を作成中…",
+  "attach_audio": "音声ファイルを文字起こし",
+  "transcribing": "文字起こし中…",
+  "transcribe_file": "文字起こし: {name}",
+  "no_speech_providers": "音声を作るには OpenRouter、Groq、Cloudflare のいずれかを追加してください。すべて無料です。",
+  "no_transcription_providers": "文字起こしには Groq か Cloudflare を追加してください。どちらも無料です。",
+  "err_audio": "このファイルは読み込める音声ではありません。MP3、M4A、WAV、WebM、OGG、FLAC を使ってください。",
+  "err_speech": "音声が返ってきませんでした。もう一度お試しください。",
+  "audio_too_big": "このファイルは 25 MB を超えています。短いものを選んでください。"
 }

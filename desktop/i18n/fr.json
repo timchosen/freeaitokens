@@ -146,5 +146,17 @@
   "svg_preview": "Aperçu du code SVG ci-dessous",
   "save_png": "Enregistrer en PNG",
   "no_image_providers": "Pour créer des images, ajoutez Cloudflare ou OpenRouter. Les deux sont gratuits.",
-  "err_image": "Aucune image reçue. Réessayez ou choisissez un autre modèle."
+  "err_image": "Aucune image reçue. Réessayez ou choisissez un autre modèle.",
+  "mode_auto": "Auto",
+  "auto_kind": "Auto : {kind}",
+  "read_aloud": "Lire à voix haute",
+  "speaking": "Création de la voix…",
+  "attach_audio": "Transcrire un fichier audio",
+  "transcribing": "Transcription…",
+  "transcribe_file": "Transcrire : {name}",
+  "no_speech_providers": "Pour créer de la voix, ajoutez OpenRouter, Groq ou Cloudflare. Tous sont gratuits.",
+  "no_transcription_providers": "Pour transcrire de l'audio, ajoutez Groq ou Cloudflare. Les deux sont gratuits.",
+  "err_audio": "Ce fichier n'est pas un audio lisible. Utilisez MP3, M4A, WAV, WebM, OGG ou FLAC.",
+  "err_speech": "Aucune voix n'est revenue. Réessayez.",
+  "audio_too_big": "Ce fichier dépasse 25 Mo. Choisissez-en un plus court."
 }

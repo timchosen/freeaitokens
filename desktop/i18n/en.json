@@ -146,5 +146,17 @@
   "svg_preview": "Preview of the SVG code below",
   "save_png": "Save as PNG",
   "no_image_providers": "To create images, add Cloudflare or OpenRouter. Both are free.",
-  "err_image": "No picture came back. Try again or pick another model."
+  "err_image": "No picture came back. Try again or pick another model.",
+  "mode_auto": "Auto",
+  "auto_kind": "Auto: {kind}",
+  "read_aloud": "Read aloud",
+  "speaking": "Making speech…",
+  "attach_audio": "Transcribe an audio file",
+  "transcribing": "Transcribing…",
+  "transcribe_file": "Transcribe: {name}",
+  "no_speech_providers": "To make speech, add OpenRouter, Groq or Cloudflare. All are free.",
+  "no_transcription_providers": "To transcribe audio, add Groq or Cloudflare. Both are free.",
+  "err_audio": "That file is not audio this app can read. Use MP3, M4A, WAV, WebM, OGG or FLAC.",
+  "err_speech": "No speech came back. Try again.",
+  "audio_too_big": "That file is over 25 MB. Pick a shorter one."
 }

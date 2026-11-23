@@ -8,7 +8,6 @@
   "tab_settings": "设置",
   "running": "正在端口 {port} 上运行",
   "running_reused": "正在使用端口 {port} 上的 FreeAITokens",
-
   "home_title": "免费 AI，运行在你的电脑上",
   "home_lead": "你的 AI 工具可以通过一个本地地址，使用许多服务商的免费模型。FreeAITokens 会为每个请求挑选模型，一个用完了就换下一个。",
   "stat_ready": "家服务商已就绪",
@@ -24,7 +23,6 @@
   "row_model": "模型",
   "copy": "复制",
   "copied": "已复制",
-
   "new_chat": "新对话",
   "saved_chats": "已保存的对话",
   "play_title": "试用区",
@@ -39,7 +37,6 @@
   "seconds": "{n} 秒",
   "tokens_one": "{n} 个 token",
   "tokens_other": "{n} 个 token",
-
   "tools_title": "工具",
   "tools_lead": "在新的终端窗口中打开编程工具，已设置好使用免费模型。工具自身的设置保持不变。",
   "other_apps": "其他应用",
@@ -54,7 +51,6 @@
   "note_qwen": "Qwen 的编程助手",
   "note_kilo": "开源编程助手",
   "note_aider": "在终端里结对编程",
-
   "prov_title": "服务商",
   "prov_lead": "每添加一家服务商，你的免费用量就更多。密钥保存在你电脑的钥匙串中。",
   "status_ready": "已就绪",
@@ -72,7 +68,6 @@
   "kind_image": "图片",
   "kind_video": "视频",
   "kind_embedding": "向量嵌入",
-
   "usage_title": "用量",
   "range_label": "时间范围",
   "range_1": "24 小时",
@@ -92,7 +87,6 @@
   "failed": "失败",
   "prov_usage": "{ok} 次成功 · {fail} 次失败 · {tokens} 个 token",
   "no_requests": "这个时间范围内还没有请求。",
-
   "settings_title": "设置",
   "set_lang": "语言",
   "set_lang_text": "FreeAITokens 使用的语言。",
@@ -111,14 +105,12 @@
   "delete_chats": "删除所有对话",
   "confirm_delete": "删除所有已保存的对话？此操作无法撤销。",
   "set_key_text": "你的应用使用的本地令牌。",
-
   "err_send": "这条消息无法发送。",
   "err_model": "这个模型不可用，请选择另一个。",
   "err_said_no": "{name} 拒绝了：{text}",
   "err_generic": "出错了：{reason}",
   "err_nothing": "没有可保存的内容",
   "err_account": "账户 ID 缺失或无效",
-
   "menu_open": "打开 FreeAITokens",
   "menu_reused": "正在使用端口 {port} 上已在运行的端点",
   "menu_running": "正在 {url} 上运行",
@@ -127,7 +119,6 @@
   "menu_add": "添加服务商…",
   "menu_quit": "退出 FreeAITokens",
   "quit": "退出",
-
   "add_title": "添加免费服务商",
   "add_lead": "使用你自己的账号，每家服务商一个。密钥会先经过测试，再保存到系统钥匙串中。",
   "add_provider": "服务商",
@@ -155,5 +146,17 @@
   "svg_preview": "下方 SVG 代码的预览",
   "save_png": "保存为 PNG",
   "no_image_providers": "要创建图片，请添加 Cloudflare 或 OpenRouter。两者都免费。",
-  "err_image": "没有返回图片。请重试或换一个模型。"
+  "err_image": "没有返回图片。请重试或换一个模型。",
+  "mode_auto": "自动",
+  "auto_kind": "自动：{kind}",
+  "read_aloud": "朗读",
+  "speaking": "正在生成语音…",
+  "attach_audio": "转写音频文件",
+  "transcribing": "正在转写…",
+  "transcribe_file": "转写：{name}",
+  "no_speech_providers": "要生成语音，请添加 OpenRouter、Groq 或 Cloudflare。都免费。",
+  "no_transcription_providers": "要转写音频，请添加 Groq 或 Cloudflare。两者都免费。",
+  "err_audio": "该文件不是本应用能读取的音频。请使用 MP3、M4A、WAV、WebM、OGG 或 FLAC。",
+  "err_speech": "没有返回语音。请重试。",
+  "audio_too_big": "该文件超过 25 MB。请选择更短的文件。"
 }

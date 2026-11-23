@@ -146,5 +146,17 @@
   "svg_preview": "Pratinjau kode SVG di bawah",
   "save_png": "Simpan sebagai PNG",
   "no_image_providers": "Untuk membuat gambar, tambahkan Cloudflare atau OpenRouter. Keduanya gratis.",
-  "err_image": "Tidak ada gambar yang kembali. Coba lagi atau pilih model lain."
+  "err_image": "Tidak ada gambar yang kembali. Coba lagi atau pilih model lain.",
+  "mode_auto": "Otomatis",
+  "auto_kind": "Otomatis: {kind}",
+  "read_aloud": "Bacakan",
+  "speaking": "Membuat suara…",
+  "attach_audio": "Transkripsikan file audio",
+  "transcribing": "Mentranskripsi…",
+  "transcribe_file": "Transkripsikan: {name}",
+  "no_speech_providers": "Untuk membuat suara, tambahkan OpenRouter, Groq, atau Cloudflare. Semuanya gratis.",
+  "no_transcription_providers": "Untuk mentranskripsi audio, tambahkan Groq atau Cloudflare. Keduanya gratis.",
+  "err_audio": "File itu bukan audio yang bisa dibaca aplikasi ini. Gunakan MP3, M4A, WAV, WebM, OGG, atau FLAC.",
+  "err_speech": "Tidak ada suara yang kembali. Coba lagi.",
+  "audio_too_big": "File itu lebih dari 25 MB. Pilih yang lebih pendek."
 }

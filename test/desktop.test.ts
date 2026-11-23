@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 // @ts-ignore plain JS module
-import { allowedUrl, choices, menuLine, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType, privateAddress, guessKind, sortedKind, audioType, mediaOptions } from '../desktop/logic.js';
+import { allowedUrl, choices, menuLine, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType, privateAddress, guessKind, sortedKind, audioType, mediaOptions, pcmToWav } from '../desktop/logic.js';
 import { readFileSync as readText } from 'node:fs';
 import vm from 'node:vm';
 
@@ -299,4 +299,18 @@ test('mediaOptions lists only models of one kind that you can use now', () => {
   const keys = { get: (id) => (id === 'b' ? 'k' : undefined) };
   assert.deepEqual(mediaOptions(c, keys, 'speech').map((o) => o.value), ['a/voice', 'b/voice2']);
   assert.deepEqual(imageOptions(c, keys).map((o) => o.value), ['a/pic']);
+});
+
+test('pcmToWav gives raw PCM speech a WAV header from its content type, and leaves other audio alone', () => {
+  const pcm = new Uint8Array([1, 0, 2, 0, 3, 0, 4, 0]);
+  const wav = pcmToWav(pcm, 'audio/pcm;rate=44100;channels=1');
+  assert.equal(audioType(wav), 'wav');
+  assert.equal(wav.length, 44 + 8);
+  const v = new DataView(wav.buffer, wav.byteOffset);
+  assert.equal(v.getUint32(24, true), 44100);
+  assert.equal(v.getUint16(22, true), 1);
+  assert.equal(v.getUint16(34, true), 16);
+  assert.equal(v.getUint32(40, true), 8);
+  assert.equal(pcmToWav(pcm, 'audio/mpeg'), pcm);
+  assert.equal(pcmToWav(pcm, null), pcm);
 });

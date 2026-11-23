@@ -229,3 +229,18 @@ export function privateAddress(ip) {
   if (type === 6) return /^::ffff:/i.test(ip) || V6.check(ip, 'ipv6');
   return true;
 }
+
+// Raw 16-bit PCM speech (content type audio/pcm or audio/L16) wrapped in a WAV header so it can be
+// played and saved; anything else comes back unchanged.
+export function pcmToWav(bytes, contentType) {
+  const m = /^audio\/(?:pcm|l16)\b(.*)$/i.exec(contentType ?? '');
+  if (!m) return bytes;
+  const rate = Number(/rate=(\d+)/i.exec(m[1])?.[1] ?? 24000), channels = Number(/channels=(\d+)/i.exec(m[1])?.[1] ?? 1);
+  const out = new Uint8Array(44 + bytes.length), v = new DataView(out.buffer);
+  const text = (i, s) => { for (let j = 0; j < s.length; j++) out[i + j] = s.charCodeAt(j); };
+  text(0, 'RIFF'); v.setUint32(4, 36 + bytes.length, true); text(8, 'WAVE'); text(12, 'fmt ');
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, channels, true); v.setUint32(24, rate, true);
+  v.setUint32(28, rate * channels * 2, true); v.setUint16(32, channels * 2, true); v.setUint16(34, 16, true);
+  text(36, 'data'); v.setUint32(40, bytes.length, true); out.set(bytes, 44);
+  return out;
+}

@@ -1,7 +1,7 @@
 // freeaitokens tray app: runs the same local endpoint as the CLI, from the menu bar / system tray.
 import { app, Tray, Menu, BrowserWindow, ipcMain, clipboard, ClipboardItem, nativeImage, shell, dialog } from 'electron';
 import { spawn } from 'node:child_process';
-import { mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { lookup as dnsLookup } from 'node:dns';
 import { get as httpsGet } from 'node:https';
@@ -17,7 +17,7 @@ import { validateKey, keySteps, connectOpenRouter } from 'freeaitokens/dist/node
 import { launchSpec, LAUNCH_TOOLS } from 'freeaitokens/dist/node/harness.js';
 import { route, NoCapacityError } from 'freeaitokens/dist/core/orchestrator.js';
 import { routeMedia, NoProviderError } from 'freeaitokens/dist/core/media.js';
-import { allowedUrl, choices, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType, privateAddress } from './logic.js';
+import { allowedUrl, choices, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType, privateAddress, mediaOptions, guessKind, sortedKind, audioType, pcmToWav } from './logic.js';
 import './t.js';
 import { needsAccount, joinAccount } from 'freeaitokens/dist/core/catalogue.js';
 
@@ -115,6 +115,8 @@ ipcMain.handle('app:status', () => ({
   tools: Object.entries(LAUNCH_TOOLS).map(([id, name]) => ({ id, name, note: strings[`note_${id}`] ?? '' })),
   models: modelOptions(deps.catalogue, keys),
   images: imageOptions(deps.catalogue, keys),
+  speech: mediaOptions(deps.catalogue, keys, 'speech').length > 0,
+  transcription: mediaOptions(deps.catalogue, keys, 'transcription').length > 0,
   version: app.getVersion(),
   startAtLogin: app.getLoginItemSettings().openAtLogin,
 }));
@@ -272,8 +274,105 @@ ipcMain.handle('app:saveImage', async (_e, what) => {
   return true;
 });
 ipcMain.handle('app:dropImages', (_e, list) => {
-  if (list === 'all') return rmSync(imagesDir(), { recursive: true, force: true });
-  for (const image of Array.isArray(list) ? list : []) if (typeof image === 'string' && IMAGE_FILE.test(image)) rmSync(join(imagesDir(), image), { force: true });
+  if (list === 'all') { rmSync(imagesDir(), { recursive: true, force: true }); rmSync(audioDir(), { recursive: true, force: true }); return; }
+  for (const f of Array.isArray(list) ? list : []) {
+    if (typeof f !== 'string') continue;
+    if (IMAGE_FILE.test(f)) rmSync(join(imagesDir(), f), { force: true });
+    else if (AUDIO_FILE.test(f)) rmSync(join(audioDir(), f), { force: true });
+  }
+});
+
+// Auto mode: a free chat model sorts the message; when it cannot (no model, out of requests, too slow,
+// an answer that is not one word), the word rules in logic.js decide.
+const SORT_PROMPT = 'Sort the user\'s message. Reply with exactly one word: image if they want a picture made, speech if they want audio (words said, read or spoken out loud), chat for anything else.';
+ipcMain.handle('app:sort', async (_e, text) => {
+  if (typeof text !== 'string' || !text.trim()) return { kind: 'chat', by: 'rules' };
+  const rules = { kind: guessKind(text), by: 'rules' };
+  let timer;
+  try {
+    const ask = (async () => {
+      const { response } = await route({ messages: [{ role: 'system', content: SORT_PROMPT }, { role: 'user', content: text.slice(0, 2000) }], max_tokens: 512, temperature: 0 /* thinking models spend tokens before answering */ }, deps);
+      if (response.status !== 200) return null;
+      return sortedKind((await response.json())?.choices?.[0]?.message?.content);
+    })();
+    const kind = await Promise.race([ask, new Promise((r) => { timer = setTimeout(() => r(null), 5000); })]);
+    return kind ? { kind, by: 'model' } : rules;
+  } catch {
+    return rules;
+  } finally {
+    clearTimeout(timer);
+    saveState(deps.tracker.state);
+  }
+});
+
+// Speech made in the playground is kept like images: a file with a random id in the state folder.
+const MAX_AUDIO = 25 * 1024 * 1024;
+const AUDIO_FILE = /^[0-9a-f-]{36}\.(mp3|wav|ogg|flac|m4a|webm)$/;
+const AUDIO_MIME = { mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg', flac: 'audio/flac', m4a: 'audio/mp4', webm: 'audio/webm' };
+const audioDir = () => join(stateDir(), 'audio');
+const audioUrl = (type, bytes) => `data:${AUDIO_MIME[type]};base64,${bytes.toString('base64')}`;
+ipcMain.handle('app:speech', async (_e, text) => {
+  if (typeof text !== 'string' || !text.trim() || text.length > 4000) return { ok: false, reason: t('err_send') };
+  if (!mediaOptions(deps.catalogue, keys, 'speech').length) return { ok: false, reason: t('no_speech_providers') };
+  const start = Date.now();
+  try {
+    const { response, candidate } = await routeMedia('speech', { json: { input: text.trim() } }, deps);
+    if (response.status !== 200) return { ok: false, reason: t('err_said_no', { name: candidate.provider.name, text: (await response.text()).slice(0, 300) }) };
+    const bytes = Buffer.from(pcmToWav(new Uint8Array(await response.arrayBuffer()), response.headers.get('content-type')));
+    const type = bytes.length <= MAX_AUDIO ? audioType(bytes) : null;
+    if (!type) return { ok: false, reason: t('err_speech') };
+    const audio = `${randomUUID()}.${type}`;
+    mkdirSync(audioDir(), { recursive: true, mode: 0o700 });
+    writeFileSync(join(audioDir(), audio), bytes, { mode: 0o600 });
+    return { ok: true, audio, src: audioUrl(type, bytes), ms: Date.now() - start, provider: candidate.provider.name, model: candidate.model.id };
+  } catch (e) {
+    return { ok: false, reason: e instanceof NoProviderError ? t('no_speech_providers') : t('err_generic', { reason: e.message }) };
+  } finally {
+    saveState(deps.tracker.state);
+  }
+});
+ipcMain.handle('app:audioData', (_e, audio) => {
+  if (typeof audio !== 'string' || !AUDIO_FILE.test(audio)) return null;
+  try { return audioUrl(audio.split('.')[1], readFileSync(join(audioDir(), audio))); } catch { return null; }
+});
+ipcMain.handle('app:saveAudio', async (_e, audio) => {
+  if (typeof audio !== 'string' || !AUDIO_FILE.test(audio)) return false;
+  let bytes;
+  try { bytes = readFileSync(join(audioDir(), audio)); } catch { return false; }
+  const r = await dialog.showSaveDialog(mainWindow, { defaultPath: join(app.getPath('downloads'), `freeaitokens-speech.${audio.split('.')[1]}`) });
+  if (r.canceled || !r.filePath) return false;
+  writeFileSync(r.filePath, bytes);
+  return true;
+});
+// Transcription: the person picks an audio file here, in the main process; the window never sends a path.
+// The file goes to the router on this computer and is not kept.
+ipcMain.handle('app:transcribe', async () => {
+  if (!mediaOptions(deps.catalogue, keys, 'transcription').length) return { ok: false, reason: t('no_transcription_providers') };
+  const pick = await dialog.showOpenDialog(mainWindow, { properties: ['openFile'], filters: [{ name: t('attach_audio'), extensions: Object.keys(AUDIO_MIME) }] });
+  if (pick.canceled || !pick.filePaths[0]) return { ok: false, canceled: true };
+  const path = pick.filePaths[0], name = path.split(/[\\/]/).pop();
+  let bytes;
+  try {
+    if (statSync(path).size > MAX_AUDIO) return { ok: false, reason: t('audio_too_big'), name };
+    bytes = readFileSync(path);
+  } catch (e) { return { ok: false, reason: t('err_generic', { reason: e.message }), name }; }
+  const type = audioType(bytes);
+  if (!type) return { ok: false, reason: t('err_audio'), name };
+  const start = Date.now();
+  try {
+    const form = new FormData();
+    form.append('file', new Blob([bytes], { type: AUDIO_MIME[type] }), `audio.${type}`);
+    const { response, candidate } = await routeMedia('transcription', { form }, deps);
+    const raw = await response.text();
+    if (response.status !== 200) return { ok: false, reason: t('err_said_no', { name: candidate.provider.name, text: raw.slice(0, 300) }), name };
+    let text = raw;
+    try { text = String(JSON.parse(raw)?.text ?? ''); } catch { /* plain text answer */ }
+    return { ok: true, text: text.trim(), name, ms: Date.now() - start, provider: candidate.provider.name, model: candidate.model.id };
+  } catch (e) {
+    return { ok: false, reason: e instanceof NoProviderError ? t('no_transcription_providers') : t('err_generic', { reason: e.message }), name };
+  } finally {
+    saveState(deps.tracker.state);
+  }
 });
 
 // Both windows ask for their strings; Settings changes the language and reloads them.
