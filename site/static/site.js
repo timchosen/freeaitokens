@@ -12,10 +12,10 @@ export function detectOS(ua, platform = '') {
   return null;
 }
 
-export function downloadFor(os) {
+export function downloadFor(os, arm = false) {
   const all = ['mac', 'windows', 'linux'];
   if (!os) return { label: 'Download for your computer', file: null, others: all };
-  return { label: `Download for ${NAMES[os]}`, file: FILES[os], others: all.filter((o) => o !== os) };
+  return { label: `Download for ${NAMES[os]}`, file: os === 'linux' && arm ? 'FreeAITokens-linux-arm64.AppImage' : FILES[os], others: all.filter((o) => o !== os) };
 }
 
 export function starsLabel(n) {
@@ -26,7 +26,7 @@ export function starsLabel(n) {
 function wire() {
   const touch = navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform) ? ':touch' : '';
   const os = detectOS(navigator.userAgent, navigator.platform + touch);
-  const d = downloadFor(os);
+  const d = downloadFor(os, /aarch64|arm/i.test(navigator.platform));
   if (os) document.documentElement.dataset.os = os;
 
   for (const a of document.querySelectorAll('[data-download]')) {
@@ -72,6 +72,7 @@ function wire() {
   }
 
   for (const b of document.querySelectorAll('[data-copy]')) {
+    b.setAttribute('aria-live', 'polite');
     b.addEventListener('click', async () => {
       try {
         await navigator.clipboard.writeText(b.dataset.copy);
@@ -85,7 +86,7 @@ function wire() {
 
   const stars = document.querySelectorAll('[data-stars]');
   if (stars.length) {
-    fetch('https://api.github.com/repos/timchosen/freeaitokens', { signal: AbortSignal.timeout(3000) })
+    fetch('https://api.github.com/repos/timchosen/freeaitokens', { signal: AbortSignal.timeout?.(3000) })
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => { const t = starsLabel(j?.stargazers_count ?? null); for (const s of stars) s.textContent = t ? ` ${t}` : ''; })
       .catch(() => {}); // the button just says GitHub

@@ -29,7 +29,7 @@ export function render(body, { title, description, path }) {
   return nav
     .replace('{{title}}', esc(path === '/' ? 'FreeAITokens · Free AI, without the bill' : `${title} · FreeAITokens`))
     .replace('{{description}}', esc(description))
-    .replace('{{body}}', body);
+    .replace('{{body}}', () => body);
 }
 
 function limitText(p) {

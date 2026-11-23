@@ -44,6 +44,8 @@ if [ "$OS" = Darwin ]; then
   ditto -x -k "$TMP/$FILE" "$TMP/app"
   APP="$(find "$TMP/app" -maxdepth 1 -name '*.app' | head -n 1)"
   [ -n "$APP" ] || fail "the download did not contain the app."
+  # An older copy may be running; quit it so the new one starts.
+  osascript -e 'quit app id "io.github.timchosen.freeaitokens"' >/dev/null 2>&1 || true
   mkdir -p "$DEST"
   rm -rf "$DEST/$(basename "$APP")"
   mv "$APP" "$DEST/"
@@ -54,7 +56,7 @@ else
   chmod +x "$TMP/$FILE"
   mv -f "$TMP/$FILE" "$DEST"
   echo "Installed $DEST. Start it with: $DEST"
-  echo "(Some systems need libfuse2 to run AppImages: sudo apt install libfuse2)"
+  echo "(Some systems need libfuse2 to run AppImages: sudo apt install libfuse2, or libfuse2t64 on Ubuntu 24.04 and newer)"
 fi
 }
 

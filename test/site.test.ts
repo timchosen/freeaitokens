@@ -105,3 +105,14 @@ test('every page has a title and description, links only to pages that exist, an
   }
   assert.ok(existsSync(join(out, 'setup.md')) && existsSync(join(out, 'install')) && existsSync(join(out, 'install.ps1')));
 });
+
+test('review fixes: release deploy blocks placeholders, Windows download is quiet, ARM Linux gets the ARM file', () => {
+  const pkg = JSON.parse(readFileSync(new URL('../site/package.json', import.meta.url), 'utf8'));
+  assert.match(pkg.scripts.deploy, /SITE_RELEASE=1 node build\.mjs/);
+  assert.match(readFileSync(new URL('../site/static/install.ps1', import.meta.url), 'utf8'), /\$ProgressPreference = 'SilentlyContinue'/);
+  assert.match(readFileSync(new URL('../site/static/install', import.meta.url), 'utf8'), /quit app id "io\.github\.timchosen\.freeaitokens"/);
+  assert.equal(downloadFor('linux', true).file, 'FreeAITokens-linux-arm64.AppImage');
+  const out = mkdtempSync(join(tmpdir(), 'site-'));
+  process.env.SITE_RELEASE = '1';
+  try { build(out); } finally { delete process.env.SITE_RELEASE; }
+});

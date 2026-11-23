@@ -44,6 +44,8 @@ test('desktop build names every release file without a version', async () => {
   const b = JSON.parse(readFileSync(new URL('../desktop/package.json', import.meta.url), 'utf8')).build;
   assert.deepEqual(b.mac.target, [{ target: 'dmg', arch: ['universal'] }, { target: 'zip', arch: ['universal'] }]);
   assert.equal(b.mac.artifactName, 'FreeAITokens-mac.${ext}');
+  assert.equal(b.mac.identity, '-'); // ad-hoc signed, so a downloaded copy gets Open Anyway instead of "damaged"
+  assert.equal(b.mac.hardenedRuntime, false);
   assert.equal(b.win.artifactName, 'FreeAITokens-windows.${ext}');
   assert.equal(b.appImage.artifactName, 'FreeAITokens-linux-${arch}.${ext}');
   assert.equal(b.deb.artifactName, 'FreeAITokens-linux-${arch}.${ext}');
