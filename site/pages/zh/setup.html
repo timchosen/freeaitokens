@@ -1,0 +1,32 @@
+<!-- title: 设置 | description: 给 FreeAITokens 添加你的第一批免费 AI 密钥，并连接 Claude Code、Codex、VS Code、Zed 等工具。 -->
+<div class="page">
+  <h1>设置</h1>
+  <p class="lead">只需两步：添加几个免费密钥，然后让你的 AI 工具连到 FreeAITokens。</p>
+
+  <h2 id="keys">1. 添加免费密钥</h2>
+  <p>{{keyless}} 家服务商完全不需要账号。你每多加一个免费账号，总额度就多一份。</p>
+  <ol>
+    <li>点击菜单栏或系统托盘里的 FreeAITokens 图标，选择 <b>Add a provider</b>（添加服务商）。</li>
+    <li>挑一家服务商。应用会打开它的注册页面，并明确告诉你该点哪里。</li>
+    <li>创建一个免费账号，复制它给你的密钥，粘贴到应用里。应用会先检查密钥，再保存。</li>
+  </ol>
+  <p>适合先从这几家开始：<b>Cerebras</b> 和 <b>Groq</b>（免费额度大）、<b>OpenRouter</b>（一键连接）和 <b>Google Gemini</b>。</p>
+  <p class="small muted">密钥保存在你的电脑上（有钥匙串的话就存在钥匙串里），只会发送给它所属的服务商。请使用你自己的账号，每家服务商一个。<a href="/disclaimer">为什么这很重要</a>。</p>
+
+  <h2 id="tools">2. 连接你的工具</h2>
+  <p>你的本地地址是 <code>http://127.0.0.1:4949</code>。如果某个工具需要填这些信息，应用菜单里有 <b>Copy endpoint</b>（复制地址）和 <b>Copy local token</b>（复制本地令牌）。</p>
+  <div class="cards">
+    <div class="card"><h3>Claude Code</h3><p>通过 FreeAITokens 启动它：</p><div class="cmd"><code>npx freeaitokens claude</code><button class="copy" data-copy="npx freeaitokens claude">复制</button></div><p class="small muted">只有这一次会话使用免费模型；正常运行 <code>claude</code> 时用的还是你自己的账号。</p></div>
+    <div class="card"><h3>Codex</h3><div class="cmd"><code>npx freeaitokens codex</code><button class="copy" data-copy="npx freeaitokens codex">复制</button></div></div>
+    <div class="card"><h3>Gemini CLI</h3><div class="cmd"><code>npx freeaitokens gemini</code><button class="copy" data-copy="npx freeaitokens gemini">复制</button></div></div>
+    <div class="card"><h3>OpenCode</h3><div class="cmd"><code>npx freeaitokens setup opencode</code><button class="copy" data-copy="npx freeaitokens setup opencode">复制</button></div><p class="small muted">然后选择模型 <code>freeaitokens/free</code>。加上 <code>--undo</code> 可以恢复你原来的设置。</p></div>
+    <div class="card"><h3>VS Code、Zed、JetBrains</h3><p>会打印出该粘贴到编辑器设置里的确切内容：</p><div class="cmd"><code>npx freeaitokens setup vscode</code><button class="copy" data-copy="npx freeaitokens setup vscode">复制</button></div><p class="small muted">把 <code>vscode</code> 换成 <code>zed</code> 或 <code>jetbrains</code> 即可。</p></div>
+    <div class="card"><h3>Cline、Continue、Roo Code、Crush</h3><div class="cmd"><code>npx freeaitokens setup cline</code><button class="copy" data-copy="npx freeaitokens setup cline">复制</button></div><p class="small muted">也可以把 <code>cline</code> 换成该工具自己的名字。</p></div>
+    <div class="card"><h3>Kilo Code、Qwen Code、Goose、Aider</h3><div class="cmd"><code>npx freeaitokens aider</code><button class="copy" data-copy="npx freeaitokens aider">复制</button></div><p class="small muted">或者用 <code>kilo</code>、<code>qwen</code>、<code>goose</code>。</p></div>
+    <div class="card"><h3>其他任何应用</h3><p>只要它允许你设置自定义的 OpenAI 地址：</p><ul class="small"><li>Base URL <code>http://127.0.0.1:4949/v1</code></li><li>模型 <code>free</code></li><li>API 密钥：应用菜单里的 <b>Copy local token</b></li></ul></div>
+  </div>
+  <p class="small muted">上面的命令需要 Node.js。如果你没有，可以<a href="/ask-your-ai">让你的 AI</a> 来做这一步，或者到 <a href="https://nodejs.org">nodejs.org</a> 下载 Node.js。</p>
+
+  <h2>暂不支持</h2>
+  <p><b>Cursor</b> 会让自定义地址的流量经过它自己的服务器，而那些服务器连不到你的电脑。<b>ChatGPT 应用</b>则完全不能使用自定义地址。</p>
+</div>

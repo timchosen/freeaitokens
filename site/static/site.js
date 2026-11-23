@@ -1,6 +1,19 @@
 // The whole site's script: pick the right download, tabs, copy buttons, GitHub stars.
 const BASE = '{{repoUrl}}/releases/latest/download/';
 const NAMES = { mac: 'Mac', windows: 'Windows', linux: 'Linux' };
+// English strings; the build fills I18N with the other languages from site/i18n.
+const EN = {
+  js_download_any: "Download for your computer",
+  js_download_os: "Download for {os}",
+  js_also: "Also for {list} · free and open source",
+  js_and: " and ",
+  js_copy: "Copy",
+  js_copied: "Copied",
+  js_select: "Select and copy",
+  js_count: "{n} of {total} models",
+};
+const I18N = {};
+const fill = (s, v) => s.replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m));
 const FILES = { mac: 'FreeAITokens-mac.dmg', windows: 'FreeAITokens-windows.exe', linux: 'FreeAITokens-linux-x86_64.AppImage' };
 
 // platform may end in ':touch' (an iPad says MacIntel but has a touch screen).
@@ -12,10 +25,11 @@ export function detectOS(ua, platform = '') {
   return null;
 }
 
-export function downloadFor(os, arm = false) {
+export function downloadFor(os, arm = false, t = EN) {
+  t = { ...EN, ...t };
   const all = ['mac', 'windows', 'linux'];
-  if (!os) return { label: 'Download for your computer', file: null, others: all };
-  return { label: `Download for ${NAMES[os]}`, file: os === 'linux' && arm ? 'FreeAITokens-linux-arm64.AppImage' : FILES[os], others: all.filter((o) => o !== os) };
+  if (!os) return { label: t.js_download_any, file: null, others: all };
+  return { label: fill(t.js_download_os, { os: NAMES[os] }), file: os === 'linux' && arm ? 'FreeAITokens-linux-arm64.AppImage' : FILES[os], others: all.filter((o) => o !== os) };
 }
 
 export function starsLabel(n) {
@@ -31,7 +45,7 @@ export function filterModels(rows, f) {
     && r.context >= f.minContext);
 }
 
-function wireFilters(form) {
+function wireFilters(form, t) {
   const trs = [...document.querySelectorAll('tr[data-model]')];
   const rows = trs.map((tr) => ({ tr, provider: tr.dataset.provider, kind: tr.dataset.kind, name: tr.dataset.name, tools: tr.dataset.tools === 'true', images: tr.dataset.images === 'true', keyless: tr.dataset.keyless === 'true', context: Number(tr.dataset.context) }));
   const count = document.querySelector('[data-count]');
@@ -39,16 +53,35 @@ function wireFilters(form) {
     const e = form.elements;
     const shown = new Set(filterModels(rows, { q: e.q.value, provider: e.provider.value, kind: e.kind.value, minContext: Number(e.minContext.value), tools: e.tools.checked, images: e.images.checked, keyless: e.keyless.checked }));
     for (const r of rows) r.tr.hidden = !shown.has(r);
-    count.textContent = `${shown.size} of ${rows.length} models`;
+    count.textContent = fill(t.js_count, { n: shown.size, total: rows.length });
   };
   form.addEventListener('input', apply);
   form.addEventListener('submit', (e) => e.preventDefault());
 }
 
+function wireMenu() {
+  const top = document.querySelector('.top');
+  const btn = top?.querySelector('.menu-btn');
+  if (!btn) return;
+  top.classList.add('js'); // without the script the nav simply stays open
+  const set = (open) => { btn.setAttribute('aria-expanded', String(open)); top.classList.toggle('open', open); };
+  btn.addEventListener('click', () => set(btn.getAttribute('aria-expanded') !== 'true'));
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (top.classList.contains('open')) { set(false); btn.focus(); }
+    for (const d of document.querySelectorAll('details.lang[open]')) { d.open = false; d.querySelector('summary').focus(); }
+  });
+  document.addEventListener('click', (e) => {
+    for (const d of document.querySelectorAll('details.lang[open]')) if (!d.contains(e.target)) d.open = false;
+  });
+}
+
 function wire() {
+  const t = { ...EN, ...I18N[document.documentElement.lang] };
+  wireMenu();
   const touch = navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform) ? ':touch' : '';
   const os = detectOS(navigator.userAgent, navigator.platform + touch);
-  const d = downloadFor(os, /aarch64|arm/i.test(navigator.platform));
+  const d = downloadFor(os, /aarch64|arm/i.test(navigator.platform), t);
   if (os) document.documentElement.dataset.os = os;
 
   for (const a of document.querySelectorAll('[data-download]')) {
@@ -57,15 +90,16 @@ function wire() {
   }
   for (const p of document.querySelectorAll('[data-also]')) {
     if (!os) continue; // the default text already lists every system
-    p.textContent = 'Also for ';
+    const [before, after = ''] = t.js_also.split('{list}');
+    p.textContent = before;
     d.others.forEach((o, i) => {
-      if (i) p.append(' and ');
+      if (i) p.append(t.js_and);
       const a = document.createElement('a');
-      a.href = `/download#${o}`;
+      a.href = `${document.querySelector('a.brand').getAttribute('href').replace(/\/$/, '')}/download#${o}`;
       a.textContent = NAMES[o];
       p.append(a);
     });
-    p.append(' · free and open source');
+    p.append(after);
   }
   // Commands for other systems stay reachable under "Other systems".
   if (os) for (const el of document.querySelectorAll('[data-for]')) el.hidden = !el.dataset.for.split(' ').includes(os);
@@ -98,16 +132,16 @@ function wire() {
     b.addEventListener('click', async () => {
       try {
         await navigator.clipboard.writeText(b.dataset.copy);
-        b.textContent = 'Copied';
+        b.textContent = t.js_copied;
       } catch {
-        b.textContent = 'Select and copy';
+        b.textContent = t.js_select;
       }
-      setTimeout(() => { b.textContent = 'Copy'; }, 2000);
+      setTimeout(() => { b.textContent = t.js_copy; }, 2000);
     });
   }
 
   const filters = document.querySelector('form.filters');
-  if (filters) wireFilters(filters);
+  if (filters) wireFilters(filters, t);
 
   const stars = document.querySelectorAll('[data-stars]');
   if (stars.length) {

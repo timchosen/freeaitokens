@@ -1,0 +1,42 @@
+<!-- title: تنزيل | description: نزّل تطبيق FreeAITokens المجاني لنظام Mac أو Windows أو Linux، أو ثبّته بسطر واحد في Terminal. -->
+<div class="page">
+  <h1>تنزيل</h1>
+  <p class="lead">تطبيق FreeAITokens مجاني ومفتوح المصدر. يعمل على جهازك أنت، ويظهر في شريط القوائم أو في منطقة إشعارات النظام.</p>
+  <p><a class="btn" href="#all" data-download>نزّل لجهازك</a></p>
+  <p class="also" data-also>لأنظمة Mac وWindows وLinux · مجاني ومفتوح المصدر</p>
+
+  <h2 id="all">كل التنزيلات</h2>
+  <ul class="downloads">
+    <li id="mac"><span><b>Mac</b> · Apple silicon وIntel، نظام macOS 12 أو أحدث</span><span><a href="{{repoUrl}}/releases/latest/download/FreeAITokens-mac.dmg">.dmg</a> · <a href="{{repoUrl}}/releases/latest/download/FreeAITokens-mac.zip">.zip</a></span></li>
+    <li id="windows"><span><b>Windows</b> · نظام Windows 10 أو 11</span><span><a href="{{repoUrl}}/releases/latest/download/FreeAITokens-windows.exe">المثبّت (.exe)</a></span></li>
+    <li id="linux"><span><b>Linux</b> · AppImage أو حزمة Debian/Ubuntu</span><span><a href="{{repoUrl}}/releases/latest/download/FreeAITokens-linux-x86_64.AppImage">AppImage</a> · <a href="{{repoUrl}}/releases/latest/download/FreeAITokens-linux-amd64.deb">.deb</a> · <a href="{{repoUrl}}/releases/latest/download/FreeAITokens-linux-arm64.AppImage">ARM AppImage</a> · <a href="{{repoUrl}}/releases/latest/download/FreeAITokens-linux-arm64.deb">ARM .deb</a></span></li>
+  </ul>
+  <p class="small muted">النسخ الأقدم وملاحظات الإصدار على <a href="{{repoUrl}}/releases">GitHub</a>.</p>
+
+  <h2>أو ثبّته بسطر واحد</h2>
+  <p>على Mac أو Linux: افتح Terminal، والصق هذا، ثم اضغط Return.</p>
+  <div class="cmd"><code>curl -fsSL https://{{domain}}/install | sh</code><button class="copy" data-copy="curl -fsSL https://{{domain}}/install | sh">انسخ</button></div>
+  <p>على Windows: افتح PowerShell، والصق هذا، ثم اضغط Enter.</p>
+  <div class="cmd"><code>irm https://{{domain}}/install.ps1 | iex</code><button class="copy" data-copy="irm https://{{domain}}/install.ps1 | iex">انسخ</button></div>
+  <p class="small muted"><a href="/install-script">ماذا يفعل هذان السكربتان، سطرًا بسطر</a>.</p>
+
+  <h2 id="first-open">فتحه أول مرة</h2>
+  <p>التطبيق غير موقَّع رقميًا بعد (التوقيع يكلّف مالًا كل سنة). ينبّهك جهازك إلى التطبيقات من مطوّرين لا يعرفهم. لفتحه رغم ذلك:</p>
+  <h3>Mac</h3>
+  <ol>
+    <li>افتح التطبيق. سيقول macOS إنه لا يستطيع التحقق منه؛ اضغط <b>Done</b>.</li>
+    <li>افتح <b>System Settings → Privacy &amp; Security</b>، ومرّر لأسفل، واضغط <b>Open Anyway</b> بجانب FreeAITokens.</li>
+    <li>أكّد بكلمة مرورك أو ببصمة Touch ID. تفعل هذا مرة واحدة فقط.</li>
+  </ol>
+  <p class="small muted">إذا ثبّته بسطر Terminal فلن تحتاج إلى هذه الخطوة.</p>
+  <h3>Windows</h3>
+  <ol>
+    <li>شغّل المثبّت. إذا ظهر مربع أزرق بعنوان «Windows protected your PC» فاضغط <b>More info</b>.</li>
+    <li>اضغط <b>Run anyway</b>.</li>
+  </ol>
+  <h3>Linux</h3>
+  <p>اجعل ملف AppImage قابلًا للتشغيل (انقر بزر الفأرة الأيمن ← Properties ← Allow executing، أو <code>chmod +x</code>) ثم افتحه. بعض الأنظمة تحتاج أيضًا إلى <code>libfuse2</code> (<code>libfuse2t64</code> على Ubuntu 24.04 وما بعده).</p>
+
+  <h2>تفضّل سطر الأوامر؟</h2>
+  <p>يستطيع المطوّرون تجاوز التطبيق وتشغيل <code>npx freeaitokens</code> مع Node.js 20 أو أحدث. راجع <a href="/docs#command-line">التوثيق</a>.</p>
+</div>

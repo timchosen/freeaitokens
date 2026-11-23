@@ -1,0 +1,23 @@
+<!-- title: سكربت التثبيت | description: ما الذي يفعله مثبّت FreeAITokens ذو السطر الواحد بالضبط، مع شيفرته الكاملة لأنظمة macOS وLinux وWindows. -->
+<div class="page">
+  <h1>ماذا يفعل سكربت التثبيت</h1>
+  <p class="lead">لصق أمر من موقع ويب في Terminal يعني أنك تثق بذلك الموقع. هنا كل ما يفعله مثبّت FreeAITokens، وشيفرته الكاملة.</p>
+
+  <h2>بكلمات بسيطة</h2>
+  <ol>
+    <li>يعرف هل جهازك Mac أم Linux أم Windows.</li>
+    <li>ينزّل أحدث تطبيق FreeAITokens من <a href="{{repoUrl}}/releases">إصدارات GitHub</a> العلنية.</li>
+    <li>على Mac: يضع التطبيق في مجلد Applications (ويستبدل أي نسخة أقدم) ويفتحه. على Linux: يحفظه باسم <code>~/.local/bin/freeaitokens-app</code>. على Windows: يشغّل المثبّت المعتاد.</li>
+    <li>يحذف الملف الذي نزّله. ولا يغيّر شيئًا آخر: لا كلمة مرور للمدير، ولا إعدادات، ولا برامج أخرى.</li>
+  </ol>
+  <p>السكربت كله داخل دالة واحدة لا تعمل إلا في آخر لحظة، فإذا انقطع التنزيل في منتصفه لا يحدث شيء.</p>
+  <p>لقراءته قبل تشغيله: <code>curl -fsSL https://{{domain}}/install | less</code></p>
+
+  <h2>Mac وLinux: <a href="/install">/install</a></h2>
+  <pre><code>{{installScript}}</code></pre>
+
+  <h2>Windows: <a href="/install.ps1">/install.ps1</a></h2>
+  <pre><code>{{installPs1}}</code></pre>
+
+  <p class="small muted">الملفان موجودان أيضًا في <a href="{{repoUrl}}/tree/main/site/static">مستودع الشيفرة المصدرية</a>. وجدت مشكلة؟ <a href="{{repoUrl}}/security/policy">أبلغ عنها بسرية</a>.</p>
+</div>

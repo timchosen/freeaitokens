@@ -1,0 +1,32 @@
+<!-- title: सेटअप | description: FreeAITokens में अपनी पहली मुफ़्त AI keys जोड़ें और Claude Code, Codex, VS Code, Zed व दूसरे टूल जोड़ें। -->
+<div class="page">
+  <h1>सेटअप</h1>
+  <p class="lead">सिर्फ़ दो कदम: कुछ मुफ़्त keys जोड़ें, फिर अपने AI टूल को FreeAITokens की तरफ़ मोड़ दें।</p>
+
+  <h2 id="keys">1. मुफ़्त keys जोड़ें</h2>
+  <p>{{keyless}} प्रोवाइडर बिना किसी अकाउंट के काम करते हैं। आप जो भी मुफ़्त अकाउंट जोड़ते हैं, आपका कुल कोटा बढ़ जाता है।</p>
+  <ol>
+    <li>अपने मेन्यू बार या सिस्टम ट्रे में FreeAITokens के आइकन पर क्लिक करें और <b>Add a provider</b> (प्रोवाइडर जोड़ें) चुनें।</li>
+    <li>कोई प्रोवाइडर चुनें। ऐप उसका साइन-अप पेज खोल देता है और बताता है कि ठीक-ठीक कहाँ क्लिक करना है।</li>
+    <li>मुफ़्त अकाउंट बनाएँ, जो key मिले उसे कॉपी करें और ऐप में पेस्ट कर दें। सेव करने से पहले ऐप key को जाँच लेता है।</li>
+  </ol>
+  <p>शुरू करने के लिए अच्छे विकल्प: <b>Cerebras</b> और <b>Groq</b> (बड़ा मुफ़्त कोटा), <b>OpenRouter</b> (एक क्लिक में कनेक्ट) और <b>Google Gemini</b>।</p>
+  <p class="small muted">Keys आपके कंप्यूटर पर रहती हैं, जहाँ कीचेन हो वहाँ उसमें, और सिर्फ़ उसी प्रोवाइडर को भेजी जाती हैं जिसकी वे हैं। अपने ही अकाउंट इस्तेमाल करें, हर प्रोवाइडर पर एक। <a href="/disclaimer">यह क्यों ज़रूरी है</a>।</p>
+
+  <h2 id="tools">2. अपना टूल जोड़ें</h2>
+  <p>आपका लोकल एड्रेस <code>http://127.0.0.1:4949</code> है। जहाँ भी ज़रूरत हो, ऐप के मेन्यू में <b>Copy endpoint</b> और <b>Copy local token</b> मिलेंगे।</p>
+  <div class="cards">
+    <div class="card"><h3>Claude Code</h3><p>इसे FreeAITokens के ज़रिए शुरू करें:</p><div class="cmd"><code>npx freeaitokens claude</code><button class="copy" data-copy="npx freeaitokens claude">कॉपी करें</button></div><p class="small muted">सिर्फ़ वही सेशन मुफ़्त मॉडल इस्तेमाल करता है; अपने अकाउंट के लिए <code>claude</code> सामान्य तरीके से चलाएँ।</p></div>
+    <div class="card"><h3>Codex</h3><div class="cmd"><code>npx freeaitokens codex</code><button class="copy" data-copy="npx freeaitokens codex">कॉपी करें</button></div></div>
+    <div class="card"><h3>Gemini CLI</h3><div class="cmd"><code>npx freeaitokens gemini</code><button class="copy" data-copy="npx freeaitokens gemini">कॉपी करें</button></div></div>
+    <div class="card"><h3>OpenCode</h3><div class="cmd"><code>npx freeaitokens setup opencode</code><button class="copy" data-copy="npx freeaitokens setup opencode">कॉपी करें</button></div><p class="small muted">फिर मॉडल <code>freeaitokens/free</code> चुनें। <code>--undo</code> से आपकी पुरानी सेटिंग वापस आ जाती हैं।</p></div>
+    <div class="card"><h3>VS Code, Zed, JetBrains</h3><p>एडिटर की सेटिंग में क्या पेस्ट करना है, यह ठीक-ठीक छाप देता है:</p><div class="cmd"><code>npx freeaitokens setup vscode</code><button class="copy" data-copy="npx freeaitokens setup vscode">कॉपी करें</button></div><p class="small muted"><code>vscode</code> की जगह <code>zed</code> या <code>jetbrains</code> लिखें।</p></div>
+    <div class="card"><h3>Cline, Continue, Roo Code, Crush</h3><div class="cmd"><code>npx freeaitokens setup cline</code><button class="copy" data-copy="npx freeaitokens setup cline">कॉपी करें</button></div><p class="small muted">या <code>cline</code> की जगह उस टूल का अपना नाम।</p></div>
+    <div class="card"><h3>Kilo Code, Qwen Code, Goose, Aider</h3><div class="cmd"><code>npx freeaitokens aider</code><button class="copy" data-copy="npx freeaitokens aider">कॉपी करें</button></div><p class="small muted">या <code>kilo</code>, <code>qwen</code>, <code>goose</code>।</p></div>
+    <div class="card"><h3>कोई दूसरा ऐप</h3><p>अगर उसमें अपना OpenAI एड्रेस डालने की सुविधा है:</p><ul class="small"><li>Base URL <code>http://127.0.0.1:4949/v1</code></li><li>Model <code>free</code></li><li>API key: ऐप के मेन्यू में <b>Copy local token</b></li></ul></div>
+  </div>
+  <p class="small muted">ऊपर के कमांड के लिए Node.js चाहिए। अगर वह आपके पास नहीं है, तो यह हिस्सा <a href="/ask-your-ai">अपने AI से करवाएँ</a>, या Node.js <a href="https://nodejs.org">nodejs.org</a> से लें।</p>
+
+  <h2>सपोर्ट नहीं है</h2>
+  <p><b>Cursor</b> कस्टम एड्रेस को अपने सर्वर से होकर भेजता है, जो आपके कंप्यूटर तक नहीं पहुँच सकते। <b>ChatGPT ऐप</b> कोई कस्टम एड्रेस इस्तेमाल ही नहीं कर सकता।</p>
+</div>

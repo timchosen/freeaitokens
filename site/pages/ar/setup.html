@@ -1,0 +1,32 @@
+<!-- title: الإعداد | description: أضف أول مفاتيح الذكاء الاصطناعي المجانية إلى FreeAITokens واربط Claude Code وCodex وVS Code وZed وأدوات أخرى. -->
+<div class="page">
+  <h1>الإعداد</h1>
+  <p class="lead">خطوتان: أضف بضعة مفاتيح مجانية، ثم وجّه أداتك الذكية إلى FreeAITokens.</p>
+
+  <h2 id="keys">1. أضف مفاتيح مجانية</h2>
+  <p>يعمل {{keyless}} مزوِّدين دون أي حساب. وكل حساب مجاني تضيفه يرفع رصيدك الإجمالي.</p>
+  <ol>
+    <li>اضغط على أيقونة FreeAITokens في شريط القوائم أو منطقة إشعارات النظام، واختر <b>Add a provider</b> (إضافة مزوِّد).</li>
+    <li>اختر مزوِّدًا. يفتح التطبيق صفحة التسجيل الخاصة به ويخبرك بالضبط على ماذا تضغط.</li>
+    <li>أنشئ حسابًا مجانيًا، وانسخ المفتاح الذي يعطيك إياه، والصقه في التطبيق. يتحقق التطبيق من المفتاح قبل حفظه.</li>
+  </ol>
+  <p>بداية جيدة: <b>Cerebras</b> و<b>Groq</b> (أرصدة مجانية كبيرة)، و<b>OpenRouter</b> (يتصل بنقرة واحدة)، و<b>Google Gemini</b>.</p>
+  <p class="small muted">تبقى المفاتيح على جهازك، في سلسلة المفاتيح (keychain) إن وُجدت، ولا تُرسل إلا إلى المزوِّد الذي تخصّه. استخدم حساباتك أنت، حسابًا واحدًا لكل مزوِّد. <a href="/disclaimer">لماذا هذا مهم</a>.</p>
+
+  <h2 id="tools">2. اربط أداتك</h2>
+  <p>عنوانك المحلي هو <code>http://127.0.0.1:4949</code>. في قائمة التطبيق <b>Copy endpoint</b> (نسخ العنوان) و<b>Copy local token</b> (نسخ الرمز المحلي) لأي شيء يطلبهما.</p>
+  <div class="cards">
+    <div class="card"><h3>Claude Code</h3><p>شغّله عبر FreeAITokens:</p><div class="cmd"><code>npx freeaitokens claude</code><button class="copy" data-copy="npx freeaitokens claude">انسخ</button></div><p class="small muted">هذه الجلسة وحدها تستخدم النماذج المجانية؛ شغّل <code>claude</code> كالمعتاد لاستخدام حسابك الخاص.</p></div>
+    <div class="card"><h3>Codex</h3><div class="cmd"><code>npx freeaitokens codex</code><button class="copy" data-copy="npx freeaitokens codex">انسخ</button></div></div>
+    <div class="card"><h3>Gemini CLI</h3><div class="cmd"><code>npx freeaitokens gemini</code><button class="copy" data-copy="npx freeaitokens gemini">انسخ</button></div></div>
+    <div class="card"><h3>OpenCode</h3><div class="cmd"><code>npx freeaitokens setup opencode</code><button class="copy" data-copy="npx freeaitokens setup opencode">انسخ</button></div><p class="small muted">ثم اختر النموذج <code>freeaitokens/free</code>. ويعيد <code>--undo</code> إعداداتك القديمة.</p></div>
+    <div class="card"><h3>VS Code وZed وJetBrains</h3><p>يطبع بالضبط ما يجب لصقه في إعدادات المحرر:</p><div class="cmd"><code>npx freeaitokens setup vscode</code><button class="copy" data-copy="npx freeaitokens setup vscode">انسخ</button></div><p class="small muted">استخدم <code>zed</code> أو <code>jetbrains</code> بدلًا من <code>vscode</code>.</p></div>
+    <div class="card"><h3>Cline وContinue وRoo Code وCrush</h3><div class="cmd"><code>npx freeaitokens setup cline</code><button class="copy" data-copy="npx freeaitokens setup cline">انسخ</button></div><p class="small muted">أو اسم الأداة نفسها بدلًا من <code>cline</code>.</p></div>
+    <div class="card"><h3>Kilo Code وQwen Code وGoose وAider</h3><div class="cmd"><code>npx freeaitokens aider</code><button class="copy" data-copy="npx freeaitokens aider">انسخ</button></div><p class="small muted">أو <code>kilo</code> أو <code>qwen</code> أو <code>goose</code>.</p></div>
+    <div class="card"><h3>أي تطبيق آخر</h3><p>إذا كان يتيح لك تحديد عنوان OpenAI مخصص:</p><ul class="small"><li>العنوان الأساسي <code>http://127.0.0.1:4949/v1</code></li><li>النموذج <code>free</code></li><li>مفتاح API: <b>Copy local token</b> (نسخ الرمز المحلي) من قائمة التطبيق</li></ul></div>
+  </div>
+  <p class="small muted">تحتاج الأوامر أعلاه إلى Node.js. إذا لم يكن لديك، <a href="/ask-your-ai">اطلب من الذكاء الاصطناعي</a> أن ينفّذ هذا الجزء، أو نزّل Node.js من <a href="https://nodejs.org">nodejs.org</a>.</p>
+
+  <h2>غير مدعوم</h2>
+  <p>يمرّر <b>Cursor</b> العناوين المخصصة عبر خوادمه، ولا تستطيع الوصول إلى جهازك. و<b>تطبيق ChatGPT</b> لا يستطيع استخدام عنوان مخصص إطلاقًا.</p>
+</div>

@@ -1,0 +1,82 @@
+<!-- title: ドキュメント | description: FreeAITokensのしくみ: コマンドライン、対応するリクエスト形式、埋め込みと画像、オプション、{{providers}}社すべての無料プロバイダーとその上限。 -->
+<div class="page wide">
+  <h1>ドキュメント</h1>
+  <p class="lead">開発者や、くわしく知りたい方向けの、FreeAITokensの詳しい説明です。とにかく使えるようにしたいだけなら、<a href="/download">アプリをダウンロード</a>して<a href="/setup">セットアップ</a>に進んでください。</p>
+
+  <nav class="toc" aria-label="このページの内容">
+    <ul>
+      <li><a href="#command-line">コマンドライン</a></li>
+      <li><a href="#tools">ツールで使う</a></li>
+      <li><a href="#how">できること</a></li>
+      <li><a href="#media">チャット以外</a></li>
+      <li><a href="#paid">有料キーとオプション</a></li>
+      <li><a href="#providers">{{providers}}社すべてのプロバイダー</a></li>
+      <li><a href="#unsupported">まだ対応していないもの</a></li>
+    </ul>
+  </nav>
+
+  <h2 id="command-line">コマンドライン</h2>
+  <p>Node.js 20以降があれば、アプリは不要です:</p>
+  <pre><code>npx freeaitokens               # start the local endpoint
+npx freeaitokens add           # add a free provider key (guided)
+npx freeaitokens list          # providers, key status, what is left today
+npx freeaitokens remove &lt;id&gt;   # delete a stored key</code></pre>
+  <p>1回だけインストールして使うこともできます: <code>npm install -g freeaitokens</code>。エンドポイントは <code>127.0.0.1:4949</code> だけで待ち受け、起動時のバナーに表示されるローカルトークンが必要です。アプリとコマンドは、キーと設定を共有します。</p>
+
+  <h2 id="tools">ツールで使う</h2>
+  <div class="table"><table>
+    <thead><tr><th>ツール</th><th>方法</th></tr></thead>
+    <tbody>
+      <tr><td>Claude Code</td><td><code>npx freeaitokens claude</code>（続けてClaude Codeの引数も指定できます）</td></tr>
+      <tr><td>Codex</td><td><code>npx freeaitokens codex</code></td></tr>
+      <tr><td>Gemini CLI</td><td><code>npx freeaitokens gemini</code></td></tr>
+      <tr><td>OpenCode</td><td><code>npx freeaitokens setup opencode</code> を実行し、モデルに <code>freeaitokens/free</code> を選びます</td></tr>
+      <tr><td>Kilo Code CLI、Qwen Code、Goose、Aider</td><td><code>npx freeaitokens kilo</code> / <code>qwen</code> / <code>goose</code> / <code>aider</code></td></tr>
+      <tr><td>Zed、JetBrains AI、VS Code</td><td><code>npx freeaitokens setup zed</code> / <code>jetbrains</code> / <code>vscode</code> で、貼り付ける内容が表示されます</td></tr>
+      <tr><td>Continue、Cline、Crush、Roo Code</td><td><code>npx freeaitokens setup cline</code>（またはそのツールの名前）で、設定値が表示されます</td></tr>
+      <tr><td>OpenAI互換のあらゆるもの</td><td>Base URL <code>http://127.0.0.1:4949/v1</code>、モデル <code>free</code>、キーは起動時のバナーに表示されたもの</td></tr>
+      <tr><td>Anthropic、Gemini、Ollamaのクライアント</td><td>Base URL <code>http://127.0.0.1:4949</code>、キーは同じもの</td></tr>
+    </tbody>
+  </table></div>
+  <p>ランチャーが影響するのはそのセッションだけで、ツールの設定ファイルには何も書き込みません。<code>setup opencode</code> は、既存のプロバイダーの隣に新しいプロバイダーを追加し、バックアップを残します。<code>--undo</code> で元に戻せます。</p>
+
+  <h2 id="how">できること</h2>
+  <ul>
+    <li><b>リクエストごとにモデルを選びます。</b>対応できるモデルだけが対象です。十分なコンテキストがあること、ツールが必要ならツール呼び出しに対応していること、画像があるなら画像を読めることが条件です。あなたの環境で速く安定していた、より良いモデルを優先し、ほかのモデルが明らかに良くない限り、会話の途中では同じモデルを使い続けます。</li>
+    <li><b>自動で切り替えます。</b>上限、サーバーエラー、タイムアウトが起きたときは、ツールに何も見せる前に次のモデルを試します。すべてが混み合っていても、30秒以内に空きが戻るなら待ち、そうでなければいつ使えるかをお知らせします。</li>
+    <li><b>無料の上限を記録します。</b>プロバイダー、モデル、キーごとに、分単位と日単位で管理し、プロバイダーが返す上限の情報をもとに自分で補正します。</li>
+    <li><b>5つの形式に対応します:</b>OpenAI chat completions、Anthropic Messages（Claude Code）、OpenAI Responses（Codex）、Gemini（Gemini CLI）、Ollama（<code>/api/chat</code>）。</li>
+    <li><b>最新のプロバイダー一覧を保ちます。</b>一覧は署名され、使う前に検証されるので、アップデートなしで新しい無料モデルが追加されます。</li>
+  </ul>
+
+  <h2 id="media">チャット以外</h2>
+  <p>同じエンドポイントで、埋め込み（<code>/v1/embeddings</code>）、通常の補完（<code>/v1/completions</code>）、画像（<code>/v1/images/generations</code>）、音声読み上げ（<code>/v1/audio/speech</code>）、文字起こし（<code>/v1/audio/transcriptions</code>）、動画（<code>/v1/videos</code>）のOpenAI形式のルートも使えます。それぞれ、対応する無料プロバイダーに送られ、同じ切り替えと上限管理が働きます。</p>
+  <ul>
+    <li><b>現在無料で使えるもの:</b>埋め込み（Gemini、OpenRouter、SEA-LION、Cloudflare、OVH）、補完（Cerebras、OpenRouter、OVH）、画像（Cloudflare Flux、OpenRouter）、音声読み上げ（Groq、OpenRouter、Cloudflare）、文字起こし（Groq、Cloudflare、OVH）。無料で動画を提供しているプロバイダーは、まだありません。</li>
+    <li><b>埋め込み:</b>異なるモデルのベクトルどうしは比較できません。レスポンスで返されたモデル名（たとえば <code>gemini-embedding-001</code>）を指定すると、以降のリクエストも同じモデルを使います。</li>
+  </ul>
+
+  <h2 id="paid">有料キーとオプション</h2>
+  <p>有料キーは、無料キーの後ろに最後の手段として置けます。リクエストに応えられる無料モデルがないときだけ使われ、有料のリクエストはそのつど表示され、1日の上限もあります。</p>
+  <div class="table"><table>
+    <thead><tr><th>オプション</th><th>内容</th></tr></thead>
+    <tbody>
+      <tr><td><code>--port &lt;n&gt;</code></td><td>ローカルエンドポイントのポート（初期値は4949）</td></tr>
+      <tr><td><code>--free-only</code></td><td>有料キーを一切使いません</td></tr>
+      <tr><td><code>--paid-cap &lt;n&gt;</code></td><td>1日あたりの有料リクエストの最大数（初期値は200）</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="providers">{{providers}}社すべてのプロバイダー</h2>
+  <p>すべて合わせると、毎月最大{{monthly}}の無料トークンが公開されています。この数字は、公表されている無料の上限を足し合わせたもので、リクエスト数の上限しか公表されていない場合は、1リクエストあたり2,000トークンとして数えています。大半は、いくつかの大きな無料枠によるもので、使えるのは各プロバイダーのキーを用意した場合だけです。上限を公表していないプロバイダーは、ゼロとして数えます。</p>
+  {{providerTable}}
+
+  <h2 id="unsupported">まだ対応していないもの</h2>
+  <ul>
+    <li><b>Cursor:</b>カスタムエンドポイントへの通信を自社のサーバー経由で行うため、ローカルアドレスには届きません。</li>
+    <li><b>ChatGPTアプリ:</b>カスタムエンドポイントを使えません。</li>
+    <li>画像の編集、音声の翻訳、リアルタイム音声。</li>
+    <li>Codexの連携アプリ（MCP）ツールとウェブ検索は、無料モデルには渡されません。無料モデルが受け付ける量より多くのコンテキストが増えてしまうためです。</li>
+  </ul>
+  <p>ソースコード、Issue、完全なREADME: <a href="{{repoUrl}}">GitHub</a>。</p>
+</div>

@@ -1,0 +1,82 @@
+<!-- title: Dokumentasi | description: Cara kerja FreeAITokens: baris perintah, format permintaan yang didukung, embedding dan gambar, opsi, serta semua {{providers}} penyedia gratis beserta batasnya. -->
+<div class="page wide">
+  <h1>Dokumentasi</h1>
+  <p class="lead">Detail di balik FreeAITokens, untuk pengembang dan yang penasaran. Kalau kamu hanya ingin ia berfungsi, <a href="/download">unduh aplikasinya</a> dan ikuti <a href="/setup">Pengaturan</a>.</p>
+
+  <nav class="toc" aria-label="Di halaman ini">
+    <ul>
+      <li><a href="#command-line">Baris perintah</a></li>
+      <li><a href="#tools">Pakai dengan alatmu</a></li>
+      <li><a href="#how">Apa yang dilakukannya</a></li>
+      <li><a href="#media">Bukan hanya obrolan</a></li>
+      <li><a href="#paid">Kunci berbayar dan opsi</a></li>
+      <li><a href="#providers">Semua {{providers}} penyedia</a></li>
+      <li><a href="#unsupported">Belum didukung</a></li>
+    </ul>
+  </nav>
+
+  <h2 id="command-line">Baris perintah</h2>
+  <p>Dengan Node.js 20 atau lebih baru, kamu tidak perlu aplikasinya:</p>
+  <pre><code>npx freeaitokens               # start the local endpoint
+npx freeaitokens add           # add a free provider key (guided)
+npx freeaitokens list          # providers, key status, what is left today
+npx freeaitokens remove &lt;id&gt;   # delete a stored key</code></pre>
+  <p>Atau pasang sekali saja: <code>npm install -g freeaitokens</code>. Endpoint-nya hanya mendengarkan di <code>127.0.0.1:4949</code> dan membutuhkan token lokal dari banner saat dimulai. Aplikasi dan perintah ini berbagi kunci dan pengaturan.</p>
+
+  <h2 id="tools">Pakai dengan alatmu</h2>
+  <div class="table"><table>
+    <thead><tr><th>Alat</th><th>Caranya</th></tr></thead>
+    <tbody>
+      <tr><td>Claude Code</td><td><code>npx freeaitokens claude</code> (argumen Claude Code apa pun bisa ditambahkan setelahnya)</td></tr>
+      <tr><td>Codex</td><td><code>npx freeaitokens codex</code></td></tr>
+      <tr><td>Gemini CLI</td><td><code>npx freeaitokens gemini</code></td></tr>
+      <tr><td>OpenCode</td><td><code>npx freeaitokens setup opencode</code>, lalu modelnya <code>freeaitokens/free</code></td></tr>
+      <tr><td>Kilo Code CLI, Qwen Code, Goose, Aider</td><td><code>npx freeaitokens kilo</code> / <code>qwen</code> / <code>goose</code> / <code>aider</code></td></tr>
+      <tr><td>Zed, JetBrains AI, VS Code</td><td><code>npx freeaitokens setup zed</code> / <code>jetbrains</code> / <code>vscode</code> menampilkan apa yang perlu ditempel</td></tr>
+      <tr><td>Continue, Cline, Crush, Roo Code</td><td><code>npx freeaitokens setup cline</code> (atau nama alatnya) menampilkan nilai-nilainya</td></tr>
+      <tr><td>Apa pun yang kompatibel dengan OpenAI</td><td>Base URL <code>http://127.0.0.1:4949/v1</code>, model <code>free</code>, kunci dari banner saat dimulai</td></tr>
+      <tr><td>Klien Anthropic, Gemini, atau Ollama</td><td>Base URL <code>http://127.0.0.1:4949</code>, kunci yang sama</td></tr>
+    </tbody>
+  </table></div>
+  <p>Peluncur ini hanya memengaruhi satu sesi itu dan tidak menulis apa pun ke konfigurasi alatmu. <code>setup opencode</code> menambahkan penyedia di samping yang sudah ada dan menyimpan cadangan; <code>--undo</code> mengembalikannya.</p>
+
+  <h2 id="how">Apa yang dilakukannya</h2>
+  <ul>
+    <li><b>Memilih model untuk tiap permintaan.</b> Hanya model yang sanggup mengerjakannya: konteks cukup, pemanggilan alat bila alatmu memerlukannya, dukungan gambar bila ada gambar. Ia lebih memilih model yang lebih baik dan yang cepat serta andal bagimu, dan tetap di model yang sama sepanjang percakapan kecuali ada yang jelas lebih baik.</li>
+    <li><b>Pindah otomatis bila gagal.</b> Saat kena batas laju, error server, atau waktu habis, ia mencoba model berikutnya sebelum alatmu menyadarinya. Kalau semuanya sibuk dan kapasitas kembali dalam 30 detik, ia menunggu; kalau tidak, ia memberi tahu kapan.</li>
+    <li><b>Melacak batas gratis</b> per penyedia, model, dan kunci, per menit dan per hari, serta mengoreksi dirinya dari batas yang dilaporkan penyedia.</li>
+    <li><b>Mendukung lima format:</b> OpenAI chat completions, Anthropic Messages (Claude Code), OpenAI Responses (Codex), Gemini (Gemini CLI), dan Ollama (<code>/api/chat</code>).</li>
+    <li><b>Menjaga daftar penyedia tetap terbaru</b>, bertanda tangan digital dan diperiksa sebelum dipakai, sehingga model gratis baru datang tanpa perlu pembaruan.</li>
+  </ul>
+
+  <h2 id="media">Bukan hanya obrolan</h2>
+  <p>Endpoint yang sama menerima rute OpenAI untuk embedding (<code>/v1/embeddings</code>), completion biasa (<code>/v1/completions</code>), gambar (<code>/v1/images/generations</code>), teks ke suara (<code>/v1/audio/speech</code>), transkripsi (<code>/v1/audio/transcriptions</code>), dan video (<code>/v1/videos</code>), masing-masing dikirim ke penyedia gratis yang menawarkannya, dengan pindah otomatis dan batas yang sama.</p>
+  <ul>
+    <li><b>Gratis saat ini:</b> embedding (Gemini, OpenRouter, SEA-LION, Cloudflare, OVH), completion (Cerebras, OpenRouter, OVH), gambar (Cloudflare Flux, OpenRouter), teks ke suara (Groq, OpenRouter, Cloudflare), transkripsi (Groq, Cloudflare, OVH). Belum ada penyedia yang menawarkan video gratis.</li>
+    <li><b>Embedding:</b> vektor dari model yang berbeda tidak bisa dibandingkan. Kirim nama model yang diberikan responsnya (misalnya <code>gemini-embedding-001</code>) dan permintaan berikutnya tetap memakainya.</li>
+  </ul>
+
+  <h2 id="paid">Kunci berbayar dan opsi</h2>
+  <p>Kunci berbayar bisa ditaruh di bawah kunci gratis sebagai pilihan terakhir: hanya dipakai saat tidak ada model gratis yang bisa melayani permintaan, setiap permintaan berbayar dicetak, dengan batas harian.</p>
+  <div class="table"><table>
+    <thead><tr><th>Opsi</th><th>Fungsinya</th></tr></thead>
+    <tbody>
+      <tr><td><code>--port &lt;n&gt;</code></td><td>Port untuk endpoint lokal (bawaan 4949)</td></tr>
+      <tr><td><code>--free-only</code></td><td>Tidak pernah memakai kunci berbayar</td></tr>
+      <tr><td><code>--paid-cap &lt;n&gt;</code></td><td>Jumlah maksimal permintaan berbayar per hari (bawaan 200)</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="providers">Semua {{providers}} penyedia</h2>
+  <p>Secara total mereka mempublikasikan hingga {{monthly}} token gratis per bulan. Angka itu menjumlahkan batas gratis yang dipublikasikan, dengan menghitung 2.000 token per permintaan bila hanya batas permintaan yang dipublikasikan; sebagian besarnya berasal dari beberapa jatah besar, dan kamu mendapatkannya hanya dengan kunci untuk tiap penyedia. Penyedia yang tidak mempublikasikan batas dihitung nol.</p>
+  {{providerTable}}
+
+  <h2 id="unsupported">Belum didukung</h2>
+  <ul>
+    <li><b>Cursor:</b> ia mengirim lalu lintas endpoint khusus lewat servernya sendiri, yang tidak bisa menjangkau alamat lokal.</li>
+    <li><b>Aplikasi ChatGPT:</b> ia tidak bisa memakai endpoint khusus.</li>
+    <li>Pengeditan gambar, terjemahan audio, suara realtime.</li>
+    <li>Alat aplikasi terhubung (MCP) dan pencarian web milik Codex tidak diteruskan ke model gratis: keduanya menambah konteks lebih banyak daripada yang diterima model gratis.</li>
+  </ul>
+  <p>Kode sumber, issue, dan README lengkap: <a href="{{repoUrl}}">GitHub</a>.</p>
+</div>

@@ -1,0 +1,23 @@
+<!-- title: O script de instalação | description: Exatamente o que o instalador de uma linha do FreeAITokens faz, com o código completo para macOS, Linux e Windows. -->
+<div class="page">
+  <h1>O que o script de instalação faz</h1>
+  <p class="lead">Colar no Terminal um comando tirado de um site significa confiar nesse site. Aqui está tudo o que o instalador do FreeAITokens faz, com o código completo.</p>
+
+  <h2>Em palavras simples</h2>
+  <ol>
+    <li>Descobre se você tem um Mac, um Linux ou um Windows.</li>
+    <li>Baixa o app FreeAITokens mais recente das <a href="{{repoUrl}}/releases">versões públicas no GitHub</a>.</li>
+    <li>Mac: coloca o app na pasta Aplicativos (trocando uma cópia mais antiga) e o abre. Linux: salva em <code>~/.local/bin/freeaitokens-app</code>. Windows: executa o instalador normal.</li>
+    <li>Apaga o arquivo baixado. Não muda mais nada: sem senha de administrador, sem configurações, sem outros programas.</li>
+  </ol>
+  <p>O script inteiro fica dentro de uma única função que só roda no final, então um download interrompido no meio não faz nada.</p>
+  <p>Para ler antes de executar: <code>curl -fsSL https://{{domain}}/install | less</code></p>
+
+  <h2>Mac e Linux: <a href="/install">/install</a></h2>
+  <pre><code>{{installScript}}</code></pre>
+
+  <h2>Windows: <a href="/install.ps1">/install.ps1</a></h2>
+  <pre><code>{{installPs1}}</code></pre>
+
+  <p class="small muted">Os dois arquivos também estão no <a href="{{repoUrl}}/tree/main/site/static">repositório do código</a>. Achou algum problema? <a href="{{repoUrl}}/security/policy">Avise em particular</a>.</p>
+</div>

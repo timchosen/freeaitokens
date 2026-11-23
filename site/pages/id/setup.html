@@ -1,0 +1,32 @@
+<!-- title: Pengaturan | description: Tambahkan kunci AI gratis pertamamu ke FreeAITokens dan sambungkan Claude Code, Codex, VS Code, Zed, dan alat lainnya. -->
+<div class="page">
+  <h1>Pengaturan</h1>
+  <p class="lead">Dua langkah: tambahkan beberapa kunci gratis, lalu arahkan alat AI-mu ke FreeAITokens.</p>
+
+  <h2 id="keys">1. Tambahkan kunci gratis</h2>
+  <p>{{keyless}} penyedia bisa dipakai tanpa akun sama sekali. Setiap akun gratis yang kamu tambahkan menaikkan totalmu.</p>
+  <ol>
+    <li>Klik ikon FreeAITokens di menu bar atau system tray, lalu pilih <b>Add a provider</b> (Tambah penyedia).</li>
+    <li>Pilih sebuah penyedia. Aplikasi membuka halaman pendaftarannya dan memberi tahu persis apa yang perlu diklik.</li>
+    <li>Buat akun gratis, salin kunci yang diberikan, lalu tempel ke aplikasi. Aplikasi memeriksa kunci itu sebelum menyimpannya.</li>
+  </ol>
+  <p>Yang bagus untuk memulai: <b>Cerebras</b> dan <b>Groq</b> (jatah gratis besar), <b>OpenRouter</b> (tersambung dengan satu klik), dan <b>Google Gemini</b>.</p>
+  <p class="small muted">Kunci tetap di komputermu, di keychain bila ada, dan hanya dikirim ke penyedia pemiliknya. Pakai akunmu sendiri, satu per penyedia. <a href="/disclaimer">Kenapa itu penting</a>.</p>
+
+  <h2 id="tools">2. Sambungkan alatmu</h2>
+  <p>Alamat lokalmu adalah <code>http://127.0.0.1:4949</code>. Menu aplikasi punya <b>Copy endpoint</b> dan <b>Copy local token</b> untuk apa pun yang memintanya.</p>
+  <div class="cards">
+    <div class="card"><h3>Claude Code</h3><p>Jalankan lewat FreeAITokens:</p><div class="cmd"><code>npx freeaitokens claude</code><button class="copy" data-copy="npx freeaitokens claude">Salin</button></div><p class="small muted">Hanya sesi itu yang memakai model gratis; jalankan <code>claude</code> seperti biasa untuk akunmu sendiri.</p></div>
+    <div class="card"><h3>Codex</h3><div class="cmd"><code>npx freeaitokens codex</code><button class="copy" data-copy="npx freeaitokens codex">Salin</button></div></div>
+    <div class="card"><h3>Gemini CLI</h3><div class="cmd"><code>npx freeaitokens gemini</code><button class="copy" data-copy="npx freeaitokens gemini">Salin</button></div></div>
+    <div class="card"><h3>OpenCode</h3><div class="cmd"><code>npx freeaitokens setup opencode</code><button class="copy" data-copy="npx freeaitokens setup opencode">Salin</button></div><p class="small muted">Lalu pilih model <code>freeaitokens/free</code>. <code>--undo</code> mengembalikan pengaturan lamamu.</p></div>
+    <div class="card"><h3>VS Code, Zed, JetBrains</h3><p>Menampilkan persis apa yang perlu ditempel ke pengaturan editor:</p><div class="cmd"><code>npx freeaitokens setup vscode</code><button class="copy" data-copy="npx freeaitokens setup vscode">Salin</button></div><p class="small muted">Pakai <code>zed</code> atau <code>jetbrains</code> sebagai ganti <code>vscode</code>.</p></div>
+    <div class="card"><h3>Cline, Continue, Roo Code, Crush</h3><div class="cmd"><code>npx freeaitokens setup cline</code><button class="copy" data-copy="npx freeaitokens setup cline">Salin</button></div><p class="small muted">Atau nama alatnya sendiri sebagai ganti <code>cline</code>.</p></div>
+    <div class="card"><h3>Kilo Code, Qwen Code, Goose, Aider</h3><div class="cmd"><code>npx freeaitokens aider</code><button class="copy" data-copy="npx freeaitokens aider">Salin</button></div><p class="small muted">Atau <code>kilo</code>, <code>qwen</code>, <code>goose</code>.</p></div>
+    <div class="card"><h3>Aplikasi lain</h3><p>Kalau aplikasinya memungkinkan mengatur alamat OpenAI khusus:</p><ul class="small"><li>Base URL <code>http://127.0.0.1:4949/v1</code></li><li>Model <code>free</code></li><li>Kunci API: <b>Copy local token</b> di menu aplikasi</li></ul></div>
+  </div>
+  <p class="small muted">Perintah di atas membutuhkan Node.js. Kalau belum punya, <a href="/ask-your-ai">minta AI-mu</a> mengerjakan bagian ini, atau ambil Node.js dari <a href="https://nodejs.org">nodejs.org</a>.</p>
+
+  <h2>Belum didukung</h2>
+  <p><b>Cursor</b> mengirim alamat khusus lewat servernya sendiri, yang tidak bisa menjangkau komputermu. <b>Aplikasi ChatGPT</b> sama sekali tidak bisa memakai alamat khusus.</p>
+</div>

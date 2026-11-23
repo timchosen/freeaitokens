@@ -1,0 +1,78 @@
+<!-- title: होम | description: FreeAITokens आपके अपने कंप्यूटर पर {{providers}} AI प्रोवाइडर के मुफ़्त कोटे जोड़ देता है, ताकि आपके AI टूल बिना सब्सक्रिप्शन चलते रहें। -->
+<section class="hero">
+  <p class="eyebrow">{{providers}} AI प्रोवाइडर · एक ऐप · मुफ़्त</p>
+  <h1>मुफ़्त AI, बिना किसी बिल के।</h1>
+  <p class="lead">यह चुपचाप {{providers}} AI प्रोवाइडर के मुफ़्त कोटे जोड़ देता है, ताकि आपके AI टूल बिना सब्सक्रिप्शन चलते रहें। महीने में {{monthly}} तक मुफ़्त टोकन।</p>
+  <a class="btn" href="/download" data-download>अपने कंप्यूटर के लिए डाउनलोड करें</a>
+  <p class="also" data-also>Mac, Windows और Linux के लिए · मुफ़्त और ओपन सोर्स</p>
+
+  <div class="tabs" role="tablist" aria-label="इंस्टॉल करने के तरीके">
+    <button role="tab" id="tab-dl" aria-controls="p-dl" aria-selected="false" tabindex="-1">डाउनलोड</button>
+    <button role="tab" id="tab-term" aria-controls="p-term" aria-selected="true">Terminal में पेस्ट करें</button>
+    <button role="tab" id="tab-ai" aria-controls="p-ai" aria-selected="false" tabindex="-1">अपने AI से कहें</button>
+  </div>
+
+  <div class="panel" role="tabpanel" id="p-dl" aria-labelledby="tab-dl" hidden>
+    <p>ऐप डाउनलोड करके खोलें, और वह आपके मेन्यू बार (Mac) या सिस्टम ट्रे (Windows और Linux) में दिखने लगेगा।</p>
+    <p class="small muted">ऐप अभी कोड-साइन्ड नहीं है, इसलिए पहली बार खोलने पर आपका कंप्यूटर चेतावनी देता है। <a href="/download#first-open">फिर भी कैसे खोलें</a>।</p>
+  </div>
+
+  <div class="panel" role="tabpanel" id="p-term" aria-labelledby="tab-term">
+    <div data-for="mac linux">
+      <p>Terminal खोलें, यह पेस्ट करें, Return दबाएँ:</p>
+      <div class="cmd"><code>curl -fsSL https://{{domain}}/install | sh</code><button class="copy" data-copy="curl -fsSL https://{{domain}}/install | sh">कॉपी करें</button></div>
+    </div>
+    <div data-for="windows">
+      <p>Windows पर PowerShell खोलें, यह पेस्ट करें, Enter दबाएँ:</p>
+      <div class="cmd"><code>irm https://{{domain}}/install.ps1 | iex</code><button class="copy" data-copy="irm https://{{domain}}/install.ps1 | iex">कॉपी करें</button></div>
+    </div>
+    <p class="small muted">यह ऐप को GitHub से डाउनलोड करके इंस्टॉल करता है, और कुछ नहीं। <a href="/install-script">यह स्क्रिप्ट क्या करती है?</a></p>
+  </div>
+
+  <div class="panel" role="tabpanel" id="p-ai" aria-labelledby="tab-ai" hidden>
+    <p>क्या आप कमांड चला सकने वाला AI असिस्टेंट इस्तेमाल करते हैं, जैसे Claude, ChatGPT या Codex? उसे यह पेस्ट करें:</p>
+    <div class="cmd"><code>कृपया इस गाइड को फ़ॉलो करके मेरे कंप्यूटर पर FreeAITokens सेट अप करो: https://{{domain}}/setup.md</code><button class="copy" data-copy="कृपया इस गाइड को फ़ॉलो करके मेरे कंप्यूटर पर FreeAITokens सेट अप करो: https://{{domain}}/setup.md">कॉपी करें</button></div>
+    <p class="small muted">वह ऐप इंस्टॉल करता है, आपके टूल जोड़ता है, और मुफ़्त अकाउंट आपसे खुद बनवाता है। <a href="/ask-your-ai">इसके बारे में और जानें</a>।</p>
+  </div>
+</section>
+
+<section class="band">
+  <div class="inner">
+    <h2 class="center">यह कैसे काम करता है</h2>
+    <div class="grid3">
+      <div class="step"><b>1. इंस्टॉल करें</b>यह आपके मेन्यू बार में रहता है। {{keyless}} प्रोवाइडर तुरंत, बिना अकाउंट के काम करते हैं।</div>
+      <div class="step"><b>2. मुफ़्त keys जोड़ें</b>आप जो भी मुफ़्त अकाउंट जोड़ते हैं, आपका कुल कोटा बढ़ता है। ऐप हर एक में आपका हाथ पकड़कर चलाता है।</div>
+      <div class="step"><b>3. अपने AI टूल इस्तेमाल करें</b>जब एक प्रोवाइडर का कोटा ख़त्म होता है, यह अगले पर चला जाता है। आपको पता भी नहीं चलता।</div>
+    </div>
+  </div>
+</section>
+
+<section class="section center">
+  <h2>उन्हीं टूल के साथ चलता है जो आप पहले से इस्तेमाल करते हैं</h2>
+  <ul class="tools">
+    <li><a class="tool" href="/setup#tools"><img src="/logos/claude.svg" alt="" width="28" height="28"><span>Claude Code</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/terminal.svg" alt="" width="28" height="28"><span>Codex</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/googlegemini.svg" alt="" width="28" height="28"><span>Gemini CLI</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/editor.svg" alt="" width="28" height="28"><span>VS Code</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/zedindustries.svg" alt="" width="28" height="28"><span>Zed</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/jetbrains.svg" alt="" width="28" height="28"><span>JetBrains</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/cline.svg" alt="" width="28" height="28"><span>Cline</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/opencode.svg" alt="" width="28" height="28"><span>OpenCode</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/terminal.svg" alt="" width="28" height="28"><span>Aider</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/plug.svg" alt="" width="28" height="28"><span>कस्टम AI एड्रेस वाला कोई भी ऐप</span></a></li>
+  </ul>
+  <p class="small"><a href="/setup">हर टूल का सेटअप देखें</a></p>
+</section>
+
+<section class="card note">
+  <h3>जानने लायक</h3>
+  <p class="muted">मुफ़्त कोटे चीज़ें आज़माने के लिए हैं, बिज़नेस चलाने के लिए नहीं। अपने ही अकाउंट इस्तेमाल करें, हर प्रोवाइडर पर एक, और किसी को अपना एक्सेस न दें। FreeAITokens आपके अपने कंप्यूटर पर चलता है, और आपकी keys सिर्फ़ उसी प्रोवाइडर को भेजी जाती हैं जिसकी वे हैं। कुछ प्रोवाइडर आपके भेजे डेटा को अपने मॉडल बेहतर करने में इस्तेमाल कर सकते हैं; ऐप बताता है कि कौन-से।</p>
+  <p class="small"><a href="/disclaimer">पूरा अस्वीकरण पढ़ें</a></p>
+</section>
+
+<section class="section center">
+  <h2>एक इंसान ने बनाया, सबके लिए मुफ़्त</h2>
+  <p class="muted">अगर इससे आपके पैसे बचते हैं, तो एक कॉफ़ी इसे चलता रखती है।</p>
+  <a class="btn yellow" href="{{coffee}}">☕ एक कॉफ़ी पिलाएँ</a>
+  <p class="small"><a href="/support">मदद के दूसरे तरीके</a></p>
+</section>

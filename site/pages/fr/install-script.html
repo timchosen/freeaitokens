@@ -1,0 +1,23 @@
+<!-- title: Le script d'installation | description: Ce que fait exactement l'installateur FreeAITokens en une ligne, avec son code complet pour macOS, Linux et Windows. -->
+<div class="page">
+  <h1>Ce que fait le script d'installation</h1>
+  <p class="lead">Coller dans Terminal une commande trouvée sur un site, c'est faire confiance à ce site. Voici tout ce que fait l'installateur de FreeAITokens, avec son code complet.</p>
+
+  <h2>En clair</h2>
+  <ol>
+    <li>Détermine si vous avez un Mac, un ordinateur Linux ou Windows.</li>
+    <li>Télécharge la dernière app FreeAITokens depuis ses <a href="{{repoUrl}}/releases">versions publiques sur GitHub</a>.</li>
+    <li>Mac : place l'app dans votre dossier Applications (en remplaçant une ancienne copie) et l'ouvre. Linux : l'enregistre sous <code>~/.local/bin/freeaitokens-app</code>. Windows : lance l'installateur habituel.</li>
+    <li>Supprime le fichier téléchargé. Il ne change rien d'autre : pas de mot de passe administrateur, pas de réglages, pas d'autre logiciel.</li>
+  </ol>
+  <p>Tout le script tient dans une seule fonction qui ne s'exécute qu'à la toute fin, donc un téléchargement coupé en route ne fait rien.</p>
+  <p>Pour le lire avant de l'exécuter : <code>curl -fsSL https://{{domain}}/install | less</code></p>
+
+  <h2>Mac et Linux : <a href="/install">/install</a></h2>
+  <pre><code>{{installScript}}</code></pre>
+
+  <h2>Windows : <a href="/install.ps1">/install.ps1</a></h2>
+  <pre><code>{{installPs1}}</code></pre>
+
+  <p class="small muted">Les deux fichiers se trouvent aussi dans le <a href="{{repoUrl}}/tree/main/site/static">dépôt de code source</a>. Vous avez trouvé un problème ? <a href="{{repoUrl}}/security/policy">Signalez-le en privé</a>.</p>
+</div>

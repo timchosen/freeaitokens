@@ -1,0 +1,78 @@
+<!-- title: Startseite | description: FreeAITokens kombiniert die kostenlosen Kontingente von {{providers}} KI-Anbietern auf deinem eigenen Computer, damit deine KI-Tools ohne Abo weiterlaufen. -->
+<section class="hero">
+  <p class="eyebrow">{{providers}} KI-Anbieter · eine App · kostenlos</p>
+  <h1>Kostenlose KI, ohne Rechnung.</h1>
+  <p class="lead">Es verbindet ganz unauffällig die kostenlosen Kontingente von {{providers}} KI-Anbietern, damit deine KI-Tools ohne Abo weiterlaufen. Bis zu {{monthly}} kostenlose Tokens im Monat.</p>
+  <a class="btn" href="/download" data-download>Für deinen Computer herunterladen</a>
+  <p class="also" data-also>Für Mac, Windows und Linux · kostenlos und Open Source</p>
+
+  <div class="tabs" role="tablist" aria-label="Wege zur Installation">
+    <button role="tab" id="tab-dl" aria-controls="p-dl" aria-selected="false" tabindex="-1">Download</button>
+    <button role="tab" id="tab-term" aria-controls="p-term" aria-selected="true">Im Terminal einfügen</button>
+    <button role="tab" id="tab-ai" aria-controls="p-ai" aria-selected="false" tabindex="-1">Frag deine KI</button>
+  </div>
+
+  <div class="panel" role="tabpanel" id="p-dl" aria-labelledby="tab-dl" hidden>
+    <p>Lade die App herunter und öffne sie. Dann erscheint sie in deiner Menüleiste (Mac) oder im Infobereich der Taskleiste (Windows und Linux).</p>
+    <p class="small muted">Die App ist noch nicht code-signiert, deshalb warnt dich dein Computer beim ersten Öffnen. <a href="/download#first-open">So öffnest du sie trotzdem</a>.</p>
+  </div>
+
+  <div class="panel" role="tabpanel" id="p-term" aria-labelledby="tab-term">
+    <div data-for="mac linux">
+      <p>Öffne das Terminal, füge das hier ein und drücke die Eingabetaste:</p>
+      <div class="cmd"><code>curl -fsSL https://{{domain}}/install | sh</code><button class="copy" data-copy="curl -fsSL https://{{domain}}/install | sh">Kopieren</button></div>
+    </div>
+    <div data-for="windows">
+      <p>Öffne unter Windows PowerShell, füge das hier ein und drücke die Eingabetaste:</p>
+      <div class="cmd"><code>irm https://{{domain}}/install.ps1 | iex</code><button class="copy" data-copy="irm https://{{domain}}/install.ps1 | iex">Kopieren</button></div>
+    </div>
+    <p class="small muted">Es lädt die App von GitHub herunter und installiert sie, sonst nichts. <a href="/install-script">Was macht dieses Skript?</a></p>
+  </div>
+
+  <div class="panel" role="tabpanel" id="p-ai" aria-labelledby="tab-ai" hidden>
+    <p>Du nutzt einen KI-Assistenten, der Befehle ausführen kann, etwa Claude, ChatGPT oder Codex? Füge ihm diesen Satz ein:</p>
+    <div class="cmd"><code>Bitte richte FreeAITokens auf meinem Computer ein, indem du https://{{domain}}/setup.md folgst</code><button class="copy" data-copy="Bitte richte FreeAITokens auf meinem Computer ein, indem du https://{{domain}}/setup.md folgst">Kopieren</button></div>
+    <p class="small muted">Er installiert die App, verbindet deine Tools und bittet dich, die kostenlosen Konten selbst anzulegen. <a href="/ask-your-ai">Mehr dazu</a>.</p>
+  </div>
+</section>
+
+<section class="band">
+  <div class="inner">
+    <h2 class="center">So funktioniert es</h2>
+    <div class="grid3">
+      <div class="step"><b>1. Installieren</b>Es sitzt in deiner Menüleiste. {{keyless}} Anbieter funktionieren sofort, ganz ohne Konto.</div>
+      <div class="step"><b>2. Kostenlose Schlüssel hinzufügen</b>Jedes kostenlose Konto, das du hinzufügst, erhöht dein Gesamtkontingent. Die App führt dich durch jeden Schritt.</div>
+      <div class="step"><b>3. Deine KI-Tools nutzen</b>Wenn ein Anbieter aufgebraucht ist, wechselt es zum nächsten. Du merkst nichts davon.</div>
+    </div>
+  </div>
+</section>
+
+<section class="section center">
+  <h2>Funktioniert mit den Tools, die du schon nutzt</h2>
+  <ul class="tools">
+    <li><a class="tool" href="/setup#tools"><img src="/logos/claude.svg" alt="" width="28" height="28"><span>Claude Code</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/terminal.svg" alt="" width="28" height="28"><span>Codex</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/googlegemini.svg" alt="" width="28" height="28"><span>Gemini CLI</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/editor.svg" alt="" width="28" height="28"><span>VS Code</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/zedindustries.svg" alt="" width="28" height="28"><span>Zed</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/jetbrains.svg" alt="" width="28" height="28"><span>JetBrains</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/cline.svg" alt="" width="28" height="28"><span>Cline</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/opencode.svg" alt="" width="28" height="28"><span>OpenCode</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/terminal.svg" alt="" width="28" height="28"><span>Aider</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/plug.svg" alt="" width="28" height="28"><span>Jede App mit eigener KI-Adresse</span></a></li>
+  </ul>
+  <p class="small"><a href="/setup">Einrichtung für jedes Tool ansehen</a></p>
+</section>
+
+<section class="card note">
+  <h3>Gut zu wissen</h3>
+  <p class="muted">Kostenlose Kontingente sind zum Ausprobieren da, nicht um ein Geschäft zu betreiben. Nutze deine eigenen Konten, eines pro Anbieter, und gib den Zugang an niemanden weiter. FreeAITokens läuft auf deinem eigenen Computer, und deine Schlüssel gehen immer nur an den Anbieter, zu dem sie gehören. Manche Anbieter nutzen das, was du sendest, womöglich zur Verbesserung ihrer Modelle; die App sagt dir, welche.</p>
+  <p class="small"><a href="/disclaimer">Den vollständigen Haftungsausschluss lesen</a></p>
+</section>
+
+<section class="section center">
+  <h2>Von einer Person gemacht, kostenlos für alle</h2>
+  <p class="muted">Wenn es dir Geld spart, hält ein Kaffee es am Leben.</p>
+  <a class="btn yellow" href="{{coffee}}">☕ Spendier mir einen Kaffee</a>
+  <p class="small"><a href="/support">Weitere Wege zu helfen</a></p>
+</section>

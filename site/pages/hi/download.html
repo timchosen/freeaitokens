@@ -1,0 +1,42 @@
+<!-- title: डाउनलोड | description: Mac, Windows या Linux के लिए मुफ़्त FreeAITokens ऐप डाउनलोड करें, या Terminal में एक लाइन से इंस्टॉल करें। -->
+<div class="page">
+  <h1>डाउनलोड</h1>
+  <p class="lead">FreeAITokens ऐप मुफ़्त और ओपन सोर्स है। यह आपके अपने कंप्यूटर पर चलता है और आपके मेन्यू बार या सिस्टम ट्रे में दिखता है।</p>
+  <p><a class="btn" href="#all" data-download>अपने कंप्यूटर के लिए डाउनलोड करें</a></p>
+  <p class="also" data-also>Mac, Windows और Linux के लिए · मुफ़्त और ओपन सोर्स</p>
+
+  <h2 id="all">सभी डाउनलोड</h2>
+  <ul class="downloads">
+    <li id="mac"><span><b>Mac</b> · Apple silicon और Intel, macOS 12 या नया</span><span><a href="{{repoUrl}}/releases/latest/download/FreeAITokens-mac.dmg">.dmg</a> · <a href="{{repoUrl}}/releases/latest/download/FreeAITokens-mac.zip">.zip</a></span></li>
+    <li id="windows"><span><b>Windows</b> · Windows 10 या 11</span><span><a href="{{repoUrl}}/releases/latest/download/FreeAITokens-windows.exe">इंस्टॉलर (.exe)</a></span></li>
+    <li id="linux"><span><b>Linux</b> · AppImage या Debian/Ubuntu पैकेज</span><span><a href="{{repoUrl}}/releases/latest/download/FreeAITokens-linux-x86_64.AppImage">AppImage</a> · <a href="{{repoUrl}}/releases/latest/download/FreeAITokens-linux-amd64.deb">.deb</a> · <a href="{{repoUrl}}/releases/latest/download/FreeAITokens-linux-arm64.AppImage">ARM AppImage</a> · <a href="{{repoUrl}}/releases/latest/download/FreeAITokens-linux-arm64.deb">ARM .deb</a></span></li>
+  </ul>
+  <p class="small muted">पुराने वर्शन और रिलीज़ नोट्स <a href="{{repoUrl}}/releases">GitHub</a> पर हैं।</p>
+
+  <h2>या एक लाइन से इंस्टॉल करें</h2>
+  <p>Mac या Linux: Terminal खोलें, यह पेस्ट करें, Return दबाएँ।</p>
+  <div class="cmd"><code>curl -fsSL https://{{domain}}/install | sh</code><button class="copy" data-copy="curl -fsSL https://{{domain}}/install | sh">कॉपी करें</button></div>
+  <p>Windows: PowerShell खोलें, यह पेस्ट करें, Enter दबाएँ।</p>
+  <div class="cmd"><code>irm https://{{domain}}/install.ps1 | iex</code><button class="copy" data-copy="irm https://{{domain}}/install.ps1 | iex">कॉपी करें</button></div>
+  <p class="small muted"><a href="/install-script">ये स्क्रिप्ट क्या करती हैं, लाइन-दर-लाइन</a>।</p>
+
+  <h2 id="first-open">पहली बार खोलना</h2>
+  <p>ऐप अभी कोड-साइन्ड नहीं है (साइनिंग का खर्च हर साल लगता है)। आपका कंप्यूटर ऐसे डेवलपर के ऐप के बारे में चेतावनी देता है जिन्हें वह नहीं जानता। फिर भी इसे खोलने के लिए:</p>
+  <h3>Mac</h3>
+  <ol>
+    <li>ऐप खोलें। macOS कहेगा कि वह इसे जाँच नहीं सकता; <b>Done</b> पर क्लिक करें।</li>
+    <li><b>System Settings → Privacy &amp; Security</b> खोलें, नीचे स्क्रॉल करें, और FreeAITokens के आगे <b>Open Anyway</b> पर क्लिक करें।</li>
+    <li>अपने पासवर्ड या Touch ID से पुष्टि करें। यह सिर्फ़ एक बार करना होता है।</li>
+  </ol>
+  <p class="small muted">अगर आपने Terminal वाली लाइन से इंस्टॉल किया है, तो यह कदम छूट जाता है।</p>
+  <h3>Windows</h3>
+  <ol>
+    <li>इंस्टॉलर चलाएँ। अगर नीला "Windows protected your PC" बॉक्स दिखे, तो <b>More info</b> पर क्लिक करें।</li>
+    <li><b>Run anyway</b> पर क्लिक करें।</li>
+  </ol>
+  <h3>Linux</h3>
+  <p>AppImage को चलने लायक बनाएँ (राइट-क्लिक → Properties → Allow executing, या <code>chmod +x</code>) और खोलें। कुछ सिस्टम को <code>libfuse2</code> भी चाहिए होता है (Ubuntu 24.04 और नए में <code>libfuse2t64</code>)।</p>
+
+  <h2>कमांड लाइन पसंद है?</h2>
+  <p>डेवलपर ऐप छोड़कर Node.js 20 या नए वर्शन के साथ <code>npx freeaitokens</code> चला सकते हैं। <a href="/docs#command-line">डॉक्स</a> देखें।</p>
+</div>

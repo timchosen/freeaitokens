@@ -1,0 +1,78 @@
+<!-- title: ホーム | description: FreeAITokensは、{{providers}}社のAIプロバイダーの無料枠をあなたのパソコンでまとめ、サブスクなしでもAIツールを使い続けられるようにします。 -->
+<section class="hero">
+  <p class="eyebrow">{{providers}}社のAIプロバイダー · 1つのアプリ · 無料</p>
+  <h1>請求書のない無料AI。</h1>
+  <p class="lead">{{providers}}社のAIプロバイダーの無料枠をひそかにまとめて、サブスクなしでもAIツールを使い続けられるようにします。毎月最大{{monthly}}トークンが無料です。</p>
+  <a class="btn" href="/download" data-download>お使いのパソコン用をダウンロード</a>
+  <p class="also" data-also>Mac、Windows、Linuxに対応 · 無料のオープンソース</p>
+
+  <div class="tabs" role="tablist" aria-label="インストール方法">
+    <button role="tab" id="tab-dl" aria-controls="p-dl" aria-selected="false" tabindex="-1">ダウンロード</button>
+    <button role="tab" id="tab-term" aria-controls="p-term" aria-selected="true">ターミナルに貼り付け</button>
+    <button role="tab" id="tab-ai" aria-controls="p-ai" aria-selected="false" tabindex="-1">AIに頼む</button>
+  </div>
+
+  <div class="panel" role="tabpanel" id="p-dl" aria-labelledby="tab-dl" hidden>
+    <p>アプリをダウンロードして開くと、メニューバー（Mac）またはシステムトレイ（WindowsとLinux）に表示されます。</p>
+    <p class="small muted">このアプリにはまだコード署名がないため、初めて開くときにパソコンが警告を出します。<a href="/download#first-open">それでも開く方法</a>。</p>
+  </div>
+
+  <div class="panel" role="tabpanel" id="p-term" aria-labelledby="tab-term">
+    <div data-for="mac linux">
+      <p>ターミナル（Terminal）を開き、次の行を貼り付けて、Returnキーを押します:</p>
+      <div class="cmd"><code>curl -fsSL https://{{domain}}/install | sh</code><button class="copy" data-copy="curl -fsSL https://{{domain}}/install | sh">コピー</button></div>
+    </div>
+    <div data-for="windows">
+      <p>Windowsの場合は、PowerShellを開き、次の行を貼り付けて、Enterキーを押します:</p>
+      <div class="cmd"><code>irm https://{{domain}}/install.ps1 | iex</code><button class="copy" data-copy="irm https://{{domain}}/install.ps1 | iex">コピー</button></div>
+    </div>
+    <p class="small muted">GitHubからアプリをダウンロードしてインストールするだけで、ほかには何もしません。<a href="/install-script">このスクリプトは何をするの？</a></p>
+  </div>
+
+  <div class="panel" role="tabpanel" id="p-ai" aria-labelledby="tab-ai" hidden>
+    <p>ClaudeやChatGPT、Codexのように、コマンドを実行できるAIアシスタントを使っていますか？ 次の文をAIに貼り付けてください:</p>
+    <div class="cmd"><code>FreeAITokensをこのパソコンにセットアップしてください。手順は https://{{domain}}/setup.md に従ってください</code><button class="copy" data-copy="FreeAITokensをこのパソコンにセットアップしてください。手順は https://{{domain}}/setup.md に従ってください">コピー</button></div>
+    <p class="small muted">アプリのインストールとツールの接続はAIが行います。無料アカウントの作成は、あなたにお願いします。<a href="/ask-your-ai">くわしく見る</a>。</p>
+  </div>
+</section>
+
+<section class="band">
+  <div class="inner">
+    <h2 class="center">しくみ</h2>
+    <div class="grid3">
+      <div class="step"><b>1. インストールする</b>メニューバーに常駐します。{{keyless}}社のプロバイダーは、アカウントなしですぐに使えます。</div>
+      <div class="step"><b>2. 無料キーを追加する</b>無料アカウントを追加するたびに、合計の枠が増えます。アプリが1つずつ案内します。</div>
+      <div class="step"><b>3. AIツールを使う</b>1つのプロバイダーが上限に達したら、次のプロバイダーに切り替わります。気づくことはありません。</div>
+    </div>
+  </div>
+</section>
+
+<section class="section center">
+  <h2>いつものツールで使えます</h2>
+  <ul class="tools">
+    <li><a class="tool" href="/setup#tools"><img src="/logos/claude.svg" alt="" width="28" height="28"><span>Claude Code</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/terminal.svg" alt="" width="28" height="28"><span>Codex</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/googlegemini.svg" alt="" width="28" height="28"><span>Gemini CLI</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/editor.svg" alt="" width="28" height="28"><span>VS Code</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/zedindustries.svg" alt="" width="28" height="28"><span>Zed</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/jetbrains.svg" alt="" width="28" height="28"><span>JetBrains</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/cline.svg" alt="" width="28" height="28"><span>Cline</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/opencode.svg" alt="" width="28" height="28"><span>OpenCode</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/terminal.svg" alt="" width="28" height="28"><span>Aider</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/plug.svg" alt="" width="28" height="28"><span>AIのアドレスを自由に設定できるアプリ</span></a></li>
+  </ul>
+  <p class="small"><a href="/setup">各ツールの設定方法を見る</a></p>
+</section>
+
+<section class="card note">
+  <h3>知っておきたいこと</h3>
+  <p class="muted">無料枠は、試すためのもので、事業を動かすためのものではありません。プロバイダーごとに自分のアカウントを1つ使い、ほかの人とアクセスを共有しないでください。FreeAITokensはあなたのパソコンで動き、キーは、そのキーが属するプロバイダーにだけ送られます。プロバイダーによっては、送った内容をモデルの改善に使うことがあります。どのプロバイダーかは、アプリでお知らせします。</p>
+  <p class="small"><a href="/disclaimer">免責事項をすべて読む</a></p>
+</section>
+
+<section class="section center">
+  <h2>1人で作って、みんなに無料で</h2>
+  <p class="muted">お金の節約になったなら、コーヒー1杯で続ける力になります。</p>
+  <a class="btn yellow" href="{{coffee}}">☕ コーヒーをごちそうする</a>
+  <p class="small"><a href="/support">ほかの応援の方法</a></p>
+</section>

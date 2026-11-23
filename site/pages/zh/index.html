@@ -1,0 +1,78 @@
+<!-- title: 首页 | description: FreeAITokens 在你自己的电脑上汇集 {{providers}} 家 AI 服务商的免费额度，让你的 AI 工具不用订阅也能一直用。 -->
+<section class="hero">
+  <p class="eyebrow">{{providers}} 家 AI 服务商 · 一个应用 · 免费</p>
+  <h1>免费 AI，不用花钱。</h1>
+  <p class="lead">它默默地把 {{providers}} 家 AI 服务商的免费额度汇集起来，让你的 AI 工具不用订阅也能一直用。每月最多 {{monthly}} 个免费 token。</p>
+  <a class="btn" href="/download" data-download>下载适用于你电脑的版本</a>
+  <p class="also" data-also>支持 Mac、Windows 和 Linux · 免费且开源</p>
+
+  <div class="tabs" role="tablist" aria-label="安装方式">
+    <button role="tab" id="tab-dl" aria-controls="p-dl" aria-selected="false" tabindex="-1">下载</button>
+    <button role="tab" id="tab-term" aria-controls="p-term" aria-selected="true">粘贴到 Terminal</button>
+    <button role="tab" id="tab-ai" aria-controls="p-ai" aria-selected="false" tabindex="-1">让你的 AI 来设置</button>
+  </div>
+
+  <div class="panel" role="tabpanel" id="p-dl" aria-labelledby="tab-dl" hidden>
+    <p>下载应用并打开，它就会出现在菜单栏（Mac）或系统托盘（Windows 和 Linux）里。</p>
+    <p class="small muted">这个应用目前还没有代码签名，所以第一次打开时你的电脑会发出警告。<a href="/download#first-open">如何继续打开</a>。</p>
+  </div>
+
+  <div class="panel" role="tabpanel" id="p-term" aria-labelledby="tab-term">
+    <div data-for="mac linux">
+      <p>打开 Terminal，粘贴下面的命令，按 Return 键：</p>
+      <div class="cmd"><code>curl -fsSL https://{{domain}}/install | sh</code><button class="copy" data-copy="curl -fsSL https://{{domain}}/install | sh">复制</button></div>
+    </div>
+    <div data-for="windows">
+      <p>在 Windows 上，打开 PowerShell，粘贴下面的命令，按 Enter 键：</p>
+      <div class="cmd"><code>irm https://{{domain}}/install.ps1 | iex</code><button class="copy" data-copy="irm https://{{domain}}/install.ps1 | iex">复制</button></div>
+    </div>
+    <p class="small muted">它只会从 GitHub 下载应用并安装，不做别的。<a href="/install-script">这个脚本做了什么？</a></p>
+  </div>
+
+  <div class="panel" role="tabpanel" id="p-ai" aria-labelledby="tab-ai" hidden>
+    <p>在用能运行命令的 AI 助手，比如 Claude、ChatGPT 或 Codex？把下面这句话粘贴给它：</p>
+    <div class="cmd"><code>请按照 https://{{domain}}/setup.md 的说明，在我的电脑上设置好 FreeAITokens</code><button class="copy" data-copy="请按照 https://{{domain}}/setup.md 的说明，在我的电脑上设置好 FreeAITokens">复制</button></div>
+    <p class="small muted">它会安装应用并连接你的工具，免费账号则请你自己创建。<a href="/ask-your-ai">了解更多</a>。</p>
+  </div>
+</section>
+
+<section class="band">
+  <div class="inner">
+    <h2 class="center">它是怎么工作的</h2>
+    <div class="grid3">
+      <div class="step"><b>1. 安装</b>它常驻在菜单栏里。{{keyless}} 家服务商无需账号，装好就能直接用。</div>
+      <div class="step"><b>2. 添加免费密钥</b>每多加一个免费账号，你的总额度就多一份。应用会一步步带你完成。</div>
+      <div class="step"><b>3. 使用你的 AI 工具</b>一家用完了，就自动换到下一家，你完全察觉不到。</div>
+    </div>
+  </div>
+</section>
+
+<section class="section center">
+  <h2>能和你已经在用的工具搭配</h2>
+  <ul class="tools">
+    <li><a class="tool" href="/setup#tools"><img src="/logos/claude.svg" alt="" width="28" height="28"><span>Claude Code</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/terminal.svg" alt="" width="28" height="28"><span>Codex</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/googlegemini.svg" alt="" width="28" height="28"><span>Gemini CLI</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/editor.svg" alt="" width="28" height="28"><span>VS Code</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/zedindustries.svg" alt="" width="28" height="28"><span>Zed</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/jetbrains.svg" alt="" width="28" height="28"><span>JetBrains</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/cline.svg" alt="" width="28" height="28"><span>Cline</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/opencode.svg" alt="" width="28" height="28"><span>OpenCode</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/terminal.svg" alt="" width="28" height="28"><span>Aider</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/plug.svg" alt="" width="28" height="28"><span>任何能自定义 AI 地址的应用</span></a></li>
+  </ul>
+  <p class="small"><a href="/setup">查看各个工具的设置方法</a></p>
+</section>
+
+<section class="card note">
+  <h3>须知</h3>
+  <p class="muted">免费额度是用来试用的，不是用来做生意的。请使用你自己的账号，每家服务商一个，也不要和任何人共享访问权限。FreeAITokens 运行在你自己的电脑上，你的密钥只会发送给它所属的服务商。有些服务商可能会用你发送的内容来改进它们的模型；应用会告诉你是哪几家。</p>
+  <p class="small"><a href="/disclaimer">阅读完整的免责声明</a></p>
+</section>
+
+<section class="section center">
+  <h2>一个人做的，人人免费用</h2>
+  <p class="muted">如果它帮你省了钱，一杯咖啡能让它继续做下去。</p>
+  <a class="btn yellow" href="{{coffee}}">☕ 请我喝杯咖啡</a>
+  <p class="small"><a href="/support">其他帮忙的方式</a></p>
+</section>

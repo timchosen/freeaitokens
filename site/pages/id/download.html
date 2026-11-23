@@ -1,0 +1,42 @@
+<!-- title: Unduh | description: Unduh aplikasi FreeAITokens gratis untuk Mac, Windows, atau Linux, atau pasang dengan satu baris di Terminal. -->
+<div class="page">
+  <h1>Unduh</h1>
+  <p class="lead">Aplikasi FreeAITokens gratis dan open source. Ia berjalan di komputermu sendiri dan muncul di menu bar atau system tray.</p>
+  <p><a class="btn" href="#all" data-download>Unduh untuk komputermu</a></p>
+  <p class="also" data-also>Untuk Mac, Windows, dan Linux · gratis dan open source</p>
+
+  <h2 id="all">Semua unduhan</h2>
+  <ul class="downloads">
+    <li id="mac"><span><b>Mac</b> · Apple silicon dan Intel, macOS 12 atau lebih baru</span><span><a href="{{repoUrl}}/releases/latest/download/FreeAITokens-mac.dmg">.dmg</a> · <a href="{{repoUrl}}/releases/latest/download/FreeAITokens-mac.zip">.zip</a></span></li>
+    <li id="windows"><span><b>Windows</b> · Windows 10 atau 11</span><span><a href="{{repoUrl}}/releases/latest/download/FreeAITokens-windows.exe">Pemasang (.exe)</a></span></li>
+    <li id="linux"><span><b>Linux</b> · AppImage atau paket Debian/Ubuntu</span><span><a href="{{repoUrl}}/releases/latest/download/FreeAITokens-linux-x86_64.AppImage">AppImage</a> · <a href="{{repoUrl}}/releases/latest/download/FreeAITokens-linux-amd64.deb">.deb</a> · <a href="{{repoUrl}}/releases/latest/download/FreeAITokens-linux-arm64.AppImage">AppImage ARM</a> · <a href="{{repoUrl}}/releases/latest/download/FreeAITokens-linux-arm64.deb">.deb ARM</a></span></li>
+  </ul>
+  <p class="small muted">Versi lama dan catatan rilis ada di <a href="{{repoUrl}}/releases">GitHub</a>.</p>
+
+  <h2>Atau pasang dengan satu baris</h2>
+  <p>Mac atau Linux: buka Terminal, tempel ini, tekan Return.</p>
+  <div class="cmd"><code>curl -fsSL https://{{domain}}/install | sh</code><button class="copy" data-copy="curl -fsSL https://{{domain}}/install | sh">Salin</button></div>
+  <p>Windows: buka PowerShell, tempel ini, tekan Enter.</p>
+  <div class="cmd"><code>irm https://{{domain}}/install.ps1 | iex</code><button class="copy" data-copy="irm https://{{domain}}/install.ps1 | iex">Salin</button></div>
+  <p class="small muted"><a href="/install-script">Apa yang dilakukan skrip ini, baris demi baris</a>.</p>
+
+  <h2 id="first-open">Membukanya untuk pertama kali</h2>
+  <p>Aplikasi ini belum ditandatangani kode (penandatanganan butuh biaya tiap tahun). Komputermu memperingatkan soal aplikasi dari pengembang yang tidak dikenalnya. Untuk tetap membukanya:</p>
+  <h3>Mac</h3>
+  <ol>
+    <li>Buka aplikasinya. macOS bilang tidak bisa memeriksanya; klik <b>Done</b> (Selesai).</li>
+    <li>Buka <b>System Settings → Privacy &amp; Security</b>, gulir ke bawah, lalu klik <b>Open Anyway</b> di sebelah FreeAITokens.</li>
+    <li>Konfirmasi dengan kata sandi atau Touch ID. Ini hanya perlu dilakukan sekali.</li>
+  </ol>
+  <p class="small muted">Kalau kamu memasang lewat baris perintah Terminal, langkah ini tidak perlu.</p>
+  <h3>Windows</h3>
+  <ol>
+    <li>Jalankan pemasangnya. Kalau muncul kotak biru "Windows protected your PC", klik <b>More info</b>.</li>
+    <li>Klik <b>Run anyway</b>.</li>
+  </ol>
+  <h3>Linux</h3>
+  <p>Buat AppImage bisa dijalankan (klik kanan → Properties → Allow executing, atau <code>chmod +x</code>) lalu buka. Beberapa sistem juga membutuhkan <code>libfuse2</code> (<code>libfuse2t64</code> di Ubuntu 24.04 ke atas).</p>
+
+  <h2>Lebih suka baris perintah?</h2>
+  <p>Pengembang bisa melewati aplikasi dan menjalankan <code>npx freeaitokens</code> dengan Node.js 20 atau lebih baru. Lihat <a href="/docs#command-line">dokumentasi</a>.</p>
+</div>

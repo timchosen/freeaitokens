@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, readdirSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 // @ts-ignore plain JS module
@@ -88,7 +88,6 @@ test('install script refuses an unsupported system and changes nothing', () => {
 });
 
 test('every page has a title and description, links only to pages that exist, and writes the name FreeAITokens', async () => {
-  const { existsSync } = await import('node:fs');
   const out = mkdtempSync(join(tmpdir(), 'site-'));
   build(out);
   const pages = readdirSync(out).filter((f) => f.endsWith('.html'));
@@ -200,3 +199,61 @@ test('generated pages refuse a provider id that is not a plain slug', () => {
   const p = { id: '../evil', name: 'Evil', keyless: true, models: [] };
   assert.throws(() => generated([p]), /provider id/);
 });
+
+// @ts-ignore plain JS module
+import { checkLocale } from '../site/i18n/check.mjs';
+const locales = JSON.parse(readFileSync(new URL('../site/i18n/locales.json', import.meta.url), 'utf8'));
+const en = JSON.parse(readFileSync(new URL('../site/i18n/en.json', import.meta.url), 'utf8'));
+
+test('the header has a mobile menu button that controls the main nav', () => {
+  const out = mkdtempSync(join(tmpdir(), 'site-'));
+  build(out);
+  const home = readFileSync(join(out, 'index.html'), 'utf8');
+  assert.match(home, /<button class="menu-btn" type="button" aria-expanded="false" aria-controls="menu">/);
+  assert.match(home, /<nav id="menu" aria-label="Main">/);
+});
+
+test('every translation is complete and keeps the English structure', () => {
+  for (const l of locales.filter((x: any) => x.code !== 'en')) assert.deepEqual(checkLocale(l.code), [], l.code);
+});
+
+test('each language gets every page, its own links, a switcher, and the right direction', () => {
+  const out = mkdtempSync(join(tmpdir(), 'site-'));
+  build(out);
+  const english = readdirSync(out).filter((f) => f.endsWith('.html'));
+  for (const l of locales) {
+    const dir = l.code === 'en' ? out : join(out, l.code);
+    for (const f of english) assert.ok(existsSync(join(dir, f)), `${l.code}/${f}`);
+    const home = readFileSync(join(dir, 'index.html'), 'utf8');
+    assert.match(home, new RegExp(`<html lang="${l.lang}" dir="${l.dir}">`), l.code);
+    for (const o of locales) assert.ok(home.includes(`hreflang="${o.lang}" lang="${o.lang}"`), `${l.code} switcher lists ${o.code}`);
+    if (l.code !== 'en') {
+      assert.ok(home.includes(`href="/${l.code}/download"`), `${l.code} links stay in ${l.code}`);
+      assert.ok(home.includes('href="/logo.svg"') || home.includes('src="/logo.svg"'));
+      const t = JSON.parse(readFileSync(new URL(`../site/i18n/${l.code}.json`, import.meta.url), 'utf8'));
+      const provs = readFileSync(join(dir, 'providers.html'), 'utf8');
+      assert.ok(provs.includes(`<h1>${t.providers_title}</h1>`), `${l.code} providers page is translated`);
+      assert.ok(existsSync(join(dir, 'providers', 'groq.html')) && existsSync(join(dir, 'models', 'groq')), l.code);
+    }
+    for (const f of english) for (const [, href] of readFileSync(join(dir, f), 'utf8').matchAll(/href="(\/[^"#]*)/g)) {
+      const path = href.endsWith('/') ? `${href.slice(1)}index.html` : href.slice(1);
+      assert.ok(existsSync(join(out, path)) || existsSync(join(out, `${path}.html`)), `${l.code}/${f} links to missing ${href}`);
+    }
+    for (const f of [join(dir, 'index.html'), join(dir, 'models.html')]) assert.doesNotMatch(readFileSync(f, 'utf8'), /\{\{|\[\[/, f);
+  }
+});
+
+test('model tables stack into labelled cards on phones', () => {
+  const out = mkdtempSync(join(tmpdir(), 'site-'));
+  build(out);
+  const models = readFileSync(join(out, 'models.html'), 'utf8');
+  assert.match(models, /<div class="table stack">/);
+  assert.match(models, /<td data-label="Provider">/);
+});
+
+test('the in-page script strings match en.json', () => {
+  for (const k of Object.keys(en).filter((k) => k.startsWith('js_'))) assert.ok(readFileSync(new URL('../site/static/site.js', import.meta.url), 'utf8').includes(JSON.stringify(en[k])), k);
+  assert.equal(downloadFor('mac').label, 'Download for Mac');
+  assert.equal(downloadFor('mac', false, { js_download_os: 'Descargar para {os}' }).label, 'Descargar para Mac');
+});
+

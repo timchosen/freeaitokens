@@ -1,0 +1,32 @@
+<!-- title: セットアップ | description: FreeAITokensに最初の無料AIキーを追加し、Claude Code、Codex、VS Code、Zedなどのツールを接続します。 -->
+<div class="page">
+  <h1>セットアップ</h1>
+  <p class="lead">手順は2つです。無料キーをいくつか追加して、AIツールをFreeAITokensにつなぎます。</p>
+
+  <h2 id="keys">1. 無料キーを追加する</h2>
+  <p>{{keyless}}社のプロバイダーは、アカウントなしでそのまま使えます。無料アカウントを追加するたびに、使える枠の合計が増えます。</p>
+  <ol>
+    <li>メニューバーまたはシステムトレイのFreeAITokensのアイコンをクリックし、<b>Add a provider</b>（プロバイダーを追加）を選びます。</li>
+    <li>プロバイダーを選びます。アプリが登録ページを開き、何をクリックすればよいかを具体的に案内します。</li>
+    <li>無料アカウントを作り、発行されたキーをコピーして、アプリに貼り付けます。アプリは保存する前にキーを確認します。</li>
+  </ol>
+  <p>最初におすすめなのは、<b>Cerebras</b>と<b>Groq</b>（無料枠が大きい）、<b>OpenRouter</b>（ワンクリックで接続）、<b>Google Gemini</b>です。</p>
+  <p class="small muted">キーはあなたのパソコンに保存されます。キーチェーンがある環境ではキーチェーンに保存され、そのキーが属するプロバイダーにだけ送られます。プロバイダーごとに、自分のアカウントを1つ使ってください。<a href="/disclaimer">これが大切な理由</a>。</p>
+
+  <h2 id="tools">2. ツールを接続する</h2>
+  <p>ローカルアドレスは <code>http://127.0.0.1:4949</code> です。入力を求められたときのために、アプリのメニューには<b>Copy endpoint</b>（エンドポイントをコピー）と<b>Copy local token</b>（ローカルトークンをコピー）があります。</p>
+  <div class="cards">
+    <div class="card"><h3>Claude Code</h3><p>FreeAITokens経由で起動します:</p><div class="cmd"><code>npx freeaitokens claude</code><button class="copy" data-copy="npx freeaitokens claude">コピー</button></div><p class="small muted">無料モデルを使うのはそのセッションだけです。ご自分のアカウントで使うときは、いつもどおり <code>claude</code> を実行してください。</p></div>
+    <div class="card"><h3>Codex</h3><div class="cmd"><code>npx freeaitokens codex</code><button class="copy" data-copy="npx freeaitokens codex">コピー</button></div></div>
+    <div class="card"><h3>Gemini CLI</h3><div class="cmd"><code>npx freeaitokens gemini</code><button class="copy" data-copy="npx freeaitokens gemini">コピー</button></div></div>
+    <div class="card"><h3>OpenCode</h3><div class="cmd"><code>npx freeaitokens setup opencode</code><button class="copy" data-copy="npx freeaitokens setup opencode">コピー</button></div><p class="small muted">そのあと、モデルに <code>freeaitokens/free</code> を選びます。<code>--undo</code> を付けると、元の設定に戻せます。</p></div>
+    <div class="card"><h3>VS Code、Zed、JetBrains</h3><p>エディターの設定に貼り付ける内容がそのまま表示されます:</p><div class="cmd"><code>npx freeaitokens setup vscode</code><button class="copy" data-copy="npx freeaitokens setup vscode">コピー</button></div><p class="small muted"><code>vscode</code> の代わりに <code>zed</code> または <code>jetbrains</code> を使ってください。</p></div>
+    <div class="card"><h3>Cline、Continue、Roo Code、Crush</h3><div class="cmd"><code>npx freeaitokens setup cline</code><button class="copy" data-copy="npx freeaitokens setup cline">コピー</button></div><p class="small muted"><code>cline</code> の代わりに、そのツール自身の名前でも使えます。</p></div>
+    <div class="card"><h3>Kilo Code、Qwen Code、Goose、Aider</h3><div class="cmd"><code>npx freeaitokens aider</code><button class="copy" data-copy="npx freeaitokens aider">コピー</button></div><p class="small muted">または <code>kilo</code>、<code>qwen</code>、<code>goose</code>。</p></div>
+    <div class="card"><h3>そのほかのアプリ</h3><p>カスタムのOpenAIアドレスを設定できるなら:</p><ul class="small"><li>Base URL <code>http://127.0.0.1:4949/v1</code></li><li>Model <code>free</code></li><li>APIキー: アプリのメニューの<b>Copy local token</b></li></ul></div>
+  </div>
+  <p class="small muted">上のコマンドにはNode.jsが必要です。入っていない場合は、この部分を<a href="/ask-your-ai">AIに頼む</a>か、<a href="https://nodejs.org">nodejs.org</a>からNode.jsを入手してください。</p>
+
+  <h2>対応していないもの</h2>
+  <p><b>Cursor</b>は、カスタムアドレスへのリクエストを自社のサーバー経由で送るため、あなたのパソコンには届きません。<b>ChatGPTアプリ</b>は、カスタムアドレスをそもそも使えません。</p>
+</div>

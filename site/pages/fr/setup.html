@@ -1,0 +1,32 @@
+<!-- title: Installation | description: Ajoutez vos premières clés d'IA gratuites à FreeAITokens et connectez Claude Code, Codex, VS Code, Zed et d'autres outils. -->
+<div class="page">
+  <h1>Installation</h1>
+  <p class="lead">Deux étapes : ajoutez quelques clés gratuites, puis dirigez votre outil d'IA vers FreeAITokens.</p>
+
+  <h2 id="keys">1. Ajoutez des clés gratuites</h2>
+  <p>{{keyless}} fournisseurs fonctionnent sans aucun compte. Chaque compte gratuit que vous ajoutez augmente votre total.</p>
+  <ol>
+    <li>Cliquez sur l'icône FreeAITokens dans votre barre des menus ou votre zone de notification et choisissez <b>Add a provider</b> (Ajouter un fournisseur).</li>
+    <li>Choisissez un fournisseur. L'app ouvre sa page d'inscription et vous dit exactement sur quoi cliquer.</li>
+    <li>Créez un compte gratuit, copiez la clé qu'il vous donne et collez-la dans l'app. L'app vérifie la clé avant de l'enregistrer.</li>
+  </ol>
+  <p>Bons fournisseurs pour commencer : <b>Cerebras</b> et <b>Groq</b> (de grosses parts gratuites), <b>OpenRouter</b> (connexion en un clic) et <b>Google Gemini</b>.</p>
+  <p class="small muted">Les clés restent sur votre ordinateur, dans son trousseau quand il en a un, et ne sont jamais envoyées qu'au fournisseur auquel elles appartiennent. Utilisez vos propres comptes, un par fournisseur. <a href="/disclaimer">Pourquoi c'est important</a>.</p>
+
+  <h2 id="tools">2. Connectez votre outil</h2>
+  <p>Votre adresse locale est <code>http://127.0.0.1:4949</code>. Le menu de l'app propose <b>Copy endpoint</b> (Copier l'adresse) et <b>Copy local token</b> (Copier le jeton local) pour tout ce qui les demande.</p>
+  <div class="cards">
+    <div class="card"><h3>Claude Code</h3><p>Lancez-le via FreeAITokens :</p><div class="cmd"><code>npx freeaitokens claude</code><button class="copy" data-copy="npx freeaitokens claude">Copier</button></div><p class="small muted">Seule cette session utilise des modèles gratuits ; lancez <code>claude</code> normalement pour votre propre compte.</p></div>
+    <div class="card"><h3>Codex</h3><div class="cmd"><code>npx freeaitokens codex</code><button class="copy" data-copy="npx freeaitokens codex">Copier</button></div></div>
+    <div class="card"><h3>Gemini CLI</h3><div class="cmd"><code>npx freeaitokens gemini</code><button class="copy" data-copy="npx freeaitokens gemini">Copier</button></div></div>
+    <div class="card"><h3>OpenCode</h3><div class="cmd"><code>npx freeaitokens setup opencode</code><button class="copy" data-copy="npx freeaitokens setup opencode">Copier</button></div><p class="small muted">Choisissez ensuite le modèle <code>freeaitokens/free</code>. <code>--undo</code> rétablit vos anciens réglages.</p></div>
+    <div class="card"><h3>VS Code, Zed, JetBrains</h3><p>Affiche exactement ce qu'il faut coller dans les réglages de l'éditeur :</p><div class="cmd"><code>npx freeaitokens setup vscode</code><button class="copy" data-copy="npx freeaitokens setup vscode">Copier</button></div><p class="small muted">Utilisez <code>zed</code> ou <code>jetbrains</code> à la place de <code>vscode</code>.</p></div>
+    <div class="card"><h3>Cline, Continue, Roo Code, Crush</h3><div class="cmd"><code>npx freeaitokens setup cline</code><button class="copy" data-copy="npx freeaitokens setup cline">Copier</button></div><p class="small muted">Ou le nom de l'outil à la place de <code>cline</code>.</p></div>
+    <div class="card"><h3>Kilo Code, Qwen Code, Goose, Aider</h3><div class="cmd"><code>npx freeaitokens aider</code><button class="copy" data-copy="npx freeaitokens aider">Copier</button></div><p class="small muted">Ou <code>kilo</code>, <code>qwen</code>, <code>goose</code>.</p></div>
+    <div class="card"><h3>Toute autre app</h3><p>Si elle permet de définir une adresse OpenAI personnalisée :</p><ul class="small"><li>URL de base <code>http://127.0.0.1:4949/v1</code></li><li>Modèle <code>free</code></li><li>Clé API : <b>Copy local token</b> dans le menu de l'app</li></ul></div>
+  </div>
+  <p class="small muted">Les commandes ci-dessus demandent Node.js. Si vous ne l'avez pas, <a href="/ask-your-ai">demandez à votre IA</a> de s'occuper de cette partie, ou récupérez Node.js sur <a href="https://nodejs.org">nodejs.org</a>.</p>
+
+  <h2>Pas pris en charge</h2>
+  <p><b>Cursor</b> fait passer les adresses personnalisées par ses propres serveurs, qui ne peuvent pas atteindre votre ordinateur. <b>L'app ChatGPT</b> ne peut pas du tout utiliser d'adresse personnalisée.</p>
+</div>

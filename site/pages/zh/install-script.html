@@ -1,0 +1,23 @@
+<!-- title: 安装脚本 | description: FreeAITokens 一行安装命令到底做了什么，附 macOS、Linux 和 Windows 的完整源码。 -->
+<div class="page">
+  <h1>安装脚本做了什么</h1>
+  <p class="lead">把网站上的命令粘贴到 Terminal 里运行，意味着你信任这个网站。下面是 FreeAITokens 安装程序所做的全部事情，以及它的完整源码。</p>
+
+  <h2>通俗地说</h2>
+  <ol>
+    <li>判断你用的是 Mac、Linux 还是 Windows 电脑。</li>
+    <li>从公开的 <a href="{{repoUrl}}/releases">GitHub 发布页</a>下载最新的 FreeAITokens 应用。</li>
+    <li>Mac：把应用放进“应用程序”文件夹（替换旧版本）并打开。Linux：保存为 <code>~/.local/bin/freeaitokens-app</code>。Windows：运行常规的安装程序。</li>
+    <li>删除下载的文件。除此之外它不会改动任何东西：不要管理员密码，不改设置，也不装其他软件。</li>
+  </ol>
+  <p>整个脚本被包在一个函数里，只在最后一刻才运行，所以下载到一半被中断时，什么也不会发生。</p>
+  <p>想在运行前先读一读：<code>curl -fsSL https://{{domain}}/install | less</code></p>
+
+  <h2>Mac 和 Linux：<a href="/install">/install</a></h2>
+  <pre><code>{{installScript}}</code></pre>
+
+  <h2>Windows：<a href="/install.ps1">/install.ps1</a></h2>
+  <pre><code>{{installPs1}}</code></pre>
+
+  <p class="small muted">这两个文件也都在<a href="{{repoUrl}}/tree/main/site/static">源代码仓库</a>里。发现问题？<a href="{{repoUrl}}/security/policy">请私下报告</a>。</p>
+</div>

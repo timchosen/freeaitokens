@@ -1,0 +1,23 @@
+<!-- title: इंस्टॉल स्क्रिप्ट | description: FreeAITokens का एक-लाइन इंस्टॉलर ठीक-ठीक क्या करता है, macOS, Linux और Windows के लिए उसके पूरे सोर्स के साथ। -->
+<div class="page">
+  <h1>इंस्टॉल स्क्रिप्ट क्या करती है</h1>
+  <p class="lead">किसी वेबसाइट से कमांड कॉपी करके Terminal में पेस्ट करने का मतलब उस वेबसाइट पर भरोसा करना है। यहाँ वह सब है जो FreeAITokens का इंस्टॉलर करता है, और उसका पूरा सोर्स।</p>
+
+  <h2>आसान शब्दों में</h2>
+  <ol>
+    <li>पता लगाती है कि आपके पास Mac, Linux या Windows कंप्यूटर है।</li>
+    <li>FreeAITokens का नया ऐप उसके सार्वजनिक <a href="{{repoUrl}}/releases">GitHub रिलीज़</a> से डाउनलोड करती है।</li>
+    <li>Mac: ऐप को आपके Applications फ़ोल्डर में रखती है (पुरानी कॉपी बदलकर) और खोल देती है। Linux: इसे <code>~/.local/bin/freeaitokens-app</code> के रूप में सेव करती है। Windows: सामान्य इंस्टॉलर चलाती है।</li>
+    <li>डाउनलोड की हुई फ़ाइल मिटा देती है। इसके अलावा कुछ नहीं बदलती: न एडमिन पासवर्ड, न सेटिंग, न कोई दूसरा सॉफ़्टवेयर।</li>
+  </ol>
+  <p>पूरी स्क्रिप्ट एक फ़ंक्शन के अंदर है जो बिल्कुल आख़िर में चलता है, इसलिए अगर डाउनलोड बीच में कट जाए तो कुछ नहीं होता।</p>
+  <p>चलाने से पहले इसे पढ़ने के लिए: <code>curl -fsSL https://{{domain}}/install | less</code></p>
+
+  <h2>Mac और Linux: <a href="/install">/install</a></h2>
+  <pre><code>{{installScript}}</code></pre>
+
+  <h2>Windows: <a href="/install.ps1">/install.ps1</a></h2>
+  <pre><code>{{installPs1}}</code></pre>
+
+  <p class="small muted">दोनों फ़ाइलें <a href="{{repoUrl}}/tree/main/site/static">सोर्स रिपॉज़िटरी</a> में भी हैं। कोई समस्या मिली? <a href="{{repoUrl}}/security/policy">निजी तौर पर बताएँ</a>।</p>
+</div>

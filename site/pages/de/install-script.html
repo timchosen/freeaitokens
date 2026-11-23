@@ -1,0 +1,23 @@
+<!-- title: Das Installationsskript | description: Was der Ein-Zeilen-Installer von FreeAITokens genau macht, mit vollständigem Quelltext für macOS, Linux und Windows. -->
+<div class="page">
+  <h1>Was das Installationsskript macht</h1>
+  <p class="lead">Einen Befehl von einer Website ins Terminal einzufügen heißt, dieser Website zu vertrauen. Hier siehst du alles, was der FreeAITokens-Installer tut, samt vollständigem Quelltext.</p>
+
+  <h2>In einfachen Worten</h2>
+  <ol>
+    <li>Er stellt fest, ob du einen Mac, einen Linux- oder einen Windows-Computer hast.</li>
+    <li>Er lädt die neueste FreeAITokens-App von den öffentlichen <a href="{{repoUrl}}/releases">GitHub-Releases</a> herunter.</li>
+    <li>Mac: Er legt die App in deinen Programme-Ordner (eine ältere Kopie wird ersetzt) und öffnet sie. Linux: Er speichert sie als <code>~/.local/bin/freeaitokens-app</code>. Windows: Er startet das normale Installationsprogramm.</li>
+    <li>Er löscht die heruntergeladene Datei. Sonst ändert er nichts: kein Admin-Passwort, keine Einstellungen, keine andere Software.</li>
+  </ol>
+  <p>Das ganze Skript steckt in einer einzigen Funktion, die erst ganz am Ende läuft. Ein mittendrin abgebrochener Download bewirkt also nichts.</p>
+  <p>So liest du es, bevor du es ausführst: <code>curl -fsSL https://{{domain}}/install | less</code></p>
+
+  <h2>Mac und Linux: <a href="/install">/install</a></h2>
+  <pre><code>{{installScript}}</code></pre>
+
+  <h2>Windows: <a href="/install.ps1">/install.ps1</a></h2>
+  <pre><code>{{installPs1}}</code></pre>
+
+  <p class="small muted">Beide Dateien findest du auch im <a href="{{repoUrl}}/tree/main/site/static">Quellcode-Repository</a>. Ein Problem entdeckt? <a href="{{repoUrl}}/security/policy">Melde es privat</a>.</p>
+</div>

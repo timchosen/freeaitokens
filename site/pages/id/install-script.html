@@ -1,0 +1,23 @@
+<!-- title: Skrip instalasi | description: Persis apa yang dilakukan pemasang satu baris FreeAITokens, lengkap dengan kode sumbernya untuk macOS, Linux, dan Windows. -->
+<div class="page">
+  <h1>Apa yang dilakukan skrip instalasi</h1>
+  <p class="lead">Menempelkan perintah dari sebuah situs web ke Terminal berarti memercayai situs itu. Berikut semua yang dilakukan pemasang FreeAITokens, beserta kode sumber lengkapnya.</p>
+
+  <h2>Dengan kata sederhana</h2>
+  <ol>
+    <li>Mencari tahu apakah komputermu Mac, Linux, atau Windows.</li>
+    <li>Mengunduh aplikasi FreeAITokens terbaru dari <a href="{{repoUrl}}/releases">rilis GitHub</a> publiknya.</li>
+    <li>Mac: menaruh aplikasi di folder Applications (menggantikan salinan lama) lalu membukanya. Linux: menyimpannya sebagai <code>~/.local/bin/freeaitokens-app</code>. Windows: menjalankan pemasang biasa.</li>
+    <li>Menghapus berkas yang diunduh. Tidak ada hal lain yang diubah: tanpa kata sandi admin, tanpa pengaturan, tanpa perangkat lunak lain.</li>
+  </ol>
+  <p>Seluruh skrip berada di dalam satu fungsi yang baru dijalankan di paling akhir, jadi unduhan yang terputus di tengah tidak melakukan apa-apa.</p>
+  <p>Untuk membacanya sebelum menjalankan: <code>curl -fsSL https://{{domain}}/install | less</code></p>
+
+  <h2>Mac dan Linux: <a href="/install">/install</a></h2>
+  <pre><code>{{installScript}}</code></pre>
+
+  <h2>Windows: <a href="/install.ps1">/install.ps1</a></h2>
+  <pre><code>{{installPs1}}</code></pre>
+
+  <p class="small muted">Kedua berkas ini juga ada di <a href="{{repoUrl}}/tree/main/site/static">repositori sumber</a>. Menemukan masalah? <a href="{{repoUrl}}/security/policy">Laporkan secara pribadi</a>.</p>
+</div>

@@ -1,0 +1,78 @@
+<!-- title: Accueil | description: FreeAITokens combine les parts gratuites de {{providers}} fournisseurs d'IA sur votre propre ordinateur, pour que vos outils d'IA continuent de fonctionner sans abonnement. -->
+<section class="hero">
+  <p class="eyebrow">{{providers}} fournisseurs d'IA · une seule app · gratuit</p>
+  <h1>L'IA gratuite, sans la facture.</h1>
+  <p class="lead">Il combine discrètement les parts gratuites de {{providers}} fournisseurs d'IA, pour que vos outils d'IA continuent de fonctionner sans abonnement. Jusqu'à {{monthly}} tokens gratuits par mois.</p>
+  <a class="btn" href="/download" data-download>Télécharger pour votre ordinateur</a>
+  <p class="also" data-also>Pour Mac, Windows et Linux · gratuit et open source</p>
+
+  <div class="tabs" role="tablist" aria-label="Façons d'installer">
+    <button role="tab" id="tab-dl" aria-controls="p-dl" aria-selected="false" tabindex="-1">Télécharger</button>
+    <button role="tab" id="tab-term" aria-controls="p-term" aria-selected="true">Coller dans Terminal</button>
+    <button role="tab" id="tab-ai" aria-controls="p-ai" aria-selected="false" tabindex="-1">Demandez à votre IA</button>
+  </div>
+
+  <div class="panel" role="tabpanel" id="p-dl" aria-labelledby="tab-dl" hidden>
+    <p>Téléchargez l'app, ouvrez-la, et elle apparaît dans votre barre des menus (Mac) ou votre zone de notification (Windows et Linux).</p>
+    <p class="small muted">L'app n'est pas encore signée numériquement, donc la première fois que vous l'ouvrez, votre ordinateur vous avertit. <a href="/download#first-open">Comment l'ouvrir quand même</a>.</p>
+  </div>
+
+  <div class="panel" role="tabpanel" id="p-term" aria-labelledby="tab-term">
+    <div data-for="mac linux">
+      <p>Ouvrez Terminal, collez ceci, appuyez sur Entrée :</p>
+      <div class="cmd"><code>curl -fsSL https://{{domain}}/install | sh</code><button class="copy" data-copy="curl -fsSL https://{{domain}}/install | sh">Copier</button></div>
+    </div>
+    <div data-for="windows">
+      <p>Sous Windows, ouvrez PowerShell, collez ceci, appuyez sur Entrée :</p>
+      <div class="cmd"><code>irm https://{{domain}}/install.ps1 | iex</code><button class="copy" data-copy="irm https://{{domain}}/install.ps1 | iex">Copier</button></div>
+    </div>
+    <p class="small muted">Il télécharge l'app depuis GitHub et l'installe, rien d'autre. <a href="/install-script">Que fait ce script ?</a></p>
+  </div>
+
+  <div class="panel" role="tabpanel" id="p-ai" aria-labelledby="tab-ai" hidden>
+    <p>Vous utilisez un assistant IA capable d'exécuter des commandes, comme Claude, ChatGPT ou Codex ? Collez-lui ceci :</p>
+    <div class="cmd"><code>Installe FreeAITokens sur mon ordinateur en suivant https://{{domain}}/setup.md</code><button class="copy" data-copy="Installe FreeAITokens sur mon ordinateur en suivant https://{{domain}}/setup.md">Copier</button></div>
+    <p class="small muted">Il installe l'app et connecte vos outils, et vous demande de créer vous-même les comptes gratuits. <a href="/ask-your-ai">En savoir plus</a>.</p>
+  </div>
+</section>
+
+<section class="band">
+  <div class="inner">
+    <h2 class="center">Comment ça marche</h2>
+    <div class="grid3">
+      <div class="step"><b>1. Installez-le</b>Il se place dans votre barre des menus. {{keyless}} fournisseurs fonctionnent tout de suite, sans compte.</div>
+      <div class="step"><b>2. Ajoutez des clés gratuites</b>Chaque compte gratuit que vous ajoutez augmente votre total. L'app vous guide pas à pas pour chacun.</div>
+      <div class="step"><b>3. Utilisez vos outils d'IA</b>Quand un fournisseur est à court, il passe au suivant. Vous ne remarquez rien.</div>
+    </div>
+  </div>
+</section>
+
+<section class="section center">
+  <h2>Fonctionne avec les outils que vous utilisez déjà</h2>
+  <ul class="tools">
+    <li><a class="tool" href="/setup#tools"><img src="/logos/claude.svg" alt="" width="28" height="28"><span>Claude Code</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/terminal.svg" alt="" width="28" height="28"><span>Codex</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/googlegemini.svg" alt="" width="28" height="28"><span>Gemini CLI</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/editor.svg" alt="" width="28" height="28"><span>VS Code</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/zedindustries.svg" alt="" width="28" height="28"><span>Zed</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/jetbrains.svg" alt="" width="28" height="28"><span>JetBrains</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/cline.svg" alt="" width="28" height="28"><span>Cline</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/opencode.svg" alt="" width="28" height="28"><span>OpenCode</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/terminal.svg" alt="" width="28" height="28"><span>Aider</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/plug.svg" alt="" width="28" height="28"><span>Toute app avec une adresse d'IA personnalisable</span></a></li>
+  </ul>
+  <p class="small"><a href="/setup">Voir l'installation pour chaque outil</a></p>
+</section>
+
+<section class="card note">
+  <h3>Bon à savoir</h3>
+  <p class="muted">Les parts gratuites servent à essayer, pas à faire tourner une entreprise. Utilisez vos propres comptes, un par fournisseur, et ne partagez l'accès avec personne. FreeAITokens tourne sur votre propre ordinateur, et vos clés ne sont envoyées qu'au fournisseur auquel elles appartiennent. Certains fournisseurs peuvent utiliser ce que vous envoyez pour améliorer leurs modèles ; l'app vous indique lesquels.</p>
+  <p class="small"><a href="/disclaimer">Lire l'avertissement complet</a></p>
+</section>
+
+<section class="section center">
+  <h2>Fait par une personne, gratuit pour tous</h2>
+  <p class="muted">Si cela vous fait économiser de l'argent, un café aide à le faire vivre.</p>
+  <a class="btn yellow" href="{{coffee}}">☕ Offrez-moi un café</a>
+  <p class="small"><a href="/support">Autres façons d'aider</a></p>
+</section>

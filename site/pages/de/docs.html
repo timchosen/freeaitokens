@@ -1,0 +1,82 @@
+<!-- title: Doku | description: Wie FreeAITokens funktioniert: die Kommandozeile, unterstützte Anfrageformate, Embeddings und Bilder, Optionen und alle {{providers}} kostenlosen Anbieter mit ihren Limits. -->
+<div class="page wide">
+  <h1>Doku</h1>
+  <p class="lead">Die Details hinter FreeAITokens, für Entwickler und Neugierige. Wenn du es einfach nur zum Laufen bringen willst, <a href="/download">lade die App herunter</a> und folge der <a href="/setup">Einrichtung</a>.</p>
+
+  <nav class="toc" aria-label="Auf dieser Seite">
+    <ul>
+      <li><a href="#command-line">Kommandozeile</a></li>
+      <li><a href="#tools">Mit deinen Tools nutzen</a></li>
+      <li><a href="#how">Was es tut</a></li>
+      <li><a href="#media">Nicht nur Chat</a></li>
+      <li><a href="#paid">Bezahlte Schlüssel und Optionen</a></li>
+      <li><a href="#providers">Alle {{providers}} Anbieter</a></li>
+      <li><a href="#unsupported">Noch nicht unterstützt</a></li>
+    </ul>
+  </nav>
+
+  <h2 id="command-line">Kommandozeile</h2>
+  <p>Mit Node.js 20 oder neuer brauchst du die App nicht:</p>
+  <pre><code>npx freeaitokens               # start the local endpoint
+npx freeaitokens add           # add a free provider key (guided)
+npx freeaitokens list          # providers, key status, what is left today
+npx freeaitokens remove &lt;id&gt;   # delete a stored key</code></pre>
+  <p>Oder installiere es einmalig: <code>npm install -g freeaitokens</code>. Der Endpunkt lauscht nur auf <code>127.0.0.1:4949</code> und braucht das lokale Token aus dem Startbanner. App und Befehl teilen sich Schlüssel und Einstellungen.</p>
+
+  <h2 id="tools">Mit deinen Tools nutzen</h2>
+  <div class="table"><table>
+    <thead><tr><th>Tool</th><th>So geht's</th></tr></thead>
+    <tbody>
+      <tr><td>Claude Code</td><td><code>npx freeaitokens claude</code> (danach funktionieren beliebige Claude-Code-Argumente)</td></tr>
+      <tr><td>Codex</td><td><code>npx freeaitokens codex</code></td></tr>
+      <tr><td>Gemini CLI</td><td><code>npx freeaitokens gemini</code></td></tr>
+      <tr><td>OpenCode</td><td><code>npx freeaitokens setup opencode</code>, dann das Modell <code>freeaitokens/free</code></td></tr>
+      <tr><td>Kilo Code CLI, Qwen Code, Goose, Aider</td><td><code>npx freeaitokens kilo</code> / <code>qwen</code> / <code>goose</code> / <code>aider</code></td></tr>
+      <tr><td>Zed, JetBrains AI, VS Code</td><td><code>npx freeaitokens setup zed</code> / <code>jetbrains</code> / <code>vscode</code> zeigt, was du einfügen musst</td></tr>
+      <tr><td>Continue, Cline, Crush, Roo Code</td><td><code>npx freeaitokens setup cline</code> (oder der Name des Tools) zeigt die Werte</td></tr>
+      <tr><td>Alles, was OpenAI-kompatibel ist</td><td>Base URL <code>http://127.0.0.1:4949/v1</code>, Modell <code>free</code>, Schlüssel aus dem Startbanner</td></tr>
+      <tr><td>Anthropic-, Gemini- oder Ollama-Clients</td><td>Base URL <code>http://127.0.0.1:4949</code>, derselbe Schlüssel</td></tr>
+    </tbody>
+  </table></div>
+  <p>Die Starter wirken sich nur auf diese eine Sitzung aus und schreiben nichts in die Konfiguration deines Tools. <code>setup opencode</code> fügt einen Anbieter neben deinen bestehenden hinzu und legt eine Sicherung an; <code>--undo</code> stellt sie wieder her.</p>
+
+  <h2 id="how">Was es tut</h2>
+  <ul>
+    <li><b>Wählt pro Anfrage ein Modell.</b> Nur Modelle, die sie bewältigen können: genug Kontext, Tool-Aufrufe, wenn das Tool sie braucht, Bildverständnis, wenn Bilder dabei sind. Es bevorzugt bessere Modelle, die für dich schnell und zuverlässig waren, und bleibt während einer Unterhaltung beim selben Modell, solange kein anderes deutlich besser ist.</li>
+    <li><b>Weicht aus.</b> Bei einem Ratenlimit, Serverfehler oder Timeout versucht es das nächste Modell, bevor dein Tool etwas davon merkt. Wenn alles ausgelastet ist und innerhalb von 30 Sekunden wieder Kapazität frei wird, wartet es; sonst sagt es dir, wann.</li>
+    <li><b>Verfolgt die kostenlosen Limits</b> pro Anbieter, Modell und Schlüssel, pro Minute und pro Tag, und korrigiert sich anhand der Limits, die die Anbieter melden.</li>
+    <li><b>Spricht fünf Formate:</b> OpenAI Chat Completions, Anthropic Messages (Claude Code), OpenAI Responses (Codex), Gemini (Gemini CLI) und Ollama (<code>/api/chat</code>).</li>
+    <li><b>Hält die Anbieterliste aktuell</b>, signiert und vor der Nutzung geprüft, sodass neue kostenlose Modelle ohne Update ankommen.</li>
+  </ul>
+
+  <h2 id="media">Nicht nur Chat</h2>
+  <p>Derselbe Endpunkt nimmt die OpenAI-Routen für Embeddings (<code>/v1/embeddings</code>), einfache Completions (<code>/v1/completions</code>), Bilder (<code>/v1/images/generations</code>), Text zu Sprache (<code>/v1/audio/speech</code>), Transkription (<code>/v1/audio/transcriptions</code>) und Video (<code>/v1/videos</code>) an. Jede geht an einen kostenlosen Anbieter, der sie anbietet, mit demselben Ausweichen und denselben Limits.</p>
+  <ul>
+    <li><b>Heute kostenlos:</b> Embeddings (Gemini, OpenRouter, SEA-LION, Cloudflare, OVH), Completions (Cerebras, OpenRouter, OVH), Bilder (Cloudflare Flux, OpenRouter), Text zu Sprache (Groq, OpenRouter, Cloudflare), Transkription (Groq, Cloudflare, OVH). Kostenloses Video bietet noch kein Anbieter an.</li>
+    <li><b>Embeddings:</b> Vektoren verschiedener Modelle lassen sich nicht vergleichen. Sende den Modellnamen, den die Antwort dir genannt hat (zum Beispiel <code>gemini-embedding-001</code>), dann bleiben spätere Anfragen bei diesem Modell.</li>
+  </ul>
+
+  <h2 id="paid">Bezahlte Schlüssel und Optionen</h2>
+  <p>Bezahlte Schlüssel können als letzter Ausweg unter den kostenlosen stehen: Sie werden nur genutzt, wenn kein kostenloses Modell die Anfrage bedienen kann, jede bezahlte Anfrage wird ausgegeben, und es gibt eine Tagesobergrenze.</p>
+  <div class="table"><table>
+    <thead><tr><th>Option</th><th>Was sie tut</th></tr></thead>
+    <tbody>
+      <tr><td><code>--port &lt;n&gt;</code></td><td>Port für den lokalen Endpunkt (Standard 4949)</td></tr>
+      <tr><td><code>--free-only</code></td><td>Nie bezahlte Schlüssel verwenden</td></tr>
+      <tr><td><code>--paid-cap &lt;n&gt;</code></td><td>Höchstzahl bezahlter Anfragen pro Tag (Standard 200)</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="providers">Alle {{providers}} Anbieter</h2>
+  <p>Zusammen veröffentlichen sie bis zu {{monthly}} kostenlose Tokens pro Monat. Diese Zahl addiert die veröffentlichten kostenlosen Limits und rechnet 2.000 Tokens pro Anfrage, wo nur ein Anfragelimit veröffentlicht ist; das meiste stammt aus wenigen großen Kontingenten, und du bekommst es nur mit einem Schlüssel für jeden Anbieter. Anbieter, die kein Limit veröffentlichen, zählen als null.</p>
+  {{providerTable}}
+
+  <h2 id="unsupported">Noch nicht unterstützt</h2>
+  <ul>
+    <li><b>Cursor:</b> Es schickt den Datenverkehr eigener Endpunkte über seine eigenen Server, die eine lokale Adresse nicht erreichen können.</li>
+    <li><b>Die ChatGPT-App:</b> Sie kann keinen eigenen Endpunkt verwenden.</li>
+    <li>Bildbearbeitung, Audio-Übersetzung, Echtzeit-Sprache.</li>
+    <li>Die Tools für verbundene Apps (MCP) und die Websuche von Codex werden nicht an kostenlose Modelle weitergegeben: Sie bringen mehr Kontext mit, als kostenlose Modelle annehmen.</li>
+  </ul>
+  <p>Quellcode, Issues und die vollständige README: <a href="{{repoUrl}}">GitHub</a>.</p>
+</div>

@@ -1,0 +1,78 @@
+<!-- title: Inicio | description: FreeAITokens combina las cuotas gratuitas de {{providers}} proveedores de IA en tu propio ordenador, para que tus herramientas de IA sigan funcionando sin suscripción. -->
+<section class="hero">
+  <p class="eyebrow">{{providers}} proveedores de IA · una app · gratis</p>
+  <h1>IA gratis, sin facturas.</h1>
+  <p class="lead">Combina en silencio las cuotas gratuitas de {{providers}} proveedores de IA, para que tus herramientas de IA sigan funcionando sin suscripción. Hasta {{monthly}} tokens gratis al mes.</p>
+  <a class="btn" href="/download" data-download>Descargar para tu ordenador</a>
+  <p class="also" data-also>Para Mac, Windows y Linux · gratis y de código abierto</p>
+
+  <div class="tabs" role="tablist" aria-label="Formas de instalar">
+    <button role="tab" id="tab-dl" aria-controls="p-dl" aria-selected="false" tabindex="-1">Descargar</button>
+    <button role="tab" id="tab-term" aria-controls="p-term" aria-selected="true">Pegar en Terminal</button>
+    <button role="tab" id="tab-ai" aria-controls="p-ai" aria-selected="false" tabindex="-1">Pídeselo a tu IA</button>
+  </div>
+
+  <div class="panel" role="tabpanel" id="p-dl" aria-labelledby="tab-dl" hidden>
+    <p>Descarga la app, ábrela y aparecerá en la barra de menús (Mac) o en la bandeja del sistema (Windows y Linux).</p>
+    <p class="small muted">La app aún no está firmada digitalmente, así que la primera vez que la abras tu ordenador te avisará. <a href="/download#first-open">Cómo abrirla de todos modos</a>.</p>
+  </div>
+
+  <div class="panel" role="tabpanel" id="p-term" aria-labelledby="tab-term">
+    <div data-for="mac linux">
+      <p>Abre Terminal, pega esto y pulsa Return:</p>
+      <div class="cmd"><code>curl -fsSL https://{{domain}}/install | sh</code><button class="copy" data-copy="curl -fsSL https://{{domain}}/install | sh">Copiar</button></div>
+    </div>
+    <div data-for="windows">
+      <p>En Windows, abre PowerShell, pega esto y pulsa Enter:</p>
+      <div class="cmd"><code>irm https://{{domain}}/install.ps1 | iex</code><button class="copy" data-copy="irm https://{{domain}}/install.ps1 | iex">Copiar</button></div>
+    </div>
+    <p class="small muted">Descarga la app desde GitHub y la instala, nada más. <a href="/install-script">¿Qué hace este script?</a></p>
+  </div>
+
+  <div class="panel" role="tabpanel" id="p-ai" aria-labelledby="tab-ai" hidden>
+    <p>¿Usas un asistente de IA que puede ejecutar comandos, como Claude, ChatGPT o Codex? Pégale esto:</p>
+    <div class="cmd"><code>Por favor, configura FreeAITokens en mi ordenador siguiendo https://{{domain}}/setup.md</code><button class="copy" data-copy="Por favor, configura FreeAITokens en mi ordenador siguiendo https://{{domain}}/setup.md">Copiar</button></div>
+    <p class="small muted">Instala la app, conecta tus herramientas y te pide que crees tú mismo las cuentas gratuitas. <a href="/ask-your-ai">Más información</a>.</p>
+  </div>
+</section>
+
+<section class="band">
+  <div class="inner">
+    <h2 class="center">Cómo funciona</h2>
+    <div class="grid3">
+      <div class="step"><b>1. Instálalo</b>Se queda en tu barra de menús. {{keyless}} proveedores funcionan de inmediato, sin cuenta.</div>
+      <div class="step"><b>2. Añade claves gratis</b>Cada cuenta gratuita que añades aumenta tu total. La app te guía en cada una.</div>
+      <div class="step"><b>3. Usa tus herramientas de IA</b>Cuando a un proveedor se le acaba la cuota, pasa al siguiente. Ni te enteras.</div>
+    </div>
+  </div>
+</section>
+
+<section class="section center">
+  <h2>Funciona con las herramientas que ya usas</h2>
+  <ul class="tools">
+    <li><a class="tool" href="/setup#tools"><img src="/logos/claude.svg" alt="" width="28" height="28"><span>Claude Code</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/terminal.svg" alt="" width="28" height="28"><span>Codex</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/googlegemini.svg" alt="" width="28" height="28"><span>Gemini CLI</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/editor.svg" alt="" width="28" height="28"><span>VS Code</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/zedindustries.svg" alt="" width="28" height="28"><span>Zed</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/jetbrains.svg" alt="" width="28" height="28"><span>JetBrains</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/cline.svg" alt="" width="28" height="28"><span>Cline</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/opencode.svg" alt="" width="28" height="28"><span>OpenCode</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/terminal.svg" alt="" width="28" height="28"><span>Aider</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/plug.svg" alt="" width="28" height="28"><span>Cualquier app con una dirección de IA personalizada</span></a></li>
+  </ul>
+  <p class="small"><a href="/setup">Ver la configuración para cada herramienta</a></p>
+</section>
+
+<section class="card note">
+  <h3>Conviene saber</h3>
+  <p class="muted">Las cuotas gratuitas sirven para probar, no para llevar un negocio. Usa tus propias cuentas, una por proveedor, y no compartas el acceso con nadie. FreeAITokens funciona en tu propio ordenador, y tus claves solo se envían al proveedor al que pertenecen. Algunos proveedores pueden usar lo que envías para mejorar sus modelos; la app te dice cuáles.</p>
+  <p class="small"><a href="/disclaimer">Lee el aviso legal completo</a></p>
+</section>
+
+<section class="section center">
+  <h2>Hecho por una persona, gratis para todos</h2>
+  <p class="muted">Si te ahorra dinero, un café ayuda a que siga adelante.</p>
+  <a class="btn yellow" href="{{coffee}}">☕ Invítame a un café</a>
+  <p class="small"><a href="/support">Otras formas de ayudar</a></p>
+</section>

@@ -1,0 +1,78 @@
+<!-- title: Beranda | description: FreeAITokens menggabungkan jatah gratis dari {{providers}} penyedia AI di komputermu sendiri, supaya alat AI-mu tetap jalan tanpa langganan. -->
+<section class="hero">
+  <p class="eyebrow">{{providers}} penyedia AI · satu aplikasi · gratis</p>
+  <h1>AI gratis, tanpa tagihan.</h1>
+  <p class="lead">Diam-diam ia menggabungkan jatah gratis dari {{providers}} penyedia AI, supaya alat AI-mu tetap jalan tanpa langganan. Hingga {{monthly}} token gratis per bulan.</p>
+  <a class="btn" href="/download" data-download>Unduh untuk komputermu</a>
+  <p class="also" data-also>Untuk Mac, Windows, dan Linux · gratis dan open source</p>
+
+  <div class="tabs" role="tablist" aria-label="Cara memasang">
+    <button role="tab" id="tab-dl" aria-controls="p-dl" aria-selected="false" tabindex="-1">Unduh</button>
+    <button role="tab" id="tab-term" aria-controls="p-term" aria-selected="true">Tempel di Terminal</button>
+    <button role="tab" id="tab-ai" aria-controls="p-ai" aria-selected="false" tabindex="-1">Tanya AI-mu</button>
+  </div>
+
+  <div class="panel" role="tabpanel" id="p-dl" aria-labelledby="tab-dl" hidden>
+    <p>Unduh aplikasinya, buka, dan ia muncul di menu bar (Mac) atau system tray (Windows dan Linux).</p>
+    <p class="small muted">Aplikasi ini belum ditandatangani kode, jadi saat pertama kali dibuka komputermu akan memberi peringatan. <a href="/download#first-open">Cara tetap membukanya</a>.</p>
+  </div>
+
+  <div class="panel" role="tabpanel" id="p-term" aria-labelledby="tab-term">
+    <div data-for="mac linux">
+      <p>Buka Terminal, tempel ini, tekan Return:</p>
+      <div class="cmd"><code>curl -fsSL https://{{domain}}/install | sh</code><button class="copy" data-copy="curl -fsSL https://{{domain}}/install | sh">Salin</button></div>
+    </div>
+    <div data-for="windows">
+      <p>Di Windows, buka PowerShell, tempel ini, tekan Enter:</p>
+      <div class="cmd"><code>irm https://{{domain}}/install.ps1 | iex</code><button class="copy" data-copy="irm https://{{domain}}/install.ps1 | iex">Salin</button></div>
+    </div>
+    <p class="small muted">Ia mengunduh aplikasinya dari GitHub dan memasangnya, tidak lebih. <a href="/install-script">Apa yang dilakukan skrip ini?</a></p>
+  </div>
+
+  <div class="panel" role="tabpanel" id="p-ai" aria-labelledby="tab-ai" hidden>
+    <p>Memakai asisten AI yang bisa menjalankan perintah, seperti Claude, ChatGPT, atau Codex? Tempelkan ini ke dia:</p>
+    <div class="cmd"><code>Tolong pasang dan siapkan FreeAITokens di komputerku dengan mengikuti https://{{domain}}/setup.md</code><button class="copy" data-copy="Tolong pasang dan siapkan FreeAITokens di komputerku dengan mengikuti https://{{domain}}/setup.md">Salin</button></div>
+    <p class="small muted">Ia memasang aplikasinya dan menyambungkan alatmu, lalu memintamu membuat sendiri akun gratisnya. <a href="/ask-your-ai">Selengkapnya</a>.</p>
+  </div>
+</section>
+
+<section class="band">
+  <div class="inner">
+    <h2 class="center">Cara kerjanya</h2>
+    <div class="grid3">
+      <div class="step"><b>1. Pasang</b>Ia berada di menu bar-mu. {{keyless}} penyedia langsung bisa dipakai, tanpa akun.</div>
+      <div class="step"><b>2. Tambahkan kunci gratis</b>Setiap akun gratis yang kamu tambahkan menaikkan totalmu. Aplikasi memandumu untuk tiap penyedia.</div>
+      <div class="step"><b>3. Pakai alat AI-mu</b>Saat satu penyedia habis, ia pindah ke yang berikutnya. Kamu tidak akan menyadarinya.</div>
+    </div>
+  </div>
+</section>
+
+<section class="section center">
+  <h2>Cocok dengan alat yang sudah kamu pakai</h2>
+  <ul class="tools">
+    <li><a class="tool" href="/setup#tools"><img src="/logos/claude.svg" alt="" width="28" height="28"><span>Claude Code</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/terminal.svg" alt="" width="28" height="28"><span>Codex</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/googlegemini.svg" alt="" width="28" height="28"><span>Gemini CLI</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/editor.svg" alt="" width="28" height="28"><span>VS Code</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/zedindustries.svg" alt="" width="28" height="28"><span>Zed</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/jetbrains.svg" alt="" width="28" height="28"><span>JetBrains</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/cline.svg" alt="" width="28" height="28"><span>Cline</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/opencode.svg" alt="" width="28" height="28"><span>OpenCode</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/terminal.svg" alt="" width="28" height="28"><span>Aider</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/plug.svg" alt="" width="28" height="28"><span>Aplikasi apa pun dengan alamat AI khusus</span></a></li>
+  </ul>
+  <p class="small"><a href="/setup">Lihat pengaturan untuk tiap alat</a></p>
+</section>
+
+<section class="card note">
+  <h3>Perlu diketahui</h3>
+  <p class="muted">Jatah gratis ditujukan untuk mencoba-coba, bukan untuk menjalankan bisnis. Pakai akunmu sendiri, satu per penyedia, dan jangan bagikan akses ke siapa pun. FreeAITokens berjalan di komputermu sendiri, dan kunci-kuncimu hanya dikirim ke penyedia pemiliknya. Sebagian penyedia mungkin memakai apa yang kamu kirim untuk memperbaiki model mereka; aplikasi memberi tahu yang mana.</p>
+  <p class="small"><a href="/disclaimer">Baca sanggahan lengkapnya</a></p>
+</section>
+
+<section class="section center">
+  <h2>Dibuat oleh satu orang, gratis untuk semua</h2>
+  <p class="muted">Kalau ia menghemat uangmu, secangkir kopi membuatnya terus berjalan.</p>
+  <a class="btn yellow" href="{{coffee}}">☕ Traktir saya kopi</a>
+  <p class="small"><a href="/support">Cara lain untuk membantu</a></p>
+</section>

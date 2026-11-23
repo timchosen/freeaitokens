@@ -1,0 +1,42 @@
+<!-- title: 下载 | description: 下载适用于 Mac、Windows 或 Linux 的免费 FreeAITokens 应用，或在 Terminal 里用一行命令安装。 -->
+<div class="page">
+  <h1>下载</h1>
+  <p class="lead">FreeAITokens 应用免费且开源。它运行在你自己的电脑上，常驻在菜单栏或系统托盘里。</p>
+  <p><a class="btn" href="#all" data-download>下载适用于你电脑的版本</a></p>
+  <p class="also" data-also>支持 Mac、Windows 和 Linux · 免费且开源</p>
+
+  <h2 id="all">所有下载</h2>
+  <ul class="downloads">
+    <li id="mac"><span><b>Mac</b> · Apple 芯片和 Intel，macOS 12 或更新版本</span><span><a href="{{repoUrl}}/releases/latest/download/FreeAITokens-mac.dmg">.dmg</a> · <a href="{{repoUrl}}/releases/latest/download/FreeAITokens-mac.zip">.zip</a></span></li>
+    <li id="windows"><span><b>Windows</b> · Windows 10 或 11</span><span><a href="{{repoUrl}}/releases/latest/download/FreeAITokens-windows.exe">安装程序 (.exe)</a></span></li>
+    <li id="linux"><span><b>Linux</b> · AppImage 或 Debian/Ubuntu 安装包</span><span><a href="{{repoUrl}}/releases/latest/download/FreeAITokens-linux-x86_64.AppImage">AppImage</a> · <a href="{{repoUrl}}/releases/latest/download/FreeAITokens-linux-amd64.deb">.deb</a> · <a href="{{repoUrl}}/releases/latest/download/FreeAITokens-linux-arm64.AppImage">ARM AppImage</a> · <a href="{{repoUrl}}/releases/latest/download/FreeAITokens-linux-arm64.deb">ARM .deb</a></span></li>
+  </ul>
+  <p class="small muted">旧版本和更新说明在 <a href="{{repoUrl}}/releases">GitHub</a> 上。</p>
+
+  <h2>或者用一行命令安装</h2>
+  <p>Mac 或 Linux：打开 Terminal，粘贴下面的命令，按 Return 键。</p>
+  <div class="cmd"><code>curl -fsSL https://{{domain}}/install | sh</code><button class="copy" data-copy="curl -fsSL https://{{domain}}/install | sh">复制</button></div>
+  <p>Windows：打开 PowerShell，粘贴下面的命令，按 Enter 键。</p>
+  <div class="cmd"><code>irm https://{{domain}}/install.ps1 | iex</code><button class="copy" data-copy="irm https://{{domain}}/install.ps1 | iex">复制</button></div>
+  <p class="small muted"><a href="/install-script">这些脚本逐行都做了什么</a>。</p>
+
+  <h2 id="first-open">第一次打开</h2>
+  <p>这个应用目前还没有代码签名（签名每年都要花钱）。你的电脑会对来自它不认识的开发者的应用发出警告。想继续打开，请这样做：</p>
+  <h3>Mac</h3>
+  <ol>
+    <li>打开应用。macOS 会提示无法验证它；点击<b>完成</b>。</li>
+    <li>打开<b>系统设置 → 隐私与安全性</b>，向下滚动，点击 FreeAITokens 旁边的<b>仍要打开</b>。</li>
+    <li>用你的密码或触控 ID 确认。只需要做这一次。</li>
+  </ol>
+  <p class="small muted">如果你是用 Terminal 里的那行命令安装的，就不需要这一步。</p>
+  <h3>Windows</h3>
+  <ol>
+    <li>运行安装程序。如果出现蓝色的“Windows 已保护你的电脑”窗口，点击<b>更多信息</b>。</li>
+    <li>点击<b>仍要运行</b>。</li>
+  </ol>
+  <h3>Linux</h3>
+  <p>让 AppImage 可以运行（右键 → 属性 → 允许执行，或用 <code>chmod +x</code>），然后打开它。有些系统还需要 <code>libfuse2</code>（Ubuntu 24.04 及更新版本上是 <code>libfuse2t64</code>）。</p>
+
+  <h2>更喜欢命令行？</h2>
+  <p>开发者可以跳过应用，在装有 Node.js 20 或更新版本的电脑上直接运行 <code>npx freeaitokens</code>。详见<a href="/docs#command-line">文档</a>。</p>
+</div>

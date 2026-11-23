@@ -1,0 +1,82 @@
+<!-- title: डॉक्स | description: FreeAITokens कैसे काम करता है: कमांड लाइन, सपोर्टेड रिक्वेस्ट फ़ॉर्मैट, एम्बेडिंग और इमेज, विकल्प, और सभी {{providers}} मुफ़्त प्रोवाइडर उनकी सीमाओं के साथ। -->
+<div class="page wide">
+  <h1>डॉक्स</h1>
+  <p class="lead">FreeAITokens के पीछे की बारीकियाँ, डेवलपर और जिज्ञासु लोगों के लिए। अगर आपको बस इसे चालू करना है, तो <a href="/download">ऐप डाउनलोड करें</a> और <a href="/setup">सेटअप</a> फ़ॉलो करें।</p>
+
+  <nav class="toc" aria-label="इस पेज पर">
+    <ul>
+      <li><a href="#command-line">कमांड लाइन</a></li>
+      <li><a href="#tools">अपने टूल के साथ इस्तेमाल करें</a></li>
+      <li><a href="#how">यह क्या करता है</a></li>
+      <li><a href="#media">सिर्फ़ चैट नहीं</a></li>
+      <li><a href="#paid">पेड keys और विकल्प</a></li>
+      <li><a href="#providers">सभी {{providers}} प्रोवाइडर</a></li>
+      <li><a href="#unsupported">अभी सपोर्ट नहीं है</a></li>
+    </ul>
+  </nav>
+
+  <h2 id="command-line">कमांड लाइन</h2>
+  <p>Node.js 20 या नए वर्शन के साथ आपको ऐप की ज़रूरत नहीं:</p>
+  <pre><code>npx freeaitokens               # start the local endpoint
+npx freeaitokens add           # add a free provider key (guided)
+npx freeaitokens list          # providers, key status, what is left today
+npx freeaitokens remove &lt;id&gt;   # delete a stored key</code></pre>
+  <p>या इसे एक बार इंस्टॉल कर लें: <code>npm install -g freeaitokens</code>। एंडपॉइंट सिर्फ़ <code>127.0.0.1:4949</code> पर सुनता है और उसे शुरू होते समय दिखे बैनर वाला लोकल टोकन चाहिए। ऐप और कमांड, keys और सेटिंग आपस में साझा करते हैं।</p>
+
+  <h2 id="tools">अपने टूल के साथ इस्तेमाल करें</h2>
+  <div class="table"><table>
+    <thead><tr><th>टूल</th><th>कैसे</th></tr></thead>
+    <tbody>
+      <tr><td>Claude Code</td><td><code>npx freeaitokens claude</code> (इसके बाद Claude Code के कोई भी आर्गुमेंट चलते हैं)</td></tr>
+      <tr><td>Codex</td><td><code>npx freeaitokens codex</code></td></tr>
+      <tr><td>Gemini CLI</td><td><code>npx freeaitokens gemini</code></td></tr>
+      <tr><td>OpenCode</td><td><code>npx freeaitokens setup opencode</code>, फिर मॉडल <code>freeaitokens/free</code></td></tr>
+      <tr><td>Kilo Code CLI, Qwen Code, Goose, Aider</td><td><code>npx freeaitokens kilo</code> / <code>qwen</code> / <code>goose</code> / <code>aider</code></td></tr>
+      <tr><td>Zed, JetBrains AI, VS Code</td><td><code>npx freeaitokens setup zed</code> / <code>jetbrains</code> / <code>vscode</code> बताता है कि क्या पेस्ट करना है</td></tr>
+      <tr><td>Continue, Cline, Crush, Roo Code</td><td><code>npx freeaitokens setup cline</code> (या उस टूल का नाम) वैल्यू छाप देता है</td></tr>
+      <tr><td>OpenAI-कम्पैटिबल कुछ भी</td><td>Base URL <code>http://127.0.0.1:4949/v1</code>, मॉडल <code>free</code>, key स्टार्टअप बैनर से</td></tr>
+      <tr><td>Anthropic, Gemini या Ollama क्लाइंट</td><td>Base URL <code>http://127.0.0.1:4949</code>, वही key</td></tr>
+    </tbody>
+  </table></div>
+  <p>लॉन्चर सिर्फ़ उसी एक सेशन पर असर डालते हैं और आपके टूल के कॉन्फ़िग में कुछ नहीं लिखते। <code>setup opencode</code> आपके मौजूदा प्रोवाइडर के बगल में एक प्रोवाइडर जोड़ता है और बैकअप रखता है; <code>--undo</code> उसे वापस ले आता है।</p>
+
+  <h2 id="how">यह क्या करता है</h2>
+  <ul>
+    <li><b>हर रिक्वेस्ट के लिए मॉडल चुनता है।</b> सिर्फ़ वे मॉडल जो उसे संभाल सकें: काफ़ी कॉन्टेक्स्ट, टूल को ज़रूरत हो तो टूल कॉलिंग, इमेज हों तो इमेज पढ़ना। यह उन बेहतर मॉडल को तरजीह देता है जो आपके लिए तेज़ और भरोसेमंद रहे हैं, और पूरी बातचीत में उसी मॉडल पर टिका रहता है जब तक कोई दूसरा साफ़ तौर पर बेहतर न हो।</li>
+    <li><b>फ़ेलओवर करता है।</b> रेट लिमिट, सर्वर एरर या टाइमआउट पर, आपके टूल को कुछ पता चलने से पहले ही यह अगला मॉडल आज़मा लेता है। अगर सब व्यस्त हों और 30 सेकंड में क्षमता लौट आए तो यह इंतज़ार करता है; वरना बता देता है कि कब।</li>
+    <li><b>मुफ़्त सीमाओं का हिसाब रखता है</b> हर प्रोवाइडर, मॉडल और key के लिए, मिनट और दिन के हिसाब से, और प्रोवाइडर जो सीमाएँ बताते हैं उनसे खुद को सुधारता रहता है।</li>
+    <li><b>पाँच फ़ॉर्मैट समझता है:</b> OpenAI chat completions, Anthropic Messages (Claude Code), OpenAI Responses (Codex), Gemini (Gemini CLI) और Ollama (<code>/api/chat</code>)।</li>
+    <li><b>प्रोवाइडर की अप-टू-डेट सूची रखता है</b>, हस्ताक्षरित और इस्तेमाल से पहले जाँची हुई, इसलिए बिना अपडेट के नए मुफ़्त मॉडल आ जाते हैं।</li>
+  </ul>
+
+  <h2 id="media">सिर्फ़ चैट नहीं</h2>
+  <p>यही एंडपॉइंट एम्बेडिंग (<code>/v1/embeddings</code>), सादे कम्प्लीशन (<code>/v1/completions</code>), इमेज (<code>/v1/images/generations</code>), टेक्स्ट से आवाज़ (<code>/v1/audio/speech</code>), आवाज़ से टेक्स्ट (<code>/v1/audio/transcriptions</code>) और वीडियो (<code>/v1/videos</code>) के OpenAI रूट भी लेता है। हर रिक्वेस्ट ऐसे मुफ़्त प्रोवाइडर को भेजी जाती है जो यह देता हो, उसी फ़ेलओवर और सीमाओं के साथ।</p>
+  <ul>
+    <li><b>आज मुफ़्त में:</b> एम्बेडिंग (Gemini, OpenRouter, SEA-LION, Cloudflare, OVH), कम्प्लीशन (Cerebras, OpenRouter, OVH), इमेज (Cloudflare Flux, OpenRouter), टेक्स्ट से आवाज़ (Groq, OpenRouter, Cloudflare), आवाज़ से टेक्स्ट (Groq, Cloudflare, OVH)। अभी कोई प्रोवाइडर मुफ़्त वीडियो नहीं देता।</li>
+    <li><b>एम्बेडिंग:</b> अलग-अलग मॉडल के वेक्टर की आपस में तुलना नहीं हो सकती। जवाब में मिला मॉडल का नाम भेजें (जैसे <code>gemini-embedding-001</code>) और बाद की रिक्वेस्ट उसी पर बनी रहेंगी।</li>
+  </ul>
+
+  <h2 id="paid">पेड keys और विकल्प</h2>
+  <p>पेड keys मुफ़्त वाली keys के नीचे आख़िरी सहारे के तौर पर रखी जा सकती हैं: ये तभी इस्तेमाल होती हैं जब कोई मुफ़्त मॉडल रिक्वेस्ट न संभाल सके, हर पेड रिक्वेस्ट छापी जाती है, और रोज़ की एक सीमा होती है।</p>
+  <div class="table"><table>
+    <thead><tr><th>विकल्प</th><th>यह क्या करता है</th></tr></thead>
+    <tbody>
+      <tr><td><code>--port &lt;n&gt;</code></td><td>लोकल एंडपॉइंट का पोर्ट (डिफ़ॉल्ट 4949)</td></tr>
+      <tr><td><code>--free-only</code></td><td>पेड keys कभी इस्तेमाल न करें</td></tr>
+      <tr><td><code>--paid-cap &lt;n&gt;</code></td><td>रोज़ की ज़्यादा से ज़्यादा पेड रिक्वेस्ट (डिफ़ॉल्ट 200)</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="providers">सभी {{providers}} प्रोवाइडर</h2>
+  <p>ये सब मिलकर महीने में {{monthly}} तक मुफ़्त टोकन देते हैं। यह आँकड़ा प्रकाशित मुफ़्त सीमाओं को जोड़कर बनता है, और जहाँ सिर्फ़ रिक्वेस्ट की सीमा प्रकाशित है वहाँ हर रिक्वेस्ट के 2,000 टोकन गिने जाते हैं; इसका ज़्यादातर हिस्सा कुछ बड़े कोटों से आता है, और वह तभी मिलता है जब आपके पास हर प्रोवाइडर की key हो। जो प्रोवाइडर कोई सीमा प्रकाशित नहीं करते, उन्हें शून्य गिना जाता है।</p>
+  {{providerTable}}
+
+  <h2 id="unsupported">अभी सपोर्ट नहीं है</h2>
+  <ul>
+    <li><b>Cursor:</b> यह कस्टम-एंडपॉइंट का ट्रैफ़िक अपने सर्वर से होकर भेजता है, जो लोकल एड्रेस तक नहीं पहुँच सकते।</li>
+    <li><b>ChatGPT ऐप:</b> यह कस्टम एंडपॉइंट इस्तेमाल नहीं कर सकता।</li>
+    <li>इमेज एडिटिंग, ऑडियो ट्रांसलेशन, रियलटाइम वॉइस।</li>
+    <li>Codex के कनेक्टेड-ऐप (MCP) टूल और वेब सर्च मुफ़्त मॉडल को नहीं भेजे जाते: वे इतना ज़्यादा कॉन्टेक्स्ट जोड़ देते हैं जितना मुफ़्त मॉडल नहीं ले सकते।</li>
+  </ul>
+  <p>सोर्स कोड, issues और पूरा README: <a href="{{repoUrl}}">GitHub</a>।</p>
+</div>

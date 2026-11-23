@@ -1,0 +1,82 @@
+<!-- title: التوثيق | description: كيف يعمل FreeAITokens: سطر الأوامر، وصيغ الطلبات المدعومة، والتضمينات والصور، والخيارات، وكل المزوِّدين المجانيين الـ {{providers}} مع حدودهم. -->
+<div class="page wide">
+  <h1>التوثيق</h1>
+  <p class="lead">التفاصيل خلف FreeAITokens، للمطوّرين ولمن يحب الاطلاع. إذا كنت تريد فقط أن يعمل، <a href="/download">نزّل التطبيق</a> واتبع <a href="/setup">الإعداد</a>.</p>
+
+  <nav class="toc" aria-label="في هذه الصفحة">
+    <ul>
+      <li><a href="#command-line">سطر الأوامر</a></li>
+      <li><a href="#tools">استخدمه مع أدواتك</a></li>
+      <li><a href="#how">ماذا يفعل</a></li>
+      <li><a href="#media">ليس للمحادثة فقط</a></li>
+      <li><a href="#paid">المفاتيح المدفوعة والخيارات</a></li>
+      <li><a href="#providers">كل المزوِّدين الـ {{providers}}</a></li>
+      <li><a href="#unsupported">غير مدعوم بعد</a></li>
+    </ul>
+  </nav>
+
+  <h2 id="command-line">سطر الأوامر</h2>
+  <p>مع Node.js 20 أو أحدث لا تحتاج إلى التطبيق:</p>
+  <pre><code>npx freeaitokens               # start the local endpoint
+npx freeaitokens add           # add a free provider key (guided)
+npx freeaitokens list          # providers, key status, what is left today
+npx freeaitokens remove &lt;id&gt;   # delete a stored key</code></pre>
+  <p>أو ثبّته مرة واحدة: <code>npm install -g freeaitokens</code>. يستمع العنوان المحلي إلى <code>127.0.0.1:4949</code> فقط، ويحتاج إلى الرمز المحلي الظاهر في شاشة البدء. يتشارك التطبيق والأمر المفاتيح والإعدادات.</p>
+
+  <h2 id="tools">استخدمه مع أدواتك</h2>
+  <div class="table"><table>
+    <thead><tr><th>الأداة</th><th>الطريقة</th></tr></thead>
+    <tbody>
+      <tr><td>Claude Code</td><td><code>npx freeaitokens claude</code> (تعمل بعده أي وسائط خاصة بـ Claude Code)</td></tr>
+      <tr><td>Codex</td><td><code>npx freeaitokens codex</code></td></tr>
+      <tr><td>Gemini CLI</td><td><code>npx freeaitokens gemini</code></td></tr>
+      <tr><td>OpenCode</td><td><code>npx freeaitokens setup opencode</code>، ثم النموذج <code>freeaitokens/free</code></td></tr>
+      <tr><td>Kilo Code CLI, Qwen Code, Goose, Aider</td><td><code>npx freeaitokens kilo</code> / <code>qwen</code> / <code>goose</code> / <code>aider</code></td></tr>
+      <tr><td>Zed, JetBrains AI, VS Code</td><td><code>npx freeaitokens setup zed</code> / <code>jetbrains</code> / <code>vscode</code> يطبع ما يجب لصقه</td></tr>
+      <tr><td>Continue, Cline, Crush, Roo Code</td><td><code>npx freeaitokens setup cline</code> (أو اسم الأداة) يطبع القيم</td></tr>
+      <tr><td>أي شيء متوافق مع OpenAI</td><td>العنوان الأساسي <code>http://127.0.0.1:4949/v1</code>، والنموذج <code>free</code>، والمفتاح من شاشة البدء</td></tr>
+      <tr><td>عملاء Anthropic أو Gemini أو Ollama</td><td>العنوان الأساسي <code>http://127.0.0.1:4949</code>، والمفتاح نفسه</td></tr>
+    </tbody>
+  </table></div>
+  <p>تؤثر أدوات التشغيل هذه في الجلسة الواحدة فقط ولا تكتب شيئًا في إعدادات أداتك. أما <code>setup opencode</code> فيضيف مزوِّدًا بجانب مزوِّديك الحاليين ويحتفظ بنسخة احتياطية؛ ويستعيدها <code>--undo</code>.</p>
+
+  <h2 id="how">ماذا يفعل</h2>
+  <ul>
+    <li><b>يختار نموذجًا لكل طلب.</b> فقط النماذج القادرة على تنفيذه: سياق كافٍ، واستدعاء الأدوات حين تحتاجه الأداة، وقراءة الصور حين توجد صور. يفضّل النماذج الأفضل التي كانت سريعة وموثوقة معك، ويبقى على النموذج نفسه خلال المحادثة ما لم يكن غيره أفضل بوضوح.</li>
+    <li><b>ينتقل عند الفشل.</b> عند بلوغ حد الاستخدام أو خطأ في الخادم أو انتهاء المهلة يجرّب النموذج التالي قبل أن ترى أداتك شيئًا. وإذا كان كل شيء مشغولًا وستعود السعة خلال 30 ثانية فإنه ينتظر؛ وإلا يخبرك متى.</li>
+    <li><b>يتتبع الحدود المجانية</b> لكل مزوِّد ونموذج ومفتاح، بالدقيقة وباليوم، ويصحّح نفسه من الحدود التي يبلغ بها المزوِّدون.</li>
+    <li><b>يتحدث خمس صيغ:</b> OpenAI chat completions، وAnthropic Messages (لـ Claude Code)، وOpenAI Responses (لـ Codex)، وGemini (لـ Gemini CLI)، وOllama (<code>/api/chat</code>).</li>
+    <li><b>يحتفظ بقائمة مزوِّدين محدّثة</b>، موقَّعة ويجري التحقق منها قبل الاستخدام، فتصل النماذج المجانية الجديدة دون تحديث.</li>
+  </ul>
+
+  <h2 id="media">ليس للمحادثة فقط</h2>
+  <p>يقبل العنوان نفسه مسارات OpenAI الخاصة بالتضمينات (<code>/v1/embeddings</code>) والإكمال النصي العادي (<code>/v1/completions</code>) والصور (<code>/v1/images/generations</code>) وتحويل النص إلى كلام (<code>/v1/audio/speech</code>) وتفريغ الصوت إلى نص (<code>/v1/audio/transcriptions</code>) والفيديو (<code>/v1/videos</code>)، ويرسل كلًّا منها إلى مزوِّد مجاني يقدّمه، مع الانتقال عند الفشل والحدود نفسها.</p>
+  <ul>
+    <li><b>مجاني اليوم:</b> التضمينات (Gemini وOpenRouter وSEA-LION وCloudflare وOVH)، والإكمال النصي (Cerebras وOpenRouter وOVH)، والصور (Cloudflare Flux وOpenRouter)، وتحويل النص إلى كلام (Groq وOpenRouter وCloudflare)، وتفريغ الصوت (Groq وCloudflare وOVH). لا يقدّم أي مزوِّد فيديو مجانيًا حتى الآن.</li>
+    <li><b>التضمينات:</b> لا يمكن مقارنة المتجهات الصادرة من نماذج مختلفة. أرسل اسم النموذج الذي أعطاك إياه الرد (مثل <code>gemini-embedding-001</code>) فتبقى الطلبات اللاحقة عليه.</li>
+  </ul>
+
+  <h2 id="paid">المفاتيح المدفوعة والخيارات</h2>
+  <p>يمكن وضع المفاتيح المدفوعة تحت المجانية كحل أخير: لا تُستخدم إلا حين لا يستطيع أي نموذج مجاني تلبية الطلب، ويُطبع كل طلب مدفوع، ضمن حد يومي.</p>
+  <div class="table"><table>
+    <thead><tr><th>الخيار</th><th>ماذا يفعل</th></tr></thead>
+    <tbody>
+      <tr><td><code>--port &lt;n&gt;</code></td><td>المنفذ الذي يستخدمه العنوان المحلي (الافتراضي 4949)</td></tr>
+      <tr><td><code>--free-only</code></td><td>عدم استخدام المفاتيح المدفوعة إطلاقًا</td></tr>
+      <tr><td><code>--paid-cap &lt;n&gt;</code></td><td>أقصى عدد من الطلبات المدفوعة في اليوم (الافتراضي 200)</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="providers">كل المزوِّدين الـ {{providers}}</h2>
+  <p>ينشرون معًا ما يصل إلى {{monthly}} رمز مجاني في الشهر. هذا الرقم يجمع الحدود المجانية المنشورة، محتسبًا 2,000 رمز للطلب حيث يُنشر حد الطلبات فقط؛ ومعظمه يأتي من بضعة أرصدة كبيرة، ولا تحصل عليه إلا بمفتاح لكل مزوِّد. المزوِّدون الذين لا ينشرون حدًّا يُحسبون صفرًا.</p>
+  {{providerTable}}
+
+  <h2 id="unsupported">غير مدعوم بعد</h2>
+  <ul>
+    <li><b>Cursor:</b> يمرّر حركة العناوين المخصصة عبر خوادمه، ولا تستطيع الوصول إلى عنوان محلي.</li>
+    <li><b>تطبيق ChatGPT:</b> لا يستطيع استخدام عنوان مخصص.</li>
+    <li>تعديل الصور، وترجمة الصوت، والصوت الفوري.</li>
+    <li>أدوات Codex للتطبيقات المتصلة (MCP) وبحث الويب لا تُمرَّر إلى النماذج المجانية: فهي تضيف سياقًا أكبر مما تقبله النماذج المجانية.</li>
+  </ul>
+  <p>الشيفرة المصدرية والبلاغات وملف README الكامل: <a href="{{repoUrl}}">GitHub</a>.</p>
+</div>

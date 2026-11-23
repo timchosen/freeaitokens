@@ -1,0 +1,82 @@
+<!-- title: Docs | description: Comment fonctionne FreeAITokens : la ligne de commande, les formats de requête pris en charge, les embeddings et les images, les options, et les {{providers}} fournisseurs gratuits avec leurs limites. -->
+<div class="page wide">
+  <h1>Docs</h1>
+  <p class="lead">Les détails de FreeAITokens, pour les développeurs et les curieux. Si vous voulez simplement que ça marche, <a href="/download">téléchargez l'app</a> et suivez l'<a href="/setup">installation</a>.</p>
+
+  <nav class="toc" aria-label="Sur cette page">
+    <ul>
+      <li><a href="#command-line">Ligne de commande</a></li>
+      <li><a href="#tools">L'utiliser avec vos outils</a></li>
+      <li><a href="#how">Ce qu'il fait</a></li>
+      <li><a href="#media">Pas seulement la discussion</a></li>
+      <li><a href="#paid">Clés payantes et options</a></li>
+      <li><a href="#providers">Les {{providers}} fournisseurs</a></li>
+      <li><a href="#unsupported">Pas encore pris en charge</a></li>
+    </ul>
+  </nav>
+
+  <h2 id="command-line">Ligne de commande</h2>
+  <p>Avec Node.js 20 ou plus récent, vous n'avez pas besoin de l'app :</p>
+  <pre><code>npx freeaitokens               # start the local endpoint
+npx freeaitokens add           # add a free provider key (guided)
+npx freeaitokens list          # providers, key status, what is left today
+npx freeaitokens remove &lt;id&gt;   # delete a stored key</code></pre>
+  <p>Ou installez-le une fois pour toutes : <code>npm install -g freeaitokens</code>. L'adresse locale n'écoute que sur <code>127.0.0.1:4949</code> et demande le jeton local affiché au démarrage. L'app et la commande partagent les clés et les réglages.</p>
+
+  <h2 id="tools">L'utiliser avec vos outils</h2>
+  <div class="table"><table>
+    <thead><tr><th>Outil</th><th>Comment</th></tr></thead>
+    <tbody>
+      <tr><td>Claude Code</td><td><code>npx freeaitokens claude</code> (tous les arguments de Claude Code fonctionnent après)</td></tr>
+      <tr><td>Codex</td><td><code>npx freeaitokens codex</code></td></tr>
+      <tr><td>Gemini CLI</td><td><code>npx freeaitokens gemini</code></td></tr>
+      <tr><td>OpenCode</td><td><code>npx freeaitokens setup opencode</code>, puis le modèle <code>freeaitokens/free</code></td></tr>
+      <tr><td>Kilo Code CLI, Qwen Code, Goose, Aider</td><td><code>npx freeaitokens kilo</code> / <code>qwen</code> / <code>goose</code> / <code>aider</code></td></tr>
+      <tr><td>Zed, JetBrains AI, VS Code</td><td><code>npx freeaitokens setup zed</code> / <code>jetbrains</code> / <code>vscode</code> affiche ce qu'il faut coller</td></tr>
+      <tr><td>Continue, Cline, Crush, Roo Code</td><td><code>npx freeaitokens setup cline</code> (ou le nom de l'outil) affiche les valeurs</td></tr>
+      <tr><td>Tout ce qui est compatible OpenAI</td><td>URL de base <code>http://127.0.0.1:4949/v1</code>, modèle <code>free</code>, clé affichée au démarrage</td></tr>
+      <tr><td>Clients Anthropic, Gemini ou Ollama</td><td>URL de base <code>http://127.0.0.1:4949</code>, la même clé</td></tr>
+    </tbody>
+  </table></div>
+  <p>Les lanceurs n'agissent que sur cette session et n'écrivent rien dans la configuration de votre outil. <code>setup opencode</code> ajoute un fournisseur à côté des vôtres et garde une sauvegarde ; <code>--undo</code> la restaure.</p>
+
+  <h2 id="how">Ce qu'il fait</h2>
+  <ul>
+    <li><b>Choisit un modèle par requête.</b> Seulement parmi ceux qui peuvent la traiter : assez de contexte, appel d'outils si l'outil en a besoin, images s'il y en a. Il préfère les meilleurs modèles qui ont été rapides et fiables pour vous, et reste sur le même modèle pendant une conversation, sauf si un autre est nettement meilleur.</li>
+    <li><b>Bascule en cas de panne.</b> En cas de limite atteinte, d'erreur serveur ou de délai dépassé, il essaie le modèle suivant avant que votre outil ne voie quoi que ce soit. Si tout est occupé et que la capacité revient en moins de 30 secondes, il attend ; sinon il vous dit quand réessayer.</li>
+    <li><b>Suit les limites gratuites</b> par fournisseur, modèle et clé, à la minute et à la journée, et se corrige d'après les limites que les fournisseurs indiquent.</li>
+    <li><b>Parle cinq formats :</b> OpenAI chat completions, Anthropic Messages (Claude Code), OpenAI Responses (Codex), Gemini (Gemini CLI) et Ollama (<code>/api/chat</code>).</li>
+    <li><b>Garde une liste de fournisseurs à jour</b>, signée et vérifiée avant utilisation, pour que les nouveaux modèles gratuits arrivent sans mise à jour.</li>
+  </ul>
+
+  <h2 id="media">Pas seulement la discussion</h2>
+  <p>La même adresse accepte les routes OpenAI pour les embeddings (<code>/v1/embeddings</code>), les complétions simples (<code>/v1/completions</code>), les images (<code>/v1/images/generations</code>), la synthèse vocale (<code>/v1/audio/speech</code>), la transcription (<code>/v1/audio/transcriptions</code>) et la vidéo (<code>/v1/videos</code>), chacune envoyée à un fournisseur gratuit qui la propose, avec le même basculement et les mêmes limites.</p>
+  <ul>
+    <li><b>Gratuit aujourd'hui :</b> embeddings (Gemini, OpenRouter, SEA-LION, Cloudflare, OVH), complétions (Cerebras, OpenRouter, OVH), images (Cloudflare Flux, OpenRouter), synthèse vocale (Groq, OpenRouter, Cloudflare), transcription (Groq, Cloudflare, OVH). Aucun fournisseur ne propose encore de vidéo gratuite.</li>
+    <li><b>Embeddings :</b> les vecteurs de modèles différents ne sont pas comparables. Envoyez le nom de modèle que la réponse vous a donné (par exemple <code>gemini-embedding-001</code>) et les requêtes suivantes resteront sur ce modèle.</li>
+  </ul>
+
+  <h2 id="paid">Clés payantes et options</h2>
+  <p>Les clés payantes peuvent se placer sous les gratuites en dernier recours : utilisées seulement quand aucun modèle gratuit ne peut traiter la requête, chaque requête payante est affichée, avec un plafond quotidien.</p>
+  <div class="table"><table>
+    <thead><tr><th>Option</th><th>Ce qu'elle fait</th></tr></thead>
+    <tbody>
+      <tr><td><code>--port &lt;n&gt;</code></td><td>Port de l'adresse locale (4949 par défaut)</td></tr>
+      <tr><td><code>--free-only</code></td><td>N'utilise jamais de clés payantes</td></tr>
+      <tr><td><code>--paid-cap &lt;n&gt;</code></td><td>Nombre maximal de requêtes payantes par jour (200 par défaut)</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="providers">Les {{providers}} fournisseurs</h2>
+  <p>Ensemble, ils publient jusqu'à {{monthly}} tokens gratuits par mois. Ce chiffre additionne les limites gratuites publiées, en comptant 2 000 tokens par requête lorsque seule une limite de requêtes est publiée ; l'essentiel vient de quelques grosses parts, et vous ne l'obtenez qu'avec une clé pour chaque fournisseur. Les fournisseurs qui ne publient aucune limite comptent pour zéro.</p>
+  {{providerTable}}
+
+  <h2 id="unsupported">Pas encore pris en charge</h2>
+  <ul>
+    <li><b>Cursor :</b> il fait passer le trafic des adresses personnalisées par ses propres serveurs, qui ne peuvent pas atteindre une adresse locale.</li>
+    <li><b>L'app ChatGPT :</b> elle ne peut pas utiliser d'adresse personnalisée.</li>
+    <li>Édition d'images, traduction audio, voix en temps réel.</li>
+    <li>Les outils d'apps connectées (MCP) de Codex et la recherche web ne sont pas transmis aux modèles gratuits : ils ajoutent plus de contexte que ces modèles n'en acceptent.</li>
+  </ul>
+  <p>Code source, tickets et README complet : <a href="{{repoUrl}}">GitHub</a>.</p>
+</div>

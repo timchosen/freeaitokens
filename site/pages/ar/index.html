@@ -1,0 +1,78 @@
+<!-- title: الرئيسية | description: يجمع FreeAITokens الأرصدة المجانية لـ {{providers}} مزوِّدًا للذكاء الاصطناعي على جهازك أنت، لتواصل أدواتك الذكية العمل دون اشتراك. -->
+<section class="hero">
+  <p class="eyebrow">{{providers}} مزوِّدًا للذكاء الاصطناعي · تطبيق واحد · مجاني</p>
+  <h1>ذكاء اصطناعي مجاني، بلا فواتير.</h1>
+  <p class="lead">يجمع بهدوء الأرصدة المجانية لـ {{providers}} مزوِّدًا للذكاء الاصطناعي، لتواصل أدواتك الذكية العمل دون اشتراك. حتى {{monthly}} رمز مجاني في الشهر.</p>
+  <a class="btn" href="/download" data-download>نزّل لجهازك</a>
+  <p class="also" data-also>لأنظمة Mac وWindows وLinux · مجاني ومفتوح المصدر</p>
+
+  <div class="tabs" role="tablist" aria-label="طرق التثبيت">
+    <button role="tab" id="tab-dl" aria-controls="p-dl" aria-selected="false" tabindex="-1">تنزيل</button>
+    <button role="tab" id="tab-term" aria-controls="p-term" aria-selected="true">الصق في Terminal</button>
+    <button role="tab" id="tab-ai" aria-controls="p-ai" aria-selected="false" tabindex="-1">اطلب من الذكاء الاصطناعي</button>
+  </div>
+
+  <div class="panel" role="tabpanel" id="p-dl" aria-labelledby="tab-dl" hidden>
+    <p>نزّل التطبيق وافتحه، فيظهر في شريط القوائم (Mac) أو في منطقة إشعارات النظام (Windows وLinux).</p>
+    <p class="small muted">التطبيق غير موقَّع رقميًا بعد، لذا ينبّهك جهازك عند فتحه أول مرة. <a href="/download#first-open">كيف تفتحه رغم ذلك</a>.</p>
+  </div>
+
+  <div class="panel" role="tabpanel" id="p-term" aria-labelledby="tab-term">
+    <div data-for="mac linux">
+      <p>افتح Terminal، والصق هذا، ثم اضغط Return:</p>
+      <div class="cmd"><code>curl -fsSL https://{{domain}}/install | sh</code><button class="copy" data-copy="curl -fsSL https://{{domain}}/install | sh">انسخ</button></div>
+    </div>
+    <div data-for="windows">
+      <p>على Windows، افتح PowerShell، والصق هذا، ثم اضغط Enter:</p>
+      <div class="cmd"><code>irm https://{{domain}}/install.ps1 | iex</code><button class="copy" data-copy="irm https://{{domain}}/install.ps1 | iex">انسخ</button></div>
+    </div>
+    <p class="small muted">ينزّل التطبيق من GitHub ويثبّته، ولا شيء غير ذلك. <a href="/install-script">ماذا يفعل هذا السكربت؟</a></p>
+  </div>
+
+  <div class="panel" role="tabpanel" id="p-ai" aria-labelledby="tab-ai" hidden>
+    <p>هل تستخدم مساعدًا ذكيًا يستطيع تشغيل الأوامر، مثل Claude أو ChatGPT أو Codex؟ الصق له هذه الجملة:</p>
+    <div class="cmd"><code>يرجى إعداد FreeAITokens على جهازي باتباع https://{{domain}}/setup.md</code><button class="copy" data-copy="يرجى إعداد FreeAITokens على جهازي باتباع https://{{domain}}/setup.md">انسخ</button></div>
+    <p class="small muted">يثبّت التطبيق ويربط أدواتك، ويطلب منك أن تنشئ الحسابات المجانية بنفسك. <a href="/ask-your-ai">المزيد عن هذا</a>.</p>
+  </div>
+</section>
+
+<section class="band">
+  <div class="inner">
+    <h2 class="center">كيف يعمل</h2>
+    <div class="grid3">
+      <div class="step"><b>1. ثبّته</b>يبقى في شريط القوائم. يعمل {{keyless}} مزوِّدين فورًا، دون أي حساب.</div>
+      <div class="step"><b>2. أضف مفاتيح مجانية</b>كل حساب مجاني تضيفه يرفع رصيدك الإجمالي. يرشدك التطبيق في كل خطوة.</div>
+      <div class="step"><b>3. استخدم أدواتك الذكية</b>حين ينفد رصيد مزوِّد ينتقل إلى التالي. ولن تلاحظ ذلك.</div>
+    </div>
+  </div>
+</section>
+
+<section class="section center">
+  <h2>يعمل مع الأدوات التي تستخدمها أصلًا</h2>
+  <ul class="tools">
+    <li><a class="tool" href="/setup#tools"><img src="/logos/claude.svg" alt="" width="28" height="28"><span>Claude Code</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/terminal.svg" alt="" width="28" height="28"><span>Codex</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/googlegemini.svg" alt="" width="28" height="28"><span>Gemini CLI</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/editor.svg" alt="" width="28" height="28"><span>VS Code</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/zedindustries.svg" alt="" width="28" height="28"><span>Zed</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/jetbrains.svg" alt="" width="28" height="28"><span>JetBrains</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/cline.svg" alt="" width="28" height="28"><span>Cline</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/opencode.svg" alt="" width="28" height="28"><span>OpenCode</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/terminal.svg" alt="" width="28" height="28"><span>Aider</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/plug.svg" alt="" width="28" height="28"><span>أي تطبيق يقبل عنوان ذكاء اصطناعي مخصصًا</span></a></li>
+  </ul>
+  <p class="small"><a href="/setup">شاهد الإعداد لكل أداة</a></p>
+</section>
+
+<section class="card note">
+  <h3>جدير بالمعرفة</h3>
+  <p class="muted">الأرصدة المجانية للتجربة، لا لتشغيل عمل تجاري. استخدم حساباتك أنت، حسابًا واحدًا لكل مزوِّد، ولا تشارك الوصول مع أحد. يعمل FreeAITokens على جهازك أنت، ولا تُرسل مفاتيحك إلا إلى المزوِّد الذي تخصّه. بعض المزوِّدين قد يستخدمون ما ترسله لتحسين نماذجهم؛ ويخبرك التطبيق بمن هم.</p>
+  <p class="small"><a href="/disclaimer">اقرأ إخلاء المسؤولية كاملًا</a></p>
+</section>
+
+<section class="section center">
+  <h2>صنعه شخص واحد، ومجاني للجميع</h2>
+  <p class="muted">إذا وفّر عليك مالًا، فقهوة تبقيه مستمرًا.</p>
+  <a class="btn yellow" href="{{coffee}}">☕ اشترِ لي قهوة</a>
+  <p class="small"><a href="/support">طرق أخرى للمساعدة</a></p>
+</section>

@@ -1,0 +1,23 @@
+<!-- title: インストールスクリプト | description: FreeAITokensの1行インストーラーが具体的に何をするのかを、macOS、Linux、Windows用の全ソースとともに説明します。 -->
+<div class="page">
+  <h1>インストールスクリプトがすること</h1>
+  <p class="lead">ウェブサイトのコマンドをターミナルに貼り付けるということは、そのウェブサイトを信頼するということです。ここでは、FreeAITokensのインストーラーがすることのすべてと、そのソース全体をお見せします。</p>
+
+  <h2>かんたんに言うと</h2>
+  <ol>
+    <li>お使いのパソコンが、Mac、Linux、Windowsのどれかを判別します。</li>
+    <li>公開されている<a href="{{repoUrl}}/releases">GitHubのリリース</a>から、最新のFreeAITokensアプリをダウンロードします。</li>
+    <li>Mac: アプリを「アプリケーション」フォルダに入れ（古いものがあれば置き換え）、開きます。Linux: <code>~/.local/bin/freeaitokens-app</code> として保存します。Windows: 通常のインストーラーを実行します。</li>
+    <li>ダウンロードしたファイルを削除します。ほかには何も変更しません。管理者パスワードも、設定の変更も、ほかのソフトのインストールもありません。</li>
+  </ol>
+  <p>スクリプト全体はひとつの関数の中にあり、いちばん最後にだけ実行されます。そのため、ダウンロードが途中で切れても、何も起こりません。</p>
+  <p>実行する前に中身を読むには: <code>curl -fsSL https://{{domain}}/install | less</code></p>
+
+  <h2>MacとLinux: <a href="/install">/install</a></h2>
+  <pre><code>{{installScript}}</code></pre>
+
+  <h2>Windows: <a href="/install.ps1">/install.ps1</a></h2>
+  <pre><code>{{installPs1}}</code></pre>
+
+  <p class="small muted">どちらのファイルも<a href="{{repoUrl}}/tree/main/site/static">ソースリポジトリ</a>にあります。問題を見つけましたか？ <a href="{{repoUrl}}/security/policy">非公開で報告</a>してください。</p>
+</div>

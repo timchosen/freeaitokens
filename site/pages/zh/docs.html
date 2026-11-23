@@ -1,0 +1,82 @@
+<!-- title: 文档 | description: FreeAITokens 的工作原理：命令行、支持的请求格式、向量嵌入和图片、各项选项，以及全部 {{providers}} 家免费服务商及其额度。 -->
+<div class="page wide">
+  <h1>文档</h1>
+  <p class="lead">这里是 FreeAITokens 背后的细节，写给开发者和好奇的人。如果你只想让它跑起来，请<a href="/download">下载应用</a>并按<a href="/setup">设置</a>操作。</p>
+
+  <nav class="toc" aria-label="本页内容">
+    <ul>
+      <li><a href="#command-line">命令行</a></li>
+      <li><a href="#tools">配合你的工具使用</a></li>
+      <li><a href="#how">它做了什么</a></li>
+      <li><a href="#media">不止对话</a></li>
+      <li><a href="#paid">付费密钥与选项</a></li>
+      <li><a href="#providers">全部 {{providers}} 家服务商</a></li>
+      <li><a href="#unsupported">暂不支持</a></li>
+    </ul>
+  </nav>
+
+  <h2 id="command-line">命令行</h2>
+  <p>装有 Node.js 20 或更新版本的话，你不需要应用：</p>
+  <pre><code>npx freeaitokens               # start the local endpoint
+npx freeaitokens add           # add a free provider key (guided)
+npx freeaitokens list          # providers, key status, what is left today
+npx freeaitokens remove &lt;id&gt;   # delete a stored key</code></pre>
+  <p>或者一次性安装：<code>npm install -g freeaitokens</code>。本地接口只监听 <code>127.0.0.1:4949</code>，并且需要启动横幅里显示的本地令牌。应用和命令行共用同样的密钥和设置。</p>
+
+  <h2 id="tools">配合你的工具使用</h2>
+  <div class="table"><table>
+    <thead><tr><th>工具</th><th>方法</th></tr></thead>
+    <tbody>
+      <tr><td>Claude Code</td><td><code>npx freeaitokens claude</code>（后面可以跟任何 Claude Code 的参数）</td></tr>
+      <tr><td>Codex</td><td><code>npx freeaitokens codex</code></td></tr>
+      <tr><td>Gemini CLI</td><td><code>npx freeaitokens gemini</code></td></tr>
+      <tr><td>OpenCode</td><td><code>npx freeaitokens setup opencode</code>，然后选择模型 <code>freeaitokens/free</code></td></tr>
+      <tr><td>Kilo Code CLI、Qwen Code、Goose、Aider</td><td><code>npx freeaitokens kilo</code> / <code>qwen</code> / <code>goose</code> / <code>aider</code></td></tr>
+      <tr><td>Zed、JetBrains AI、VS Code</td><td><code>npx freeaitokens setup zed</code> / <code>jetbrains</code> / <code>vscode</code> 会打印出该粘贴的内容</td></tr>
+      <tr><td>Continue、Cline、Crush、Roo Code</td><td><code>npx freeaitokens setup cline</code>（或该工具的名字）会打印出要填的值</td></tr>
+      <tr><td>任何兼容 OpenAI 的工具</td><td>Base URL <code>http://127.0.0.1:4949/v1</code>，模型 <code>free</code>，密钥取自启动横幅</td></tr>
+      <tr><td>Anthropic、Gemini 或 Ollama 客户端</td><td>Base URL <code>http://127.0.0.1:4949</code>，密钥相同</td></tr>
+    </tbody>
+  </table></div>
+  <p>启动器只影响那一次会话，不会往你工具的配置里写任何东西。<code>setup opencode</code> 会在你已有的服务商旁边添加一个，并保留备份；用 <code>--undo</code> 可以恢复。</p>
+
+  <h2 id="how">它做了什么</h2>
+  <ul>
+    <li><b>每个请求选一个模型。</b>只选能胜任的模型：上下文够长、工具需要时支持工具调用、有图片时支持看图。它偏好对你来说又快又稳的更好的模型，并且在一次对话中会一直用同一个模型，除非另一个明显更合适。</li>
+    <li><b>自动切换。</b>遇到限流、服务器错误或超时，它会在你的工具察觉之前就换下一个模型。如果所有模型都忙，而额度会在 30 秒内恢复，它会等待；否则会告诉你什么时候能恢复。</li>
+    <li><b>追踪免费额度</b>，按服务商、模型和密钥分别统计，精确到每分钟和每天，并根据服务商返回的额度信息自行校正。</li>
+    <li><b>支持五种格式：</b>OpenAI chat completions、Anthropic Messages（Claude Code）、OpenAI Responses（Codex）、Gemini（Gemini CLI）和 Ollama（<code>/api/chat</code>）。</li>
+    <li><b>保持服务商列表最新</b>，列表带签名，使用前会校验，所以新的免费模型不用更新应用就能用上。</li>
+  </ul>
+
+  <h2 id="media">不止对话</h2>
+  <p>同一个接口还支持 OpenAI 的这些路径：向量嵌入（<code>/v1/embeddings</code>）、普通文本补全（<code>/v1/completions</code>）、图片（<code>/v1/images/generations</code>）、文字转语音（<code>/v1/audio/speech</code>）、语音转文字（<code>/v1/audio/transcriptions</code>）和视频（<code>/v1/videos</code>）。每种请求都会发给提供该功能的免费服务商，同样有自动切换和额度限制。</p>
+  <ul>
+    <li><b>目前免费的有：</b>向量嵌入（Gemini、OpenRouter、SEA-LION、Cloudflare、OVH）、文本补全（Cerebras、OpenRouter、OVH）、图片（Cloudflare Flux、OpenRouter）、文字转语音（Groq、OpenRouter、Cloudflare）、语音转文字（Groq、Cloudflare、OVH）。目前还没有服务商提供免费视频。</li>
+    <li><b>向量嵌入：</b>不同模型生成的向量不能互相比较。请发送响应里告诉你的模型名（例如 <code>gemini-embedding-001</code>），之后的请求就会一直用它。</li>
+  </ul>
+
+  <h2 id="paid">付费密钥与选项</h2>
+  <p>付费密钥可以排在免费密钥之后，作为最后的备选：只有在没有免费模型能处理请求时才会用，每次付费请求都会打印出来，并且有每日上限。</p>
+  <div class="table"><table>
+    <thead><tr><th>选项</th><th>作用</th></tr></thead>
+    <tbody>
+      <tr><td><code>--port &lt;n&gt;</code></td><td>本地接口的端口（默认 4949）</td></tr>
+      <tr><td><code>--free-only</code></td><td>从不使用付费密钥</td></tr>
+      <tr><td><code>--paid-cap &lt;n&gt;</code></td><td>每天最多的付费请求数（默认 200）</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="providers">全部 {{providers}} 家服务商</h2>
+  <p>它们加起来每月最多公布 {{monthly}} 个免费 token。这个数字是把各家公布的免费额度加总得到的，只公布了请求次数限制的，按每次请求 2,000 个 token 计算；其中大部分来自少数几份大额度，而且你只有为每家服务商都添加密钥才能用上。没有公布额度的服务商按零计算。</p>
+  {{providerTable}}
+
+  <h2 id="unsupported">暂不支持</h2>
+  <ul>
+    <li><b>Cursor：</b>它会让自定义接口的流量经过它自己的服务器，而那些服务器连不到本地地址。</li>
+    <li><b>ChatGPT 应用：</b>它不能使用自定义接口。</li>
+    <li>图片编辑、音频翻译、实时语音。</li>
+    <li>Codex 的已连接应用（MCP）工具和网页搜索不会传给免费模型：它们带来的上下文比免费模型能接受的更多。</li>
+  </ul>
+  <p>源代码、问题反馈和完整的 README：<a href="{{repoUrl}}">GitHub</a>。</p>
+</div>
