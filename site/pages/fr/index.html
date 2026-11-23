@@ -37,6 +37,12 @@
   </div>
 </section>
 
+<section class="showcase">
+  <h2>Chat, images et voix dans une seule fenêtre</h2>
+  <p class="lead muted">Demandez avec vos mots. Le mode Auto devine si vous voulez une réponse, une image ou de la voix, et chaque réponse indique quel fournisseur gratuit l'a faite.</p>
+  <figure class="window"><div class="window-bar" aria-hidden="true"><i></i><i></i><i></i></div><img src="/shots/app-light.webp" width="1680" height="1170" alt="L'app FreeAITokens : un chat avec une aquarelle de phare, une réponse écrite avec un lecteur audio pour l'écouter et l'historique des chats" loading="lazy" decoding="async"></figure>
+</section>
+
 <section class="band">
   <div class="inner">
     <h2 class="center">Comment ça marche</h2>
@@ -50,6 +56,38 @@
 
 <section class="section center">
   <h2>Fonctionne avec les outils que vous utilisez déjà</h2>
+  <p class="muted">De vraies sessions, enregistrées sur un portable : Claude Code et OpenCode qui codent avec un modèle gratuit via FreeAITokens.</p>
+  <div class="terms">
+    <figure class="term">
+      <div class="window-bar"><i></i><i></i><i></i><span>Claude Code</span></div>
+<pre><span class="p">$</span> npx freeaitokens claude
+<span class="you">&gt; Add a check to warmest() in temps.py so an empty list returns None instead of crashing.</span>
+
+<span class="tl">⏺ Update(temps.py)</span>
+<span class="dim">  ⎿  Added 2 lines</span>
+<span class="dim">       5</span>   def warmest(readings):
+<span class="add">       6 +     if not readings:</span>
+<span class="add">       7 +         return None</span>
+<span class="dim">       8</span>       best = readings[0]
+
+⏺ Added an early return in warmest() that checks if the readings list is empty and returns None instead of crashing with an IndexError.</pre>
+      <figcaption>Réponse de <b>Kilo Gateway · nvidia/nemotron-3-ultra-550b-a55b:free</b></figcaption>
+    </figure>
+    <figure class="term">
+      <div class="window-bar"><i></i><i></i><i></i><span>OpenCode</span></div>
+<pre><span class="p">$</span> opencode run -m freeaitokens/free
+<span class="you">&gt; Write short pytest tests for temps.py in test_temps.py, including the empty list case.</span>
+
+<span class="dim">&gt; build · free</span>
+<span class="tl">→</span> Read temps.py
+<span class="dim">&gt; build · free</span>
+<span class="tl">←</span> Write test_temps.py
+<span class="add">Created file successfully: test_temps.py</span>
+<span class="dim">&gt; build · free</span>
+Created test_temps.py with pytest tests covering to_fahrenheit (freezing, boiling, negative, decimal) and warmest (single, multiple, empty list, tie-breaking).</pre>
+      <figcaption>Réponse de <b>Kilo Gateway · nvidia/nemotron-3-ultra-550b-a55b:free</b></figcaption>
+    </figure>
+  </div>
   <ul class="tools">
     <li><a class="tool" href="/setup#tools"><img src="/logos/claude.svg" alt="" width="28" height="28"><span>Claude Code</span></a></li>
     <li><a class="tool" href="/setup#tools"><img src="/logos/terminal.svg" alt="" width="28" height="28"><span>Codex</span></a></li>
