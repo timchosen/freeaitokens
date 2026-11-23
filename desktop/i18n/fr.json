@@ -208,5 +208,6 @@
   "sync_bad_key": "Ce n'est pas une clé de synchronisation. Elle a cette forme : FAT-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX.",
   "sync_bad_code": "Ce code de récupération n'ouvre pas cette clé de synchronisation.",
   "chat_too_long": "Cette conversation est trop longue pour être enregistrée. Commencez-en une nouvelle pour continuer.",
-  "sync_confirm_new": "Cette clé n'est pas encore configurée : cette phrase secrète sera la première. Saisissez-la à nouveau pour confirmer."
+  "sync_confirm_new": "Cette clé n'est pas encore configurée : cette phrase secrète sera la première. Saisissez-la à nouveau pour confirmer.",
+  "upd_early": "Accès anticipé pour les abonnés à la synchronisation."
 }

@@ -423,9 +423,9 @@ $('checkUpd').addEventListener('click', async () => {
   $('checkUpd').disabled = false;
   if (!r.ok) { $('updText').textContent = t('upd_failed', { reason: r.reason }); return; }
   if (!r.newer) { $('updText').textContent = t('upd_latest', { v: version }); return; }
-  $('updText').textContent = `${t('upd_out', { v: r.latest })} `;
+  $('updText').textContent = `${t('upd_out', { v: r.latest })} ${r.early ? `${t('upd_early')} ` : ''}`;
   const a = el('a', '', t('upd_download'));
-  a.href = 'https://freeaitokens.co/download';
+  a.href = r.early && r.url ? r.url : 'https://freeaitokens.co/download'; // a pre-release isn't on the download page yet
   a.addEventListener('click', (e) => { e.preventDefault(); api.open(a.href); });
   $('updText').append(a);
 });

@@ -90,6 +90,7 @@ cd sync && npx wrangler d1 execute SYNC_DB --remote --file schema.sql && npx wra
 - [ ] Have the lifetime wording reviewed in the site terms (section 8, "for as long as the sync service runs"). It appears in all ten languages.
 - [ ] Decide what ends the lifetime **launch offer** (a date, a number of sales, or both). The site, terms and app only call it a "limited launch offer" for now; nothing stops lifetime sales yet, so ending it needs a code change.
 - [ ] Release the desktop app with a `desktop-v*` tag.
+  - **Early access for sync plans:** when you publish the draft release, tick **Set as a pre-release**. Apps with an active sync plan offer it from Settings › Check for updates; everyone else is offered it once you edit the release and tick **Set as the latest release**. The terms promise early access but no fixed delay.
   - Before publishing, check that the Mac zip's `app.asar` contains `syncsvc.js` and `chats.js`.
   - Check that `codesign --verify --deep` passes.
 - [ ] Deploy the site, so that `/sync`, `/sync-thanks` and the updated privacy and terms pages go live.

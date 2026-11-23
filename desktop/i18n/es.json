@@ -208,5 +208,6 @@
   "sync_bad_key": "Eso no es una clave de sincronización. Tiene esta forma: FAT-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX.",
   "sync_bad_code": "Ese código de recuperación no abre esta clave de sincronización.",
   "chat_too_long": "Este chat es demasiado largo para guardarlo. Empieza uno nuevo para seguir.",
-  "sync_confirm_new": "Esta clave aún no está configurada, así que esta será su primera frase de contraseña. Escríbela otra vez para confirmarla."
+  "sync_confirm_new": "Esta clave aún no está configurada, así que esta será su primera frase de contraseña. Escríbela otra vez para confirmarla.",
+  "upd_early": "Acceso anticipado para quienes apoyan con la sincronización."
 }

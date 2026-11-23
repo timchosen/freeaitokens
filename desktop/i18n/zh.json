@@ -208,5 +208,6 @@
   "sync_bad_key": "这不是同步密钥。同步密钥的格式是 FAT-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX。",
   "sync_bad_code": "这个恢复码打不开该同步密钥。",
   "chat_too_long": "这个对话太长,无法保存。请新建一个对话继续。",
-  "sync_confirm_new": "这个密钥还没有设置,这将是它的第一个口令。请再输入一次以确认。"
+  "sync_confirm_new": "这个密钥还没有设置,这将是它的第一个口令。请再输入一次以确认。",
+  "upd_early": "同步订阅者可抢先获取。"
 }

@@ -17,7 +17,7 @@ import { validateKey, keySteps, connectOpenRouter } from 'freeaitokens/dist/node
 import { launchSpec, LAUNCH_TOOLS } from 'freeaitokens/dist/node/harness.js';
 import { route, NoCapacityError } from 'freeaitokens/dist/core/orchestrator.js';
 import { routeMedia, NoProviderError } from 'freeaitokens/dist/core/media.js';
-import { allowedUrl, choices, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType, privateAddress, mediaOptions, guessKind, sortedKind, audioType, pcmToWav } from './logic.js';
+import { allowedUrl, choices, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType, privateAddress, mediaOptions, guessKind, sortedKind, audioType, pcmToWav, pickRelease } from './logic.js';
 import './t.js';
 import { openChatStore, cleanChat, migrateChats } from './chats.js';
 import { createSyncService } from './syncsvc.js';
@@ -158,9 +158,12 @@ ipcMain.handle('app:usage', (_e, days) => usageSummary((srv.reused ? loadState()
 ipcMain.handle('app:login', (_e, on) => { app.setLoginItemSettings({ openAtLogin: on === true }); refresh(); return app.getLoginItemSettings().openAtLogin; });
 ipcMain.handle('app:updates', async () => {
   try {
-    const r = await fetch('https://api.github.com/repos/timchosen/freeaitokens/releases/latest', { headers: { accept: 'application/vnd.github+json' }, signal: AbortSignal.timeout(10_000) });
-    const j = await r.json();
-    return { ok: true, latest: String(j.tag_name ?? ''), newer: newerVersion(app.getVersion(), String(j.tag_name ?? '')) };
+    // Pre-releases are offered first to people with an active sync plan (early access), then to everyone once marked latest.
+    const early = sync?.status().state === 'on';
+    const r = await fetch('https://api.github.com/repos/timchosen/freeaitokens/releases?per_page=20', { headers: { accept: 'application/vnd.github+json' }, signal: AbortSignal.timeout(10_000) });
+    const rel = pickRelease(await r.json(), app.getVersion(), early);
+    const url = rel?.url.startsWith('https://github.com/timchosen/freeaitokens/releases/') ? rel.url : undefined;
+    return { ok: true, latest: rel?.tag ?? '', newer: !!rel, early: !!rel?.early, url };
   } catch (e) {
     return { ok: false, reason: e.message };
   }

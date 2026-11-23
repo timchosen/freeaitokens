@@ -208,5 +208,6 @@
   "sync_bad_key": "Itu bukan kunci sinkronisasi. Bentuknya seperti ini: FAT-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX.",
   "sync_bad_code": "Kode pemulihan itu tidak membuka kunci sinkronisasi ini.",
   "chat_too_long": "Obrolan ini terlalu panjang untuk disimpan. Mulai obrolan baru untuk melanjutkan.",
-  "sync_confirm_new": "Kunci ini belum disiapkan, jadi ini akan menjadi frasa sandi pertamanya. Ketik sekali lagi untuk memastikan."
+  "sync_confirm_new": "Kunci ini belum disiapkan, jadi ini akan menjadi frasa sandi pertamanya. Ketik sekali lagi untuk memastikan.",
+  "upd_early": "Akses lebih awal untuk pendukung sinkronisasi."
 }

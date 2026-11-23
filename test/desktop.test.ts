@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import { randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
 // @ts-ignore plain JS module
-import { allowedUrl, choices, menuLine, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType, privateAddress, guessKind, sortedKind, audioType, mediaOptions, pcmToWav } from '../desktop/logic.js';
+import { allowedUrl, choices, menuLine, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType, privateAddress, guessKind, sortedKind, audioType, mediaOptions, pcmToWav, pickRelease } from '../desktop/logic.js';
 import { readFileSync as readText } from 'node:fs';
 import vm from 'node:vm';
 
@@ -630,4 +630,16 @@ test('cleanChat keeps spoken answers, transcribed files and Auto mode', () => {
   assert.equal(c.mode, 'auto');
   assert.deepEqual(c.messages.map((m: any) => [m.kind, m.audio]), [['file', undefined], ['speech', '0b5c7a3e-1f2d-4c5b-9a8e-7d6c5b4a3f21.mp3']]);
   assert.equal(cleanChat({ ...c, messages: [{ ...c.messages[1], audio: '../x.mp3' }] }), null);
+});
+
+test('pickRelease offers pre-releases only to early access, never drafts, only newer versions', () => {
+  const list = [
+    { tag_name: 'v0.4.0', prerelease: true, draft: false, html_url: 'https://github.com/x/releases/tag/v0.4.0' },
+    { tag_name: 'v0.5.0', prerelease: false, draft: true, html_url: 'https://github.com/x/releases/tag/v0.5.0' },
+    { tag_name: 'v0.3.11', prerelease: false, draft: false, html_url: 'https://github.com/x/releases/tag/v0.3.11' },
+  ];
+  assert.deepEqual(pickRelease(list, '0.3.10', true), { tag: 'v0.4.0', url: 'https://github.com/x/releases/tag/v0.4.0', early: true });
+  assert.deepEqual(pickRelease(list, '0.3.10', false), { tag: 'v0.3.11', url: 'https://github.com/x/releases/tag/v0.3.11', early: false });
+  assert.equal(pickRelease(list, '0.4.0', true), null);
+  assert.equal(pickRelease('junk', '0.1.0', true), null);
 });

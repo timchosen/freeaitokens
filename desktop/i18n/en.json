@@ -208,5 +208,6 @@
   "sync_bad_key": "That is not a sync key. It looks like FAT-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX.",
   "sync_bad_code": "That recovery code does not open this sync key.",
   "chat_too_long": "This chat is too long to save. Start a new chat to keep going.",
-  "sync_confirm_new": "This key isn't set up yet, so this passphrase will be its first. Type it again to make sure."
+  "sync_confirm_new": "This key isn't set up yet, so this passphrase will be its first. Type it again to make sure.",
+  "upd_early": "Early access for sync supporters."
 }
