@@ -94,8 +94,28 @@ function modelsSection(cat, t, lang, code) {
 export function render(body, { title, description, path, url = path, code = 'en' }) {
   const t = strings(code);
   const l = locales.find((x) => x.code === code);
+  const fullTitle = path === '/' ? `FreeAITokens · ${t.home_title}` : `${title} · FreeAITokens`;
   const vars = {
     lang: l.lang, dir: l.dir, langMenu: langMenu(code, url, t),
+    // Link previews (Open Graph, X): one shared card image for every page.
+    social: [
+      `<link rel="canonical" href="https://{{domain}}${pageUrl(code, url)}">`,
+      '<meta property="og:type" content="website">',
+      '<meta property="og:site_name" content="FreeAITokens">',
+      `<meta property="og:title" content="${esc(fullTitle)}">`,
+      `<meta property="og:description" content="${esc(description)}">`,
+      `<meta property="og:url" content="https://{{domain}}${pageUrl(code, url)}">`,
+      `<meta property="og:locale" content="${l.lang.replace('-', '_')}">`,
+      '<meta property="og:image" content="https://{{domain}}/og.png">',
+      '<meta property="og:image:width" content="1200">',
+      '<meta property="og:image:height" content="630">',
+      `<meta property="og:image:alt" content="${esc(t.og_alt)}">`,
+      '<meta name="twitter:card" content="summary_large_image">',
+      `<meta name="twitter:title" content="${esc(fullTitle)}">`,
+      `<meta name="twitter:description" content="${esc(description)}">`,
+      '<meta name="twitter:image" content="https://{{domain}}/og.png">',
+      `<meta name="twitter:image:alt" content="${esc(t.og_alt)}">`,
+    ].join('\n'),
     alternates: locales.map((x) => `<link rel="alternate" hreflang="${x.lang}" href="https://{{domain}}${pageUrl(x.code, url)}">`).join('\n') + `\n<link rel="alternate" hreflang="x-default" href="https://{{domain}}${url}">`,
   };
   const nav = layout.replace(/<a href="([^"]+)"( class="[^"]*")?>/g, (m, href, cls) => (href === path ? `<a href="${href}"${cls ?? ''} aria-current="page">` : m));
@@ -105,7 +125,7 @@ export function render(body, { title, description, path, url = path, code = 'en'
       if (!(k in t)) throw new Error(`site: layout uses unknown [[${k}]]`);
       return esc(t[k]);
     })
-    .replace('{{title}}', esc(path === '/' ? `FreeAITokens · ${t.home_title}` : `${title} · FreeAITokens`))
+    .replace('{{title}}', esc(fullTitle))
     .replace('{{description}}', esc(description))
     .replace('{{body}}', () => body);
   return localize(html, code);

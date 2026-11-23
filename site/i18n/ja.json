@@ -109,5 +109,6 @@
   "hero_tokens": "毎月の無料トークン",
   "hero_models": "AIモデル",
   "hero_providers": "プロバイダー",
-  "models_all": "すべてのモデルを見る"
+  "models_all": "すべてのモデルを見る",
+  "og_alt": "FreeAITokens：多くのプロバイダーから毎月数十億の無料AIトークンを、ひとつのアプリで"
 }
