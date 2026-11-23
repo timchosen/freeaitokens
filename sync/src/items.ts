@@ -31,20 +31,19 @@ const b64 = (buf: ArrayBuffer) => {
 
 async function write(env: Env, lic: LicenseRow, id: string, want: number, bytes: Uint8Array | null, now: number): Promise<Response> {
   const kh = lic.key_hash;
-  const cur = await env.SYNC_DB.prepare('SELECT version, size FROM items WHERE key_hash = ? AND id = ?').bind(kh, id).first<{ version: number; size: number }>();
+  const cur = await env.SYNC_DB.prepare('SELECT version, size, obj FROM items WHERE key_hash = ? AND id = ?').bind(kh, id).first<{ version: number; size: number; obj: string | null }>();
   if ((cur?.version ?? 0) !== want) return json({ version: cur?.version ?? 0 }, 412);
   const size = bytes?.byteLength ?? 0;
   const delta = size - (cur?.size ?? 0);
-  if (delta > 0) {
-    const used = (await env.SYNC_DB.prepare('SELECT bytes FROM counters WHERE key_hash = ?').bind(kh).first<number>('bytes')) ?? 0;
-    if (used + delta > MAX_TOTAL) return json({ error: 'storage full' }, 413);
-  }
   const next = want + 1;
-  if (bytes) await env.SYNC_BLOBS.put(`${kh}/${id}/${next}`, bytes);
+  const obj = bytes ? `${kh}/${id}/${crypto.randomUUID()}` : null;
+  if (obj) await env.SYNC_BLOBS.put(obj, bytes!);
   const seq = '(SELECT seq FROM counters WHERE key_hash = ?1)';
+  // The swap lands only if the version still matches and the new total stays under the cap.
+  const fits = `COALESCE((SELECT bytes FROM counters WHERE key_hash = ?1), 0) + ?5 <= ${MAX_TOTAL}`;
   const swap = want === 0
-    ? env.SYNC_DB.prepare(`INSERT INTO items (key_hash, id, version, seq, size, deleted, updated) VALUES (?1, ?2, 1, ${seq}, ?3, 0, ?4) ON CONFLICT DO NOTHING`).bind(kh, id, size, now)
-    : env.SYNC_DB.prepare(`UPDATE items SET version = ?5, seq = ${seq}, size = ?3, deleted = ?6, updated = ?4 WHERE key_hash = ?1 AND id = ?2 AND version = ?7`).bind(kh, id, size, now, next, bytes ? 0 : 1, want);
+    ? env.SYNC_DB.prepare(`INSERT INTO items (key_hash, id, version, seq, size, deleted, updated, obj) SELECT ?1, ?2, 1, ${seq}, ?3, 0, ?4, ?6 WHERE ${fits} ON CONFLICT DO NOTHING`).bind(kh, id, size, now, delta, obj)
+    : env.SYNC_DB.prepare(`UPDATE items SET version = ?7, seq = ${seq}, size = ?3, deleted = ?8, updated = ?4, obj = ?6 WHERE key_hash = ?1 AND id = ?2 AND version = ?9 AND ${fits}`).bind(kh, id, size, now, delta, obj, next, bytes ? 0 : 1, want);
   const res = await env.SYNC_DB.batch([
     env.SYNC_DB.prepare('INSERT INTO counters (key_hash, seq, bytes) VALUES (?, 1, 0) ON CONFLICT(key_hash) DO UPDATE SET seq = seq + 1').bind(kh),
     swap,
@@ -52,12 +51,31 @@ async function write(env: Env, lic: LicenseRow, id: string, want: number, bytes:
     env.SYNC_DB.prepare(`UPDATE counters SET bytes = bytes + ?3 WHERE key_hash = ?1 AND EXISTS (SELECT 1 FROM items WHERE key_hash = ?1 AND id = ?2 AND version = ?4 AND seq = ${seq})`).bind(kh, id, delta, next),
   ]) as { meta: { changes: number } }[];
   if (res[1].meta.changes !== 1) {
-    if (bytes) await env.SYNC_BLOBS.delete(`${kh}/${id}/${next}`);
-    const now2 = await env.SYNC_DB.prepare('SELECT version FROM items WHERE key_hash = ? AND id = ?').bind(kh, id).first<number>('version');
-    return json({ version: now2 ?? 0 }, 412);
+    if (obj) await env.SYNC_BLOBS.delete(obj);
+    const v = (await env.SYNC_DB.prepare('SELECT version FROM items WHERE key_hash = ? AND id = ?').bind(kh, id).first<number>('version')) ?? 0;
+    return v === want ? json({ error: 'storage full' }, 413) : json({ version: v }, 412);
   }
-  if (want) await env.SYNC_BLOBS.delete(`${kh}/${id}/${want}`);
+  if (cur?.obj) await env.SYNC_BLOBS.delete(cur.obj);
   return json({ version: next });
+}
+
+// The body, or null once it passes `max` bytes (stops reading there).
+async function readCapped(req: Request, max: number): Promise<Uint8Array | null> {
+  if (Number(req.headers.get('content-length') ?? 0) > max) return null;
+  const parts: Uint8Array[] = [];
+  let n = 0;
+  if (req.body) {
+    const r = req.body.getReader();
+    for (let c = await r.read(); !c.done; c = await r.read()) {
+      n += c.value.byteLength;
+      if (n > max) { await r.cancel(); return null; }
+      parts.push(c.value);
+    }
+  }
+  const out = new Uint8Array(n);
+  let o = 0;
+  for (const p of parts) { out.set(p, o); o += p.byteLength; }
+  return out;
 }
 
 export async function items(req: Request, env: Env, lic: LicenseRow, path: string, now: number): Promise<Response | null> {
@@ -84,19 +102,19 @@ export async function items(req: Request, env: Env, lic: LicenseRow, path: strin
     const q = new URL(req.url).searchParams;
     const from = Math.max(0, Number(q.get('since')) || 0);
     const limit = Math.min(200, Math.max(1, Number(q.get('limit')) || 200));
-    const { results } = await env.SYNC_DB.prepare('SELECT id, version, deleted, size, updated, seq FROM items WHERE key_hash = ? AND seq > ? ORDER BY seq LIMIT ?').bind(kh, from, limit + 1).all<{ id: string; version: number; deleted: number; size: number; updated: number; seq: number }>();
+    const { results } = await env.SYNC_DB.prepare('SELECT id, version, deleted, size, updated, seq, obj FROM items WHERE key_hash = ? AND seq > ? ORDER BY seq LIMIT ?').bind(kh, from, limit + 1).all<{ id: string; version: number; deleted: number; size: number; updated: number; seq: number; obj: string | null }>();
     const out = [];
     let cursor = from, bytes = 0, more = results.length > limit;
     for (const r of results.slice(0, limit)) {
       if (out.length && bytes + r.size > MAX_PAGE_BYTES) { more = true; break; }
       cursor = r.seq;
-      const { seq, ...item } = r;
+      const { seq, obj, ...item } = r;
       if (r.deleted) { out.push(item); continue; }
-      const obj = await env.SYNC_BLOBS.get(`${kh}/${r.id}/${r.version}`);
+      const blob = obj ? await env.SYNC_BLOBS.get(obj) : null;
       // Replaced since the query: the newer version has a later seq and comes in a later pull.
-      if (!obj) continue;
+      if (!blob) continue;
       bytes += r.size;
-      out.push({ ...item, blob: b64(await obj.arrayBuffer()) });
+      out.push({ ...item, blob: b64(await blob.arrayBuffer()) });
     }
     return json({ items: out, cursor, more });
   }
@@ -108,7 +126,7 @@ export async function items(req: Request, env: Env, lic: LicenseRow, path: strin
   if (want == null || (req.method === 'DELETE' && want === 0)) return json({ error: 'if-match or if-none-match required' }, 428);
   if (!(await rateOk(env, `w:${kh}`, 120, 60_000, now))) return json({ error: 'too many writes' }, 429);
   if (req.method === 'DELETE') return write(env, lic, id, want, null, now);
-  const bytes = new Uint8Array(await req.arrayBuffer());
-  if (bytes.byteLength > MAX_ITEM) return json({ error: 'item too large' }, 413);
+  const bytes = await readCapped(req, MAX_ITEM);
+  if (!bytes) return json({ error: 'item too large' }, 413);
   return write(env, lic, id, want, bytes, now);
 }

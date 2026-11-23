@@ -1,6 +1,7 @@
 // FreeAITokens sync server: stores encrypted blobs it cannot read, sells sync through Stripe.
 import { authLicense, json } from './auth.ts';
 import { items } from './items.ts';
+import { buy, renew, billing, claim, webhook } from './billing.ts';
 
 // Minimal shapes of the Cloudflare bindings this Worker uses.
 interface Stmt { bind(...a: unknown[]): Stmt; first<T = Record<string, any>>(col?: string): Promise<T | null>; all<T = Record<string, any>>(): Promise<{ results: T[] }>; run(): Promise<{ meta: { changes: number } }> }
@@ -14,7 +15,16 @@ export interface Env {
 
 async function route(req: Request, env: Env, now: number): Promise<Response> {
   const { pathname } = new URL(req.url);
+  if (pathname === '/buy' && req.method === 'GET') return buy(req, env);
+  if (pathname === '/stripe/webhook' && req.method === 'POST') return webhook(req, env, now);
+  const c = /^\/v1\/claim\/([^/]+)$/.exec(pathname);
+  if (c && req.method === 'GET') return claim(env, c[1], now);
   if (!pathname.startsWith('/v1/')) return json({ error: 'not found' }, 404);
+  if ((pathname === '/v1/checkout' || pathname === '/v1/billing') && req.method === 'POST') {
+    const a = await authLicense(req, env, now, true);
+    if (!a.ok) return a.res;
+    return pathname === '/v1/checkout' ? renew(req, env, a.lic) : billing(env, a.lic);
+  }
   const a = await authLicense(req, env, now);
   if (!a.ok) return a.res;
   if (pathname === '/v1/usage' && req.method === 'GET') {

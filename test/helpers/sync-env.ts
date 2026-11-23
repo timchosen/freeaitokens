@@ -27,7 +27,8 @@ function fakeD1(db: DatabaseSync) {
 
 function fakeR2(blobs: Map<string, Uint8Array>) {
   return {
-    put: async (k: string, v: ArrayBuffer | Uint8Array | string) => { blobs.set(k, typeof v === 'string' ? new TextEncoder().encode(v) : new Uint8Array(v as ArrayBuffer)); },
+    // Real R2 writes take time; yielding here lets concurrent requests interleave like they do in production.
+    put: async (k: string, v: ArrayBuffer | Uint8Array | string) => { await new Promise((r) => setTimeout(r, 2)); blobs.set(k, typeof v === 'string' ? new TextEncoder().encode(v) : new Uint8Array(v as ArrayBuffer)); },
     get: async (k: string) => {
       const v = blobs.get(k);
       return v ? { arrayBuffer: async () => v.slice().buffer, size: v.byteLength } : null;

@@ -25,11 +25,12 @@ CREATE TABLE IF NOT EXISTS items (
   size INTEGER NOT NULL,
   deleted INTEGER NOT NULL DEFAULT 0,
   updated INTEGER NOT NULL,
+  obj TEXT, -- this version's R2 object; unique per write so a losing writer never touches it
   PRIMARY KEY (key_hash, id)
 );
 CREATE INDEX IF NOT EXISTS items_seq ON items(key_hash, seq);
 
 CREATE TABLE IF NOT EXISTS counters (key_hash TEXT PRIMARY KEY, seq INTEGER NOT NULL, bytes INTEGER NOT NULL);
-CREATE TABLE IF NOT EXISTS claims (claim_hash TEXT PRIMARY KEY, key_box TEXT NOT NULL, expires INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS claims (claim_hash TEXT PRIMARY KEY, session TEXT NOT NULL, expires INTEGER NOT NULL);
 CREATE TABLE IF NOT EXISTS events (id TEXT PRIMARY KEY, seen INTEGER NOT NULL);
 CREATE TABLE IF NOT EXISTS rates (bucket TEXT PRIMARY KEY, count INTEGER NOT NULL, window INTEGER NOT NULL);
