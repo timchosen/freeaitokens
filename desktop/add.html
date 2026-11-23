@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'">
+<title>Add a free provider</title>
+<style>
+  :root { color-scheme: light dark; --muted: #595959; --line: #ddd; --accent: #2563eb; --link: #1d4ed8; --ok: #15803d; --bad: #b91c1c; }
+  @media (prefers-color-scheme: dark) { :root { --muted: #b3b3b3; --line: #444; --link: #93c5fd; --ok: #4ade80; --bad: #f87171; } }
+  body { font: 14px/1.5 system-ui, sans-serif; margin: 0; padding: 20px; }
+  h1 { font-size: 18px; margin: 0 0 12px; }
+  label { display: block; font-weight: 600; margin: 14px 0 4px; }
+  select, input, button { font: inherit; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--line); width: 100%; box-sizing: border-box; }
+  button { background: var(--accent); color: #fff; border: 0; cursor: pointer; margin-top: 10px; }
+  button.secondary { background: transparent; color: var(--link); border: 1px solid var(--link); }
+  button:disabled { opacity: .5; cursor: default; }
+  pre { white-space: pre-wrap; font: inherit; background: color-mix(in srgb, currentColor 6%, transparent); padding: 10px; border-radius: 6px; }
+  .note { color: var(--muted); font-size: 13px; }
+  #status { margin-top: 12px; min-height: 1.5em; }
+  .ok { color: var(--ok); } .bad { color: var(--bad); }
+</style>
+</head>
+<body>
+<h1>Add a free provider</h1>
+<p class="note">Use your own account, one per provider. Keys are tested, then stored in your system keychain.</p>
+<label for="prov">Provider</label>
+<select id="prov"></select>
+<p class="note" id="note"></p>
+<div id="keyFlow">
+  <pre id="steps"></pre>
+  <button class="secondary" id="openPage">Open the key page</button>
+  <label for="key">Paste your key</label>
+  <input id="key" type="password" autocomplete="off" spellcheck="false">
+  <button id="save">Check and save</button>
+</div>
+<div id="connectFlow" hidden>
+  <p>Sign in to OpenRouter in your browser and approve the connection. No key to copy.</p>
+  <button id="connect">Connect OpenRouter</button>
+</div>
+<div id="status" role="status"></div>
+<script>
+  const $ = (id) => document.getElementById(id);
+  let list = [];
+  const current = () => list.find((p) => p.id === $('prov').value);
+  const status = (text, cls = '') => { $('status').textContent = text; $('status').className = cls; };
+  function show() {
+    const p = current();
+    if (!p) return;
+    $('note').textContent = p.note;
+    $('steps').textContent = p.steps;
+    $('keyFlow').hidden = !!p.connect;
+    $('connectFlow').hidden = !p.connect;
+    $('key').value = '';
+    status('');
+  }
+  async function load() {
+    list = await window.freeaitokens.providers();
+    $('prov').replaceChildren(...list.map((p) => Object.assign(document.createElement('option'), { value: p.id, textContent: p.name })));
+    if (!list.length) { document.body.querySelector('#keyFlow').hidden = true; status('Every provider already has a key.', 'ok'); return; }
+    show();
+  }
+  async function run(button, work) {
+    button.disabled = true;
+    status('Checking…');
+    const r = await work();
+    button.disabled = false;
+    if (r.ok) { status(`Added ${current().name}.`, 'ok'); await load(); } else status(`That did not work: ${r.reason}.`, 'bad');
+  }
+  $('prov').addEventListener('change', show);
+  $('openPage').addEventListener('click', () => { const p = current(); if (p?.open) window.freeaitokens.open(p.open); });
+  $('save').addEventListener('click', () => run($('save'), () => window.freeaitokens.save(current().id, $('key').value)));
+  $('key').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('save').click(); });
+  $('connect').addEventListener('click', () => run($('connect'), () => window.freeaitokens.connect(current().id)));
+  load();
+</script>
+</body>
+</html>

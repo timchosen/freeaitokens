@@ -1,0 +1,31 @@
+{
+  "name": "freeaitokens-desktop",
+  "productName": "freeaitokens",
+  "version": "0.1.0",
+  "private": true,
+  "description": "freeaitokens in your menu bar: free AI from many providers on one local endpoint.",
+  "type": "module",
+  "main": "main.js",
+  "license": "MIT",
+  "author": "Timchosen Uzua",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --publish never"
+  },
+  "dependencies": {
+    "freeaitokens": "file:.."
+  },
+  "devDependencies": {
+    "electron": "45.2.0",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "io.github.timchosen.freeaitokens",
+    "files": ["main.js", "logic.js", "preload.cjs", "add.html", "icons/**"],
+    "icon": "icons/icon.png",
+    "mac": { "target": ["dmg", "zip"], "category": "public.app-category.developer-tools", "identity": null, "extendInfo": { "LSUIElement": true } },
+    "win": { "target": ["nsis"] },
+    "linux": { "target": ["AppImage", "deb"], "category": "Development" },
+    "publish": { "provider": "github", "owner": "timchosen", "repo": "freeaitokens" }
+  }
+}

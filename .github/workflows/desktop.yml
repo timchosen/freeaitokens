@@ -1,0 +1,25 @@
+# Builds the tray app on each OS and attaches it to a draft GitHub release. Run by pushing a tag like desktop-v0.1.0.
+name: desktop
+on:
+  push:
+    tags: ['desktop-v*']
+permissions:
+  contents: write
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [macos-latest, macos-13, windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci && npm test && npm run build
+      - run: npm install
+        working-directory: desktop
+      - run: npx electron-builder --publish always
+        working-directory: desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

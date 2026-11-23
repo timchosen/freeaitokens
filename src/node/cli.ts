@@ -80,11 +80,11 @@ export function banner(port: number, token: string, s: { keyless: number; keyed:
   return lines.join('\n');
 }
 
-function loadCatalogue(): Provider[] {
+export function loadCatalogue(): Provider[] {
   return parseCatalogue(JSON.parse(readFileSync(new URL('../catalogue.json', import.meta.url), 'utf8')));
 }
 
-function makeDeps(catalogue: Provider[], keys: KeyStore, a: Args): RouteDeps {
+export function makeDeps(catalogue: Provider[], keys: KeyStore, a: Args): RouteDeps {
   return {
     catalogue,
     keys: (id) => keys.get(id),
@@ -169,5 +169,6 @@ export async function main(argv: string[]): Promise<void> {
   }
 }
 
-const invoked = process.argv[1] && pathToFileURL(realpathSync(process.argv[1])).href === import.meta.url;
+// Imported (by the desktop app) rather than run: argv[1] may be missing or not a file.
+const invoked = (() => { try { return !!process.argv[1] && pathToFileURL(realpathSync(process.argv[1])).href === import.meta.url; } catch { return false; } })();
 if (invoked) main(process.argv.slice(2)).catch((e) => fail((e as Error).message));
