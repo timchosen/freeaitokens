@@ -5,6 +5,7 @@ import { mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { lookup as dnsLookup } from 'node:dns';
 import { get as httpsGet } from 'node:https';
+import { isIP } from 'node:net';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadCatalogue, makeDeps, parseArgs } from 'freeaitokens/dist/node/cli.js';
@@ -206,7 +207,11 @@ function getOnce(url) {
 }
 async function download(url) {
   for (let hop = 0; hop < 5; hop++) {
-    if (new URL(url).protocol !== 'https:') return null;
+    const u = new URL(url);
+    if (u.protocol !== 'https:') return null;
+    // A bare IP address skips the name lookup, so it is checked here.
+    const host = u.hostname.replace(/^\[|\]$/g, '');
+    if (isIP(host) && privateAddress(host)) return null;
     const r = await getOnce(url);
     if (r.next) { url = r.next; continue; }
     return r.bytes;
