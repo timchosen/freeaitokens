@@ -193,3 +193,10 @@ test('filterModels matches search, provider, kind, features and context', () => 
   assert.deepEqual(f({ images: true, keyless: true }), ['nemotron']);
   assert.deepEqual(f({ minContext: 100000 }), ['gpt-oss-120b']);
 });
+
+import { generated } from '../site/build.mjs';
+
+test('generated pages refuse a provider id that is not a plain slug', () => {
+  const p = { id: '../evil', name: 'Evil', keyless: true, models: [] };
+  assert.throws(() => generated([p]), /provider id/);
+});

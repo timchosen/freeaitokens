@@ -93,7 +93,9 @@ function keyBlock(p) {
   return `${connect}${steps}<p class="foot-buttons">${buttons}</p><p class="small muted">Then paste the key into FreeAITokens: <b>Add a provider…</b> in the app, or <code>npx freeaitokens add</code>.</p>`;
 }
 
-function generated(cat) {
+export function generated(cat) {
+  // Provider ids become file paths and URLs.
+  for (const p of cat) if (!/^[a-z0-9-]+$/.test(p.id)) throw new Error(`site: bad provider id ${JSON.stringify(p.id)}`);
   const rows = modelRows(cat);
   const pages = [];
   const cards = cat.map((p) => {
