@@ -121,3 +121,14 @@ test('discovered models are kept on later runs without being rediscovered', asyn
   assert.ok(r2.providers.find((p) => p.id === 'k')!.models.some((m) => m.id === 'new:free'));
   assert.ok(calls.includes('k/new:free')); // still re-tested in rotation
 });
+
+test('media models are kept as listed, never probed and never discovered as chat', async () => {
+  const c = cat();
+  c[1].media = [{ id: 'pic:free', kind: 'image', quality: 0.5 }];
+  const { f, calls } = fakeFetch({ 'k/v1/models': () => json({ data: [{ id: 'pic:free' }] }) });
+  const out = (await buildCatalogue(c, keys, f)).providers;
+  const k = out.find((p) => p.id === 'k')!;
+  assert.deepEqual(k.media, [{ id: 'pic:free', kind: 'image', quality: 0.5 }]);
+  assert.deepEqual(k.models.map((m) => m.id), ['x:free']);
+  assert.ok(!calls.includes('k/pic:free'));
+});

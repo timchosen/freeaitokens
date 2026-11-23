@@ -38,6 +38,11 @@ The launchers only affect that one session and write nothing to your tool's conf
 - **Fails over.** On a rate limit, server error or timeout it tries the next model before your tool sees anything. If everything is busy and capacity returns within 30 seconds, it waits; otherwise it tells you when capacity returns.
 - **Tracks free limits** per provider, model and key, by the minute and by the day, and corrects itself from the limits providers report.
 - **Speaks five formats**: OpenAI chat completions, Anthropic Messages (Claude Code), OpenAI Responses (Codex), Gemini (Gemini CLI) and Ollama (`/api/chat`, for local-model clients that can send a key).
+- **Not only chat.** The same endpoint takes the OpenAI routes for embeddings (`/v1/embeddings`), plain completions such as editor autocomplete (`/v1/completions`), image generation (`/v1/images/generations`), text to speech (`/v1/audio/speech`), transcription (`/v1/audio/transcriptions`) and video (`/v1/videos`, then poll `/v1/videos/<id>` and download `/v1/videos/<id>/content`). Each goes to a free provider that offers that kind of model, with the same failover and limit tracking. The body is passed through as sent, apart from the model name, so options a provider does not support may be refused by it. Video jobs are remembered only while freeaitokens runs.
+
+  - **Free today:** embeddings (Gemini, OpenRouter, SEA-LION, OVH), completions (Cerebras, OpenRouter, OVH), images (OpenRouter), text to speech (Groq, OpenRouter), transcription (Groq, OVH). No provider offers free video yet, so `/v1/videos` answers that none is set up.
+  - **Embeddings:** vectors from different models cannot be compared. The response names the model used; send that name as `model` (for example `gemini-embedding-001` or `ovh/bge-m3`) and every later request stays on it instead of switching.
+  - **Groq text to speech** works only after you accept the model's terms in the Groq console. Output is WAV, at most 200 characters per request.
 
 ## Providers
 
@@ -107,7 +112,7 @@ The endpoint listens on `127.0.0.1` only and needs the local token from the star
 
 - **Cursor**: it sends custom-endpoint traffic through its own servers, which cannot reach a local address.
 - **The ChatGPT app**: it cannot use a custom endpoint.
-- Images, audio and embeddings endpoints; editor autocomplete (`/v1/completions`); a dashboard.
+- Image editing, translation of audio, realtime voice; a dashboard.
 - Codex's connected-app (MCP) tools and web search are not passed to free models: they add more context than free models accept.
 
 ## Development

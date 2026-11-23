@@ -10,6 +10,8 @@ import { fromOllamaChat, fromOllamaGenerate, toOllamaChat, toOllamaGenerate, toO
 import { fromGemini, toGemini, toGeminiStream, geminiCount, geminiError, GEMINI_MODEL } from '../core/gemini.js';
 import { localToken, saveState, loadState } from './state.js';
 import { LimitTracker } from '../core/limits.js';
+import { routeMedia, NoProviderError, KIND_PATH, type MediaBody, type MediaCandidate } from '../core/media.js';
+import type { MediaKind } from '../core/catalogue.js';
 
 export interface ServerHandle { port: number; address: string; reused: boolean; close(): Promise<void> }
 
@@ -68,6 +70,12 @@ const GETS: Record<string, unknown> = {
   '/api/tags': OLLAMA_TAGS,
   '/api/version': { version: '0.12.0' },
 };
+// OpenAI-style endpoints for models that are not chat: the body passes through, only the model changes.
+const MEDIA: Record<string, MediaKind> = {
+  '/v1/embeddings': 'embedding', '/v1/completions': 'completion', '/v1/images/generations': 'image',
+  '/v1/audio/speech': 'speech', '/v1/audio/transcriptions': 'transcription', '/v1/videos': 'video',
+};
+const MAX_JOBS = 1000;
 // Gemini puts the model in the path: /v1beta/models/<model>:<method>.
 const pattern = (path: string) => path.replace(/^\/v1beta\/models\/[^/:]+/, '/v1beta/models/*');
 
@@ -80,7 +88,7 @@ function tokenOk(req: http.IncomingMessage, query: URLSearchParams, token: strin
   return got.length === want.length && timingSafeEqual(got, want);
 }
 
-async function readJson(req: http.IncomingMessage): Promise<unknown> {
+async function readRaw(req: http.IncomingMessage): Promise<Buffer> {
   let size = 0;
   const parts: Buffer[] = [];
   for await (const c of req) {
@@ -88,7 +96,32 @@ async function readJson(req: http.IncomingMessage): Promise<unknown> {
     if (size > MAX_BODY) throw new HttpError(413, 'Request body too large.');
     parts.push(c);
   }
-  try { return JSON.parse(Buffer.concat(parts).toString('utf8')); } catch { throw new HttpError(400, 'Request body is not valid JSON.'); }
+  return Buffer.concat(parts);
+}
+
+async function readJson(req: http.IncomingMessage): Promise<unknown> {
+  const raw = await readRaw(req);
+  try { return JSON.parse(raw.toString('utf8')); } catch { throw new HttpError(400, 'Request body is not valid JSON.'); }
+}
+
+async function readMedia(req: http.IncomingMessage): Promise<MediaBody> {
+  const type = req.headers['content-type'] ?? '';
+  if (!type.startsWith('multipart/form-data')) {
+    const json = await readJson(req);
+    if (!json || typeof json !== 'object' || Array.isArray(json)) throw new HttpError(400, 'Request body must be a JSON object.');
+    return { json: json as Record<string, unknown> };
+  }
+  const raw = await readRaw(req);
+  try { return { form: await new Request('http://local/', { method: 'POST', headers: { 'content-type': type }, body: new Uint8Array(raw) }).formData() }; } catch { throw new HttpError(400, 'Request body is not valid multipart form data.'); }
+}
+
+// Passes a provider's answer through as it came: JSON, audio, images or video.
+function pipe(res: http.ServerResponse, r: Response) {
+  res.writeHead(r.status, { 'content-type': r.headers.get('content-type') ?? 'application/octet-stream' });
+  if (!r.body) return void res.end();
+  const body = Readable.fromWeb(r.body as any);
+  body.pipe(res);
+  res.on('close', () => body.destroy());
 }
 
 function send(res: http.ServerResponse, status: number, body: unknown, headers: Record<string, string> = {}) {
@@ -96,6 +129,8 @@ function send(res: http.ServerResponse, status: number, body: unknown, headers: 
 }
 
 export function makeHandler(deps: RouteDeps, token: string, formats: Record<string, Format>) {
+  // Which provider made each video job, so polling and download go back to it. In memory: a restart forgets them.
+  const jobs = new Map<string, MediaCandidate>();
   return async (req: http.IncomingMessage, res: http.ServerResponse) => {
     const [path, query = ''] = (req.url ?? '/').split('?');
     if (req.method === 'GET' && path === '/health') {
@@ -108,8 +143,29 @@ export function makeHandler(deps: RouteDeps, token: string, formats: Record<stri
     const errOf = fmt ?? (path.startsWith('/v1beta/') ? gemini : path.startsWith('/api/') ? ollamaChat : openai);
     if (!tokenOk(req, new URLSearchParams(query), token)) return send(res, 401, errOf.error(401, 'Missing or wrong local token. Run `freeaitokens` to see it.'));
     if (req.method === 'GET' && key in GETS) return send(res, 200, GETS[key]);
-    if (req.method !== 'POST' || !fmt) return send(res, 404, errOf.error(404, `Unknown endpoint ${req.method} ${path}.`));
+    const kind = req.method === 'POST' ? MEDIA[path] : undefined;
+    const video = req.method === 'GET' ? /^\/v1\/videos\/([^/]+)(\/content)?$/.exec(path) : null;
+    if (!kind && !video && (req.method !== 'POST' || !fmt)) return send(res, 404, errOf.error(404, `Unknown endpoint ${req.method} ${path}.`));
     try {
+      if (video) {
+        const c = jobs.get(decodeURIComponent(video[1]));
+        if (!c) return send(res, 404, openaiError(404, 'Unknown video job. Jobs are forgotten when freeaitokens restarts.'));
+        const r = await deps.fetch(`${c.model.baseUrl ?? c.provider.baseUrl}${c.model.path ?? KIND_PATH.video}/${encodeURIComponent(video[1])}${video[2] ?? ''}`,
+          { headers: c.apiKey ? { authorization: `Bearer ${c.apiKey}` } : {}, signal: AbortSignal.timeout(120_000) });
+        return pipe(res, r);
+      }
+      if (kind) {
+        const { response, candidate } = await routeMedia(kind, await readMedia(req), deps);
+        if (response.status >= 400) return send(res, response.status, openaiError(response.status, `Provider rejected the request: ${(await response.text()).slice(0, 500)}`));
+        if (kind !== 'video') return pipe(res, response);
+        const j: any = await response.json();
+        if (typeof j?.id === 'string') {
+          if (jobs.size >= MAX_JOBS) jobs.delete(jobs.keys().next().value!);
+          jobs.set(j.id, candidate);
+        }
+        return send(res, response.status, j);
+      }
+      if (!fmt) throw new HttpError(404, `Unknown endpoint ${req.method} ${path}.`);
       const body: any = await readJson(req);
       if (fmt.direct) return send(res, 200, fmt.direct(body));
       const chat = fmt.toChat(body, path);
@@ -133,6 +189,7 @@ export function makeHandler(deps: RouteDeps, token: string, formats: Record<stri
         const headers: Record<string, string> = status === 429 ? { 'retry-after': String(Math.max(1, Math.ceil((e.retryAt - deps.tracker.now()) / 1000))) } : {};
         return send(res, status, errOf.error(status, e.message), headers);
       }
+      if (e instanceof NoProviderError) return send(res, e.status, errOf.error(e.status, e.message));
       if (e instanceof HttpError || e instanceof BadRequest) return send(res, e.status, errOf.error(e.status, e.message));
       return send(res, 500, errOf.error(500, `Internal error: ${(e as Error).message}`));
     } finally {

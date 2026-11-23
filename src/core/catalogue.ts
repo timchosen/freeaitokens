@@ -1,5 +1,9 @@
 export interface Limits { rpm?: number; rpd?: number; tpm?: number; tpd?: number }
 export interface Model { id: string; context: number; tools: boolean; images: boolean; quality: number; limits?: Limits }
+export const MEDIA_KINDS = ['embedding', 'completion', 'image', 'speech', 'transcription', 'video'] as const;
+export type MediaKind = typeof MEDIA_KINDS[number];
+// Non-chat models live apart from `models` so older clients, which treat every model as chat, never pick one.
+export interface MediaModel { id: string; kind: MediaKind; quality: number; limits?: Limits; baseUrl?: string; path?: string; context?: number }
 export interface Provider {
   id: string;
   name: string;
@@ -17,6 +21,7 @@ export interface Provider {
   discover?: string; // regex of model ids the catalogue service may add automatically
   limits?: Limits;
   models: Model[];
+  media?: MediaModel[];
 }
 
 function fail(where: string, field: string): never {
@@ -40,6 +45,14 @@ export function parseCatalogue(json: unknown): Provider[] {
       if (typeof m.tools !== 'boolean') fail(mw, 'tools');
       if (typeof m.images !== 'boolean') fail(mw, 'images');
       if (typeof m.quality !== 'number' || m.quality < 0 || m.quality > 1) fail(mw, 'quality');
+    }
+    for (const m of p.media ?? []) {
+      const mw = `${where}/${m?.id ?? '?'}`;
+      if (typeof m?.id !== 'string') fail(where, 'media.id');
+      if (!MEDIA_KINDS.includes(m.kind)) fail(mw, 'kind');
+      if (typeof m.quality !== 'number' || m.quality < 0 || m.quality > 1) fail(mw, 'quality');
+      if (m.baseUrl !== undefined && !String(m.baseUrl).startsWith('https://')) fail(mw, 'baseUrl');
+      if (m.path !== undefined && !/^\/[\w\-./]*$/.test(m.path)) fail(mw, 'path'); // a path, never a new host
     }
     if (p.keyPattern !== undefined) new RegExp(p.keyPattern); // throws on a bad pattern
     if (p.discover !== undefined) new RegExp(p.discover);

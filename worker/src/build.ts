@@ -76,7 +76,7 @@ export async function buildCatalogue(base: Provider[], keyFor: (id: string) => s
     if (!p.discover || budget <= 1 || fresh <= 0) continue;
     budget--;
     const want = new RegExp(p.discover);
-    const known = new Set(modelsOf(p).map((m) => m.id));
+    const known = new Set([...modelsOf(p), ...(p.media ?? [])].map((m) => m.id)); // a listed media model is never taken for chat
     for (const c of await listModels(p, keyFor(p.id), f)) {
       if (budget <= 0 || fresh <= 0) break;
       if (known.has(c.id) || state.gone[`${p.id}/${c.id}`] || !want.test(c.id) || NOT_CHAT.test(c.id)) continue;

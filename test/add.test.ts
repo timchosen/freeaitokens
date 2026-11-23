@@ -144,3 +144,11 @@ test('keySteps shows and opens the sign-up link, labelled, when it is a referral
   assert.match(ref.text, /https:\/\/console\.groq\.com\/\?ref=abc \(referral link\)/);
   assert.ok(ref.text.includes(byId('groq').keyUrl!));
 });
+
+test('runList names the non-chat kinds a provider offers', () => {
+  const store: KeyStore = { backend: 'file', get: () => null, set() {}, remove() {} };
+  const c = parseCatalogue([{ id: 'x', name: 'X', baseUrl: 'https://x.example', keyless: true, paid: false, terms: 'ok', steps: [],
+    models: [{ id: 'm', context: 1000, tools: false, images: false, quality: 0.5 }],
+    media: [{ id: 'e', kind: 'embedding', quality: 0.5 }, { id: 'i', kind: 'image', quality: 0.5 }, { id: 'i2', kind: 'image', quality: 0.5 }] }]);
+  assert.match(runList(c, store, new LimitTracker(emptyState())), /also: embedding, image$/);
+});
