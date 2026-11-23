@@ -1,0 +1,61 @@
+#!/bin/sh
+# Installs the FreeAITokens desktop app from its latest GitHub release. Nothing else is changed.
+#   macOS: the app goes into /Applications (or ~/Applications if that is not writable) and opens.
+#   Linux: the AppImage goes to ~/.local/bin/freeaitokens-app.
+# Source and explanation: https://freeaitokens.co/install-script
+set -eu
+
+# Everything is in main, so a download cut off halfway runs nothing.
+main() {
+BASE="https://github.com/timchosen/freeaitokens/releases/latest/download"
+OS="${FREEAITOKENS_OS:-$(uname -s)}"
+ARCH="${FREEAITOKENS_ARCH:-$(uname -m)}"
+DRY="${FREEAITOKENS_DRY_RUN:-}"
+
+fail() { echo "FreeAITokens: $1" >&2; exit 1; }
+
+case "$OS" in
+  Darwin)
+    FILE="FreeAITokens-mac.zip"
+    if [ -w /Applications ]; then DEST="/Applications"; else DEST="$HOME/Applications"; fi
+    ;;
+  Linux)
+    case "$ARCH" in
+      x86_64|amd64) FILE="FreeAITokens-linux-x86_64.AppImage" ;;
+      aarch64|arm64) FILE="FreeAITokens-linux-arm64.AppImage" ;;
+      *) fail "this computer's processor ($ARCH) is not supported. See https://freeaitokens.co/download" ;;
+    esac
+    DEST="$HOME/.local/bin/freeaitokens-app"
+    ;;
+  *) fail "$OS is not supported by this script. On Windows, use the PowerShell line at https://freeaitokens.co/download" ;;
+esac
+
+URL="$BASE/$FILE"
+echo "Downloading $URL"
+echo "Installing to $DEST"
+[ -n "$DRY" ] && exit 0
+
+command -v curl >/dev/null 2>&1 || fail "curl is needed but not installed."
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT
+curl -fL --progress-bar "$URL" -o "$TMP/$FILE" || fail "the download failed. Check your connection and try again."
+
+if [ "$OS" = Darwin ]; then
+  ditto -x -k "$TMP/$FILE" "$TMP/app"
+  APP="$(find "$TMP/app" -maxdepth 1 -name '*.app' | head -n 1)"
+  [ -n "$APP" ] || fail "the download did not contain the app."
+  mkdir -p "$DEST"
+  rm -rf "$DEST/$(basename "$APP")"
+  mv "$APP" "$DEST/"
+  echo "Installed $DEST/$(basename "$APP"). Opening it now; look for it in your menu bar."
+  open "$DEST/$(basename "$APP")"
+else
+  mkdir -p "$(dirname "$DEST")"
+  chmod +x "$TMP/$FILE"
+  mv -f "$TMP/$FILE" "$DEST"
+  echo "Installed $DEST. Start it with: $DEST"
+  echo "(Some systems need libfuse2 to run AppImages: sudo apt install libfuse2)"
+fi
+}
+
+main "$@"

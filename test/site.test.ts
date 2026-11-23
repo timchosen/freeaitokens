@@ -60,3 +60,29 @@ test('starsLabel hides small or unknown counts', () => {
   assert.equal(starsLabel(128), '★ 128');
   assert.equal(starsLabel(1234), '★ 1.2k');
 });
+
+import { spawnSync } from 'node:child_process';
+const SCRIPT = new URL('../site/static/install', import.meta.url).pathname;
+function dry(os: string, arch: string, home = '/home/u') {
+  return spawnSync('sh', [SCRIPT], { encoding: 'utf8', env: { PATH: process.env.PATH, HOME: home, FREEAITOKENS_DRY_RUN: '1', FREEAITOKENS_OS: os, FREEAITOKENS_ARCH: arch } });
+}
+
+test('install script picks the right file and place for each system', () => {
+  for (const arch of ['arm64', 'x86_64']) {
+    const r = dry('Darwin', arch);
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(r.stdout, /releases\/latest\/download\/FreeAITokens-mac\.zip/);
+    assert.match(r.stdout, /Applications/);
+  }
+  const l = dry('Linux', 'x86_64');
+  assert.match(l.stdout, /FreeAITokens-linux-x86_64\.AppImage/);
+  assert.match(l.stdout, /\/home\/u\/\.local\/bin\/freeaitokens-app/);
+  assert.match(dry('Linux', 'aarch64').stdout, /FreeAITokens-linux-arm64\.AppImage/);
+});
+
+test('install script refuses an unsupported system and changes nothing', () => {
+  const r = dry('FreeBSD', 'amd64');
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /not supported/);
+  assert.equal(spawnSync('sh', ['-n', SCRIPT]).status, 0);
+});
