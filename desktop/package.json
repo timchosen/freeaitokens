@@ -1,7 +1,7 @@
 {
   "name": "freeaitokens-desktop",
   "productName": "freeaitokens",
-  "version": "0.1.0",
+  "version": "0.3.1",
   "private": true,
   "description": "freeaitokens in your menu bar: free AI from many providers on one local endpoint.",
   "type": "module",
@@ -22,13 +22,73 @@
   },
   "build": {
     "appId": "io.github.timchosen.freeaitokens",
-    "files": ["main.js", "logic.js", "preload.cjs", "add.html", "icons/**"],
+    "files": [
+      "main.js",
+      "logic.js",
+      "preload.cjs",
+      "add.html",
+      "icons/**"
+    ],
     "icon": "icons/icon.png",
-    "mac": { "target": [{ "target": "dmg", "arch": ["universal"] }, { "target": "zip", "arch": ["universal"] }], "artifactName": "FreeAITokens-mac.${ext}", "category": "public.app-category.developer-tools", "identity": "-", "hardenedRuntime": false, "extendInfo": { "LSUIElement": true } },
-    "win": { "target": ["nsis"], "artifactName": "FreeAITokens-windows.${ext}" },
-    "linux": { "target": [{ "target": "AppImage", "arch": ["x64", "arm64"] }, { "target": "deb", "arch": ["x64", "arm64"] }], "category": "Development", "maintainer": "Timchosen Uzua" },
-    "appImage": { "artifactName": "FreeAITokens-linux-${arch}.${ext}" },
-    "deb": { "artifactName": "FreeAITokens-linux-${arch}.${ext}" },
-    "publish": { "provider": "github", "owner": "timchosen", "repo": "freeaitokens" }
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "artifactName": "FreeAITokens-mac.${ext}",
+      "category": "public.app-category.developer-tools",
+      "identity": "-",
+      "hardenedRuntime": false,
+      "extendInfo": {
+        "LSUIElement": true
+      }
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "artifactName": "FreeAITokens-windows.${ext}"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "category": "Development",
+      "maintainer": "Timchosen Uzua"
+    },
+    "appImage": {
+      "artifactName": "FreeAITokens-linux-${arch}.${ext}"
+    },
+    "deb": {
+      "artifactName": "FreeAITokens-linux-${arch}.${ext}"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "timchosen",
+      "repo": "freeaitokens"
+    }
   }
 }
