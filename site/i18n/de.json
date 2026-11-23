@@ -110,5 +110,21 @@
   "hero_models": "KI-Modelle",
   "hero_providers": "Anbieter",
   "models_all": "Alle Modelle ansehen",
-  "og_alt": "FreeAITokens: Milliarden kostenlose KI-Tokens im Monat von vielen Anbietern, in einer App"
+  "og_alt": "FreeAITokens: Milliarden kostenlose KI-Tokens im Monat von vielen Anbietern, in einer App",
+  "mob_eyebrow": "Demnächst",
+  "mob_title": "FreeAITokens auf deinem Handy",
+  "mob_lead": "Chatte, erstelle Bilder und mach Sprache zu Text auf iPhone und Android, mit denselben kostenlosen Modellen. Dazwischen wird nichts gehostet: Dein Handy spricht direkt mit den Anbietern über deine eigenen Schlüssel oder mit FreeAITokens auf deinem Computer.",
+  "mob_chat": "Chat",
+  "mob_images": "Bilder",
+  "mob_voice": "Sprache zu Text",
+  "mob_m_q": "Plane drei günstige Tage in Lissabon",
+  "mob_m_a": "Tag 1: morgens die Alfama und die Burg, dann ein kostenloser Sonnenuntergang am Miradouro da Graça. Tag 2: …",
+  "mob_m_q2": "Bitte vegetarisch",
+  "mob_m_ask": "Nachricht",
+  "mob_m_img": "Ein Sonnenuntergang über ruhigem Meer, Aquarell",
+  "mob_m_rec": "Hört zu…",
+  "mob_m_tr": "„Erinnere mich, morgen um zehn die Bank anzurufen.“",
+  "mob_watch": "Willst du wissen, wann sie kommt? Folge dem Projekt auf",
+  "mob_platforms": "iPhone und Android",
+  "mob_see": "Was kommt"
 }

@@ -91,6 +91,32 @@ function modelsSection(cat, t, lang, code) {
 </section>`;
 }
 
+// Coming-soon phone apps: three phone mockups drawn in HTML/CSS, every word from the language file.
+function phone(label, screen) {
+  return `<figure class="phone" role="img" aria-label="${esc(label)}"><div class="notch"></div><div class="screen">${screen}</div><figcaption>${esc(label)}</figcaption></figure>`;
+}
+function mobileSection(t, repoUrl) {
+  const chat = `<div class="ph-top"><b>${esc(t.mob_chat)}</b><span class="ph-chip">Llama 3.3 · Groq</span></div>
+    <p class="ph-u">${esc(t.mob_m_q)}</p><p class="ph-a">${esc(t.mob_m_a)}</p><p class="ph-u short">${esc(t.mob_m_q2)}</p><div class="ph-typing"><i></i><i></i><i></i></div>
+    <div class="ph-input">${esc(t.mob_m_ask)}</div>`;
+  const image = `<div class="ph-top"><b>${esc(t.mob_images)}</b><span class="ph-chip">FLUX</span></div>
+    <p class="ph-u">${esc(t.mob_m_img)}</p><div class="ph-art"><span class="sun"></span><span class="sea"></span><span class="sea two"></span></div>
+    <div class="ph-input">${esc(t.mob_m_ask)}</div>`;
+  const voice = `<div class="ph-top"><b>${esc(t.mob_voice)}</b><span class="ph-chip">Whisper</span></div>
+    <div class="ph-mic"><span></span></div><div class="ph-wave">${'<i></i>'.repeat(14)}</div><p class="ph-rec">${esc(t.mob_m_rec)}</p>
+    <p class="ph-a">${esc(t.mob_m_tr)}</p>`;
+  return `<section class="section center mobile" id="mobile">
+  <p class="eyebrow">${esc(t.mob_eyebrow)}</p>
+  <h2>${esc(t.mob_title)}</h2>
+  <p class="muted narrow">${esc(t.mob_lead)}</p>
+  <div class="phones">${phone(t.mob_chat, chat)}${phone(t.mob_images, image)}${phone(t.mob_voice, voice)}</div>
+  <p class="small">${esc(t.mob_watch)} <a href="${repoUrl}">GitHub</a></p>
+</section>`;
+}
+function mobileSoon(t, code) {
+  return `<li id="mobile"><span><b>${esc(t.mob_platforms)}</b> · ${esc(t.mob_eyebrow)}</span><span><a href="${code === 'en' ? '' : `/${code}`}/#mobile">${esc(t.mob_see)}</a></span></li>`;
+}
+
 export function render(body, { title, description, path, url = path, code = 'en' }) {
   const t = strings(code);
   const l = locales.find((x) => x.code === code);
@@ -275,7 +301,7 @@ export function build(outDir = join(here, 'dist')) {
   const files = readdirSync(pagesDir).filter((f) => f.endsWith('.html'));
   for (const l of locales) {
     const t = strings(l.code);
-    const fill = { ...base, monthly: approx(s.monthlyTokens, t, l.lang), heroStats: heroStats(catalogue, s, t, l.lang), modelsSection: modelsSection(catalogue, t, l.lang, l.code), providerTable: providerTable(catalogue, t, l.lang), providerTerms: providerTerms(catalogue, t) };
+    const fill = { ...base, monthly: approx(s.monthlyTokens, t, l.lang), heroStats: heroStats(catalogue, s, t, l.lang), mobileSection: mobileSection(t, base.repoUrl), mobileSoon: mobileSoon(t, l.code), modelsSection: modelsSection(catalogue, t, l.lang, l.code), providerTable: providerTable(catalogue, t, l.lang), providerTerms: providerTerms(catalogue, t) };
     const out = l.code === 'en' ? outDir : join(outDir, l.code);
     mkdirSync(out, { recursive: true });
     for (const f of files) {

@@ -110,5 +110,21 @@
   "hero_models": "modèles d'IA",
   "hero_providers": "fournisseurs",
   "models_all": "Voir tous les modèles",
-  "og_alt": "FreeAITokens : des milliards de jetons d'IA gratuits par mois, de nombreux fournisseurs, dans une seule app"
+  "og_alt": "FreeAITokens : des milliards de jetons d'IA gratuits par mois, de nombreux fournisseurs, dans une seule app",
+  "mob_eyebrow": "Bientôt",
+  "mob_title": "FreeAITokens sur votre téléphone",
+  "mob_lead": "Discutez, créez des images et transformez la voix en texte sur iPhone et Android, avec les mêmes modèles gratuits. Rien n’est hébergé entre les deux : votre téléphone parle directement aux fournisseurs avec vos propres clés, ou à FreeAITokens sur votre ordinateur.",
+  "mob_chat": "Chat",
+  "mob_images": "Images",
+  "mob_voice": "Voix en texte",
+  "mob_m_q": "Prévois trois jours pas chers à Lisbonne",
+  "mob_m_a": "Jour 1 : l’Alfama et le château le matin, puis un coucher de soleil gratuit au Miradouro da Graça. Jour 2 : …",
+  "mob_m_q2": "Version végétarienne",
+  "mob_m_ask": "Message",
+  "mob_m_img": "Un coucher de soleil sur une mer calme, aquarelle",
+  "mob_m_rec": "Écoute…",
+  "mob_m_tr": "« Rappelle-moi d’appeler la banque demain à dix heures. »",
+  "mob_watch": "Envie de savoir quand elle sort ? Suivez le projet sur",
+  "mob_platforms": "iPhone et Android",
+  "mob_see": "Voir ce qui arrive"
 }

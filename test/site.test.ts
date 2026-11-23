@@ -290,3 +290,14 @@ test('every page carries link-preview tags pointing at the 1200x630 card', () =>
   assert.equal(png.readUInt32BE(16), 1200);
   assert.equal(png.readUInt32BE(20), 630);
 });
+
+test('mobile apps are shown as coming soon on the home and download pages in every language', () => {
+  const out = mkdtempSync(join(tmpdir(), 'site-mobile-'));
+  build(out);
+  const en = readFileSync(join(out, 'index.html'), 'utf8');
+  assert.equal((en.match(/class="phone" role="img"/g) ?? []).length, 3);
+  assert.match(en, /id="mobile"[\s\S]*Coming soon/);
+  assert.match(readFileSync(join(out, 'download.html'), 'utf8'), /<li id="mobile">.*href="\/#mobile"/);
+  assert.match(readFileSync(join(out, 'de', 'download.html'), 'utf8'), /<li id="mobile">.*href="\/de\/#mobile"/);
+  assert.match(readFileSync(join(out, 'ja', 'index.html'), 'utf8'), /近日公開/);
+});

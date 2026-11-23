@@ -110,5 +110,21 @@
   "hero_models": "AIモデル",
   "hero_providers": "プロバイダー",
   "models_all": "すべてのモデルを見る",
-  "og_alt": "FreeAITokens：多くのプロバイダーから毎月数十億の無料AIトークンを、ひとつのアプリで"
+  "og_alt": "FreeAITokens：多くのプロバイダーから毎月数十億の無料AIトークンを、ひとつのアプリで",
+  "mob_eyebrow": "近日公開",
+  "mob_title": "スマホで FreeAITokens",
+  "mob_lead": "iPhone と Android で、同じ無料モデルを使ってチャット、画像生成、音声の文字起こしができます。間に何もホストしません。スマホが自分のキーでプロバイダーに直接つながるか、パソコンの FreeAITokens につながります。",
+  "mob_chat": "チャット",
+  "mob_images": "画像",
+  "mob_voice": "音声を文字に",
+  "mob_m_q": "リスボンで節約3日間の旅を計画して",
+  "mob_m_a": "1日目：午前はアルファマとお城、夕方はグラサ展望台で無料の夕日。2日目：…",
+  "mob_m_q2": "ベジタリアン向けにして",
+  "mob_m_ask": "メッセージ",
+  "mob_m_img": "穏やかな海に沈む夕日、水彩画",
+  "mob_m_rec": "聞き取り中…",
+  "mob_m_tr": "「明日10時に銀行へ電話するよう知らせて」",
+  "mob_watch": "公開を知りたい方は、こちらでプロジェクトをフォロー：",
+  "mob_platforms": "iPhone と Android",
+  "mob_see": "これから登場する機能"
 }

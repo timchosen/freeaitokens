@@ -110,5 +110,21 @@
   "hero_models": "AI models",
   "hero_providers": "providers",
   "models_all": "See every model",
-  "og_alt": "FreeAITokens: billions of free AI tokens a month from many providers, in one app"
+  "og_alt": "FreeAITokens: billions of free AI tokens a month from many providers, in one app",
+  "mob_eyebrow": "Coming soon",
+  "mob_title": "FreeAITokens on your phone",
+  "mob_lead": "Chat, make images and turn speech into text on iPhone and Android, with the same free models. Nothing is hosted in between: your phone talks straight to the providers with your own keys, or to FreeAITokens on your computer.",
+  "mob_chat": "Chat",
+  "mob_images": "Images",
+  "mob_voice": "Speech to text",
+  "mob_m_q": "Plan three cheap days in Lisbon",
+  "mob_m_a": "Day 1: Alfama and the castle in the morning, then a free sunset at Miradouro da Graça. Day 2: …",
+  "mob_m_q2": "Make it vegetarian",
+  "mob_m_ask": "Message",
+  "mob_m_img": "A sunset over a calm sea, watercolour",
+  "mob_m_rec": "Listening…",
+  "mob_m_tr": "“Remind me to call the bank tomorrow at ten.”",
+  "mob_watch": "Want to know when it is out? Follow the project on",
+  "mob_platforms": "iPhone and Android",
+  "mob_see": "See what is coming"
 }

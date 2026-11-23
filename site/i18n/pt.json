@@ -110,5 +110,21 @@
   "hero_models": "modelos de IA",
   "hero_providers": "provedores",
   "models_all": "Ver todos os modelos",
-  "og_alt": "FreeAITokens: bilhões de tokens de IA grátis por mês de vários provedores, em um só app"
+  "og_alt": "FreeAITokens: bilhões de tokens de IA grátis por mês de vários provedores, em um só app",
+  "mob_eyebrow": "Em breve",
+  "mob_title": "FreeAITokens no seu celular",
+  "mob_lead": "Converse, crie imagens e transforme fala em texto no iPhone e no Android, com os mesmos modelos grátis. Nada fica hospedado no meio: seu celular fala direto com os provedores usando suas próprias chaves, ou com o FreeAITokens no seu computador.",
+  "mob_chat": "Chat",
+  "mob_images": "Imagens",
+  "mob_voice": "Fala para texto",
+  "mob_m_q": "Planeje três dias baratos em Lisboa",
+  "mob_m_a": "Dia 1: Alfama e o castelo de manhã, depois um pôr do sol grátis no Miradouro da Graça. Dia 2: …",
+  "mob_m_q2": "Deixe vegetariano",
+  "mob_m_ask": "Mensagem",
+  "mob_m_img": "Um pôr do sol sobre um mar calmo, aquarela",
+  "mob_m_rec": "Ouvindo…",
+  "mob_m_tr": "“Me lembre de ligar para o banco amanhã às dez.”",
+  "mob_watch": "Quer saber quando sai? Siga o projeto no",
+  "mob_platforms": "iPhone e Android",
+  "mob_see": "Ver o que vem por aí"
 }

@@ -110,5 +110,21 @@
   "hero_models": "AI 模型",
   "hero_providers": "提供商",
   "models_all": "查看全部模型",
-  "og_alt": "FreeAITokens：每月数十亿免费 AI token，来自众多提供商，集中在一个应用里"
+  "og_alt": "FreeAITokens：每月数十亿免费 AI token，来自众多提供商，集中在一个应用里",
+  "mob_eyebrow": "即将推出",
+  "mob_title": "手机上的 FreeAITokens",
+  "mob_lead": "在 iPhone 和 Android 上聊天、生成图像、把语音转成文字，用的是同样的免费模型。中间没有任何托管：手机用你自己的密钥直接连接提供商，或连接你电脑上的 FreeAITokens。",
+  "mob_chat": "聊天",
+  "mob_images": "图像",
+  "mob_voice": "语音转文字",
+  "mob_m_q": "帮我规划三天省钱的里斯本行程",
+  "mob_m_a": "第 1 天：上午逛阿尔法玛和城堡，傍晚去格拉萨观景台免费看日落。第 2 天：…",
+  "mob_m_q2": "改成素食",
+  "mob_m_ask": "消息",
+  "mob_m_img": "平静海面上的日落，水彩风格",
+  "mob_m_rec": "正在听…",
+  "mob_m_tr": "“提醒我明天十点给银行打电话。”",
+  "mob_watch": "想知道什么时候上线？在这里关注项目：",
+  "mob_platforms": "iPhone 和 Android",
+  "mob_see": "看看即将推出的功能"
 }

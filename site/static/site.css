@@ -190,3 +190,40 @@ td a { overflow-wrap: anywhere; }
 .tool.fam b { font-family: var(--serif); font-weight: 400; font-size: 30px; line-height: 1; color: var(--coral-text); }
 .tool.fam small { font-weight: 400; font-size: 12px; color: var(--muted, inherit); }
 @media (max-width: 640px) { .hero-stats { grid-template-columns: 1fr 1fr; } .hero-stats .hs-big { grid-column: 1 / -1; } }
+
+/* Coming-soon phone apps: three phones drawn in CSS, in the app's dark look. */
+.mobile .narrow { max-width: 640px; margin: 0 auto 32px; }
+.phones { display: flex; justify-content: center; align-items: flex-start; gap: 28px; flex-wrap: wrap; margin: 0 auto 20px; max-width: 980px; }
+.phone { margin: 0; width: 240px; flex: none; }
+.phone:nth-child(2) { margin-top: 28px; }
+.phone .screen { position: relative; height: 470px; border-radius: 34px; background: #1E1A17; border: 8px solid #2B2520; box-shadow: 0 24px 50px -24px rgba(43, 37, 32, .45); padding: 34px 14px 14px; display: flex; flex-direction: column; gap: 10px; overflow: hidden; text-align: start; color: #F3ECE3; font-size: 13px; line-height: 1.45; }
+.phone .notch { position: relative; z-index: 1; width: 78px; height: 20px; margin: 0 auto -26px; top: 14px; border-radius: 999px; background: #2B2520; }
+.phone figcaption { margin-top: 12px; font-weight: 600; font-size: 15px; }
+.ph-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ph-top b { font-family: var(--serif); font-weight: 400; font-size: 18px; }
+.ph-chip { font-size: 10.5px; background: #3A322C; color: #B9AC9F; border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+.ph-u, .ph-a { margin: 0; padding: 8px 11px; border-radius: 14px; max-width: 88%; }
+.ph-u { align-self: flex-end; background: var(--coral); color: #fff; border-end-end-radius: 4px; }
+.ph-a { align-self: flex-start; background: #2C2622; border: 1px solid #3D3530; border-end-start-radius: 4px; }
+.ph-typing { display: flex; gap: 4px; padding: 10px 12px; background: #2C2622; border-radius: 14px; align-self: flex-start; }
+.ph-typing i { width: 6px; height: 6px; border-radius: 50%; background: #B9AC9F; opacity: .5; }
+.ph-typing i:nth-child(2) { opacity: .75; } .ph-typing i:nth-child(3) { opacity: 1; }
+.ph-input { margin-top: auto; border: 1px solid #3D3530; border-radius: 999px; padding: 8px 14px; color: #8F8379; font-size: 12px; position: relative; }
+.ph-input::after { content: ''; position: absolute; inset-inline-end: 5px; top: 5px; width: 24px; height: 24px; border-radius: 50%; background: var(--coral); }
+.ph-art { position: relative; height: 210px; border-radius: 14px; overflow: hidden; background: linear-gradient(#F6C9A0, #E98A6A 45%, #B9566A 62%, #5C6E8C 63%, #3E4E6C); }
+.ph-art .sun { position: absolute; left: 50%; top: 82px; width: 70px; height: 70px; margin-left: -35px; border-radius: 50%; background: #FCE3B8; opacity: .9; filter: blur(.5px); }
+.ph-art .sea { position: absolute; left: -10%; right: -10%; top: 134px; height: 10px; border-radius: 50%; background: rgba(252, 227, 184, .35); }
+.ph-art .sea.two { top: 156px; left: 10%; right: 10%; opacity: .6; }
+.ph-mic { margin: 24px auto 8px; width: 92px; height: 92px; border-radius: 50%; background: rgba(196, 81, 43, .18); display: grid; place-items: center; }
+.ph-mic span { width: 60px; height: 60px; border-radius: 50%; background: var(--coral); position: relative; }
+.ph-mic span::before { content: ''; position: absolute; left: 50%; top: 14px; width: 14px; height: 22px; margin-left: -7px; border-radius: 7px; background: #fff; }
+.ph-mic span::after { content: ''; position: absolute; left: 50%; top: 38px; width: 2px; height: 8px; margin-left: -1px; background: #fff; }
+.ph-wave { display: flex; align-items: center; justify-content: center; gap: 4px; height: 40px; }
+.ph-wave i { width: 4px; border-radius: 2px; background: var(--coral); height: 10px; }
+.ph-wave i:nth-child(3n) { height: 26px; } .ph-wave i:nth-child(4n+1) { height: 36px; } .ph-wave i:nth-child(5n+2) { height: 18px; }
+.ph-rec { margin: 0; text-align: center; color: #B9AC9F; font-size: 12px; }
+@media (max-width: 640px) {
+  .phones { flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; scroll-snap-type: x mandatory; padding: 4px 16px 12px; margin: 0 -16px 16px; gap: 18px; }
+  .phone { scroll-snap-align: center; width: 220px; }
+  .phone:nth-child(2) { margin-top: 0; }
+}
