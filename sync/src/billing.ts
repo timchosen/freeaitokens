@@ -77,19 +77,26 @@ async function completed(env: Env, s: any, now: number): Promise<void> {
     return;
   }
   const keyHash = await sha256hex(await licenseKey(env.LICENSE_SECRET, s.id));
-  await env.SYNC_DB.batch([
+  const res = await env.SYNC_DB.batch([
     env.SYNC_DB.prepare('INSERT INTO licenses (key_hash, plan, stripe_customer, stripe_ref, first_session, email_hash, paid_until, revoked, created) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?) ON CONFLICT DO NOTHING')
       .bind(keyHash, plan, s.customer ?? null, ref, s.id, emailHash, until, now),
     ...(s.client_reference_id && HEX64.test(s.client_reference_id)
       ? [env.SYNC_DB.prepare('INSERT INTO claims (claim_hash, session, expires) VALUES (?, ?, ?) ON CONFLICT DO NOTHING').bind(s.client_reference_id, s.id, now + DAY)]
       : []),
-  ]);
+  ]) as { meta: { changes: number } }[];
+  // Another checkout took this claim first; the buyer still gets the key by email ("send me my key").
+  if (res[1] && res[1].meta.changes === 0) console.warn('claim already taken for session', s.id);
 }
 
-// A charge maps to a lifetime license by payment intent, or to a yearly one by customer.
+// A charge maps to a lifetime license by payment intent, or to a yearly one by customer. The first charge
+// that revokes is remembered, so only winning the dispute on that same charge lifts it.
 async function setRevoked(env: Env, charge: any, at: number | null): Promise<void> {
-  await env.SYNC_DB.prepare('UPDATE licenses SET revoked = ? WHERE (stripe_ref = ? AND stripe_ref IS NOT NULL) OR (stripe_customer = ? AND stripe_customer IS NOT NULL)')
-    .bind(at, charge.payment_intent ?? null, charge.customer ?? null).run();
+  const match = "(stripe_ref = ?2 OR (plan = 'year' AND stripe_customer = ?3))";
+  const q = at == null
+    ? `UPDATE licenses SET revoked = NULL, revoked_by = NULL WHERE revoked_by = ?1 AND ${match}`
+    : `UPDATE licenses SET revoked = ?4, revoked_by = ?1 WHERE revoked IS NULL AND ${match}`;
+  const binds = [charge.id ?? null, charge.payment_intent ?? null, charge.customer ?? null];
+  await env.SYNC_DB.prepare(q).bind(...(at == null ? binds : [...binds, at])).run();
 }
 
 async function handle(env: Env, type: string, o: any, now: number): Promise<void> {
@@ -106,10 +113,11 @@ async function handle(env: Env, type: string, o: any, now: number): Promise<void
       if (lic.plan === 'year') await env.SYNC_DB.prepare('UPDATE licenses SET paid_until = ? WHERE stripe_ref = ?').bind(end, sub).run();
       return;
     }
+    // Only a paid invoice extends a plan; a subscription change (past_due, cancel) can only shorten it.
     case 'customer.subscription.updated':
     case 'customer.subscription.deleted': {
       const end = periodEnd(o);
-      if (end) await env.SYNC_DB.prepare("UPDATE licenses SET paid_until = ? WHERE stripe_ref = ? AND plan = 'year'").bind(end, o.id).run();
+      if (end) await env.SYNC_DB.prepare("UPDATE licenses SET paid_until = MIN(paid_until, ?) WHERE stripe_ref = ? AND plan = 'year'").bind(end, o.id).run();
       return;
     }
     case 'charge.refunded':

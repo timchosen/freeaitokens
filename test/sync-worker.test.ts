@@ -314,3 +314,26 @@ test('cleanup deletes data 90 days after a plan ends or is revoked, old tombston
   assert.equal((db.prepare('SELECT COUNT(*) AS n FROM licenses').get() as any).n, 4, 'license rows stay so a renewal finds them');
   assert.deepEqual((db.prepare("SELECT id FROM items WHERE deleted = 1").all() as any[]).map((x) => x.id), ['new-tomb']);
 });
+
+test('webhook: a subscription change never extends a plan; only a paid invoice does', async () => {
+  stubStripe();
+  const { env, db } = makeEnv();
+  await hook(env, 'checkout.session.completed', completed({ id: 'cs_y', mode: 'subscription', subscription: 'sub_1', payment_intent: null }));
+  const before = (db.prepare('SELECT paid_until FROM licenses').get() as any).paid_until;
+  const far = Math.floor(before / 1000) + 400 * 86400;
+  await hook(env, 'customer.subscription.updated', { id: 'sub_1', status: 'past_due', items: { data: [{ current_period_end: far }] } });
+  assert.equal((db.prepare('SELECT paid_until FROM licenses').get() as any).paid_until, before, 'failed renewal does not extend');
+  globalThis.fetch = realFetch;
+});
+
+test('webhook: winning a dispute does not undo a revocation caused by a refund of another charge', async () => {
+  stubStripe();
+  stripeReply = (url) => url.includes('/v1/charges/ch_2') ? { id: 'ch_2', payment_intent: 'pi_1', customer: 'cus_1' } : {};
+  const { env } = makeEnv();
+  await hook(env, 'checkout.session.completed', completed());
+  const key = await (await import('../sync/src/license.ts')).licenseKey('lic-secret', 'cs_life_1');
+  await hook(env, 'charge.refunded', { id: 'ch_1', refunded: true, payment_intent: 'pi_1', customer: 'cus_1' });
+  await hook(env, 'charge.dispute.closed', { id: 'dp_2', charge: 'ch_2', status: 'won' });
+  assert.deepEqual(await (await call(env, '/v1/usage', { key })).json(), { error: 'revoked' });
+  globalThis.fetch = realFetch;
+});

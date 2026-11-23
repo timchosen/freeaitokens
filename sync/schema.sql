@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS licenses (
   email_hash TEXT,
   paid_until INTEGER,
   revoked INTEGER,
+  revoked_by TEXT,
   created INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS licenses_email ON licenses(email_hash);
