@@ -141,8 +141,9 @@ function bubble(m) {
     box.append(meta);
   }
   $('empty').hidden = true;
-  $('chat').append(box);
-  box.scrollIntoView({ block: 'end', behavior: 'smooth' });
+  const chat = $('chat');
+  chat.append(box);
+  chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' });
   return box;
 }
 // A made image: shown from the file the main process saved, with Save and Copy.
