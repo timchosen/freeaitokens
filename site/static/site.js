@@ -1,5 +1,5 @@
 // The whole site's script: pick the right download, tabs, copy buttons, GitHub stars.
-const BASE = 'https://github.com/timchosen/freeaitokens/releases/latest/download/';
+const BASE = '{{repoUrl}}/releases/latest/download/';
 const NAMES = { mac: 'Mac', windows: 'Windows', linux: 'Linux' };
 const FILES = { mac: 'FreeAITokens-mac.dmg', windows: 'FreeAITokens-windows.exe', linux: 'FreeAITokens-linux-x86_64.AppImage' };
 
@@ -86,7 +86,7 @@ function wire() {
 
   const stars = document.querySelectorAll('[data-stars]');
   if (stars.length) {
-    fetch('https://api.github.com/repos/timchosen/freeaitokens', { signal: AbortSignal.timeout?.(3000) })
+    fetch('https://api.github.com/repos/{{repo}}', { signal: AbortSignal.timeout?.(3000) })
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => { const t = starsLabel(j?.stargazers_count ?? null); for (const s of stars) s.textContent = t ? ` ${t}` : ''; })
       .catch(() => {}); // the button just says GitHub

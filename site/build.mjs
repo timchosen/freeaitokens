@@ -50,24 +50,47 @@ function providerTable(cat) {
 
 const billions = (n) => `about ${(n / 1e9).toFixed(1).replace(/\.0$/, '')} billion`;
 
+// Everything that names the owner (GitHub repo, donation link, domain) comes from here, so a fork edits one file.
+const config = JSON.parse(readFileSync(join(here, 'site.config.json'), 'utf8'));
+const TEXT_FILES = /^(install|install\.ps1|.*\.(md|js|txt))$/;
+
+function providerTerms(cat) {
+  const rows = cat.map((p) => {
+    const site = p.signupUrl ?? p.keyUrl;
+    const name = site ? `<a href="${esc(site)}">${esc(p.name)}</a>` : esc(p.name);
+    return `<tr><td>${name}</td><td>${esc(p.termsNote ?? 'Standard free tier; see the provider\'s terms.')}</td></tr>`;
+  });
+  return `<div class="table"><table><thead><tr><th>Provider</th><th>What to know before you use it</th></tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
+}
+
 export function build(outDir = join(here, 'dist')) {
   rmSync(outDir, { recursive: true, force: true });
   mkdirSync(outDir, { recursive: true });
   cpSync(join(here, 'static'), outDir, { recursive: true });
   const s = stats(catalogue);
-  const fill = { providers: String(s.providers), models: String(s.models), keyless: String(s.keyless), monthly: billions(s.monthlyTokens), providerTable: providerTable(catalogue), installScript: esc(readFileSync(join(here, 'static/install'), 'utf8')), installPs1: esc(readFileSync(join(here, 'static/install.ps1'), 'utf8')) };
+  const fill = {
+    ...config,
+    repoUrl: `https://github.com/${config.repo}`,
+    year: String(new Date().getUTCFullYear()),
+    providers: String(s.providers), models: String(s.models), keyless: String(s.keyless), monthly: billions(s.monthlyTokens),
+    providerTable: providerTable(catalogue), providerTerms: providerTerms(catalogue),
+  };
+  const put = (t, where) => t.replace(/\{\{(\w+)\}\}/g, (m, k) => {
+    if (!(k in fill)) throw new Error(`site: ${where} uses unknown {{${k}}}`);
+    return fill[k];
+  });
+  for (const f of readdirSync(outDir).filter((f) => TEXT_FILES.test(f))) {
+    writeFileSync(join(outDir, f), put(readFileSync(join(outDir, f), 'utf8'), f));
+  }
+  fill.installScript = esc(readFileSync(join(outDir, 'install'), 'utf8'));
+  fill.installPs1 = esc(readFileSync(join(outDir, 'install.ps1'), 'utf8'));
   for (const f of readdirSync(join(here, 'pages')).filter((f) => f.endsWith('.html'))) {
     const src = readFileSync(join(here, 'pages', f), 'utf8');
     const meta = /^<!--\s*title:\s*(.*?)\s*\|\s*description:\s*(.*?)\s*-->\n?/.exec(src);
     if (!meta) throw new Error(`site: ${f} has no title/description comment`);
-    const put = (t) => t.replace(/\{\{(\w+)\}\}/g, (m, k) => {
-      if (!(k in fill)) throw new Error(`site: ${f} uses unknown {{${k}}}`);
-      return fill[k];
-    });
-    const body = put(src.slice(meta[0].length));
     const name = f.replace(/\.html$/, '');
-    if (process.env.SITE_RELEASE === '1' && body.includes('REPLACE_ME')) throw new Error(`site: ${f} still has a REPLACE_ME link`);
-    writeFileSync(join(outDir, f), render(body, { title: meta[1], description: put(meta[2]), path: name === 'index' ? '/' : `/${name}` }));
+    const page = render(src.slice(meta[0].length), { title: meta[1], description: put(meta[2], f), path: name === 'index' ? '/' : `/${name}` });
+    writeFileSync(join(outDir, f), put(page, f));
   }
 }
 

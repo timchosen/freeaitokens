@@ -19,20 +19,53 @@
     <a href="/docs">Docs</a>
     <a href="/about">About</a>
     <a href="/support" class="accent">Support us</a>
-    <a href="https://github.com/timchosen/freeaitokens" class="gh"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub<span data-stars></span></a>
+    <a href="{{repoUrl}}" class="gh"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub<span data-stars></span></a>
   </nav>
 </header>
 <main id="main">
 {{body}}
 </main>
 <footer class="foot">
-  <span>FreeAITokens is free and open source. Not affiliated with any AI provider.</span>
-  <nav aria-label="Footer">
-    <a href="https://github.com/timchosen/freeaitokens">GitHub</a>
-    <a href="/disclaimer">Disclaimer</a>
-    <a href="/privacy">Privacy</a>
-    <a href="https://github.com/timchosen/freeaitokens/security/policy">Security</a>
-  </nav>
+  <div class="foot-grid">
+    <div class="foot-brand">
+      <a href="/" class="brand">FreeAITokens</a>
+      <p>Free AI from {{providers}} providers, on your own computer. Open source, single-user, no accounts.</p>
+      <p class="foot-buttons"><a class="btn small-btn" href="/download">Download</a> <a class="btn quiet small-btn" href="{{repoUrl}}">GitHub</a></p>
+    </div>
+    <nav aria-label="Product">
+      <h2>Product</h2>
+      <a href="/download">Download</a>
+      <a href="/setup">Setup</a>
+      <a href="/ask-your-ai">Ask your AI</a>
+      <a href="/install-script">Install script</a>
+    </nav>
+    <nav aria-label="Providers">
+      <h2>Providers</h2>
+      <a href="/docs#providers">All {{providers}} providers</a>
+      <a href="/docs#media">Images, speech and more</a>
+      <a href="/disclaimer#providers">Provider terms</a>
+      <a href="{{repoUrl}}/issues">Suggest a provider</a>
+    </nav>
+    <nav aria-label="Resources">
+      <h2>Resources</h2>
+      <a href="/docs">Docs</a>
+      <a href="{{repoUrl}}/releases">Releases</a>
+      <a href="{{repoUrl}}/issues">Report a bug</a>
+      <a href="{{repoUrl}}/security/policy">Security</a>
+    </nav>
+    <nav aria-label="Project">
+      <h2>Project</h2>
+      <a href="/about">About</a>
+      <a href="/support">Support us</a>
+      <a href="/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/disclaimer">Disclaimer</a>
+    </nav>
+  </div>
+  <div class="foot-bottom">
+    <span>© {{year}} {{owner}} · MIT licence</span>
+    <span>For personal use. Each provider's terms apply. Never share your endpoint or keys. Not affiliated with any AI provider.</span>
+  </div>
 </footer>
 </body>
 </html>

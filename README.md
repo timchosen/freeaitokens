@@ -117,6 +117,10 @@ The endpoint listens on `127.0.0.1` only and needs the local token from the star
 - Image editing, translation of audio, realtime voice; a dashboard.
 - Codex's connected-app (MCP) tools and web search are not passed to free models: they add more context than free models accept.
 
+## Website
+
+The site at [freeaitokens.co](https://freeaitokens.co) lives in [`site/`](site). `npm run build` there writes `site/dist`; `npm run deploy` publishes it to Cloudflare. If you fork it, change [`site/site.config.json`](site/site.config.json) (your repo, domain, donation link) and the routes in `site/wrangler.jsonc`; nothing else names the owner.
+
 ## Development
 
 ```bash

@@ -20,18 +20,18 @@
   <div class="panel" role="tabpanel" id="p-term" aria-labelledby="tab-term">
     <div data-for="mac linux">
       <p>Open Terminal, paste this, press Return:</p>
-      <div class="cmd"><code>curl -fsSL https://freeaitokens.co/install | sh</code><button class="copy" data-copy="curl -fsSL https://freeaitokens.co/install | sh">Copy</button></div>
+      <div class="cmd"><code>curl -fsSL https://{{domain}}/install | sh</code><button class="copy" data-copy="curl -fsSL https://{{domain}}/install | sh">Copy</button></div>
     </div>
     <div data-for="windows">
       <p>On Windows, open PowerShell, paste this, press Enter:</p>
-      <div class="cmd"><code>irm https://freeaitokens.co/install.ps1 | iex</code><button class="copy" data-copy="irm https://freeaitokens.co/install.ps1 | iex">Copy</button></div>
+      <div class="cmd"><code>irm https://{{domain}}/install.ps1 | iex</code><button class="copy" data-copy="irm https://{{domain}}/install.ps1 | iex">Copy</button></div>
     </div>
     <p class="small muted">It downloads the app from GitHub and installs it, nothing else. <a href="/install-script">What does this script do?</a></p>
   </div>
 
   <div class="panel" role="tabpanel" id="p-ai" aria-labelledby="tab-ai" hidden>
     <p>Using an AI assistant that can run commands, like Claude, ChatGPT or Codex? Paste this to it:</p>
-    <div class="cmd"><code>Please set up FreeAITokens on my computer by following https://freeaitokens.co/setup.md</code><button class="copy" data-copy="Please set up FreeAITokens on my computer by following https://freeaitokens.co/setup.md">Copy</button></div>
+    <div class="cmd"><code>Please set up FreeAITokens on my computer by following https://{{domain}}/setup.md</code><button class="copy" data-copy="Please set up FreeAITokens on my computer by following https://{{domain}}/setup.md">Copy</button></div>
     <p class="small muted">It installs the app and connects your tools, and asks you to create the free accounts yourself. <a href="/ask-your-ai">More about this</a>.</p>
   </div>
 </section>
@@ -49,14 +49,23 @@
 
 <section class="section center">
   <h2>Works with the tools you already use</h2>
-  <ul class="chips">
-    <li>Claude Code</li><li>Codex</li><li>Gemini CLI</li><li>VS Code</li><li>Zed</li><li>JetBrains</li><li>Cline</li><li>OpenCode</li><li>Aider</li><li>Any app that takes a custom AI address</li>
+  <ul class="tools">
+    <li><a class="tool" href="/setup#tools"><img src="/logos/claude.svg" alt="" width="28" height="28"><span>Claude Code</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/terminal.svg" alt="" width="28" height="28"><span>Codex</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/googlegemini.svg" alt="" width="28" height="28"><span>Gemini CLI</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/editor.svg" alt="" width="28" height="28"><span>VS Code</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/zedindustries.svg" alt="" width="28" height="28"><span>Zed</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/jetbrains.svg" alt="" width="28" height="28"><span>JetBrains</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/cline.svg" alt="" width="28" height="28"><span>Cline</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/opencode.svg" alt="" width="28" height="28"><span>OpenCode</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/terminal.svg" alt="" width="28" height="28"><span>Aider</span></a></li>
+    <li><a class="tool" href="/setup#tools"><img src="/logos/plug.svg" alt="" width="28" height="28"><span>Any app with a custom AI address</span></a></li>
   </ul>
   <p class="small"><a href="/setup">See setup for each tool</a></p>
 </section>
 
 <section class="card note">
-  <h3>The honest part</h3>
+  <h3>Good to know</h3>
   <p class="muted">Free allowances are for trying things, not for running a business. Use your own accounts, one per provider, and don't share access with anyone. FreeAITokens runs on your own computer, and your keys are only ever sent to the provider they belong to. Some providers may use what you send to improve their models; the app tells you which.</p>
   <p class="small"><a href="/disclaimer">Read the full disclaimer</a></p>
 </section>
@@ -64,6 +73,6 @@
 <section class="section center">
   <h2>Made by one person, free for everyone</h2>
   <p class="muted">If it saves you money, a coffee keeps it going.</p>
-  <a class="btn yellow" href="https://buymeacoffee.com/timchosen">☕ Buy me a coffee</a>
+  <a class="btn yellow" href="{{coffee}}">☕ Buy me a coffee</a>
   <p class="small"><a href="/support">Other ways to help</a></p>
 </section>

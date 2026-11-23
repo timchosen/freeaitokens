@@ -2,12 +2,12 @@
 # Installs the FreeAITokens desktop app from its latest GitHub release. Nothing else is changed.
 #   macOS: the app goes into /Applications (or ~/Applications if that is not writable) and opens.
 #   Linux: the AppImage goes to ~/.local/bin/freeaitokens-app.
-# Source and explanation: https://freeaitokens.co/install-script
+# Source and explanation: https://{{domain}}/install-script
 set -eu
 
 # Everything is in main, so a download cut off halfway runs nothing.
 main() {
-BASE="https://github.com/timchosen/freeaitokens/releases/latest/download"
+BASE="{{repoUrl}}/releases/latest/download"
 OS="${FREEAITOKENS_OS:-$(uname -s)}"
 ARCH="${FREEAITOKENS_ARCH:-$(uname -m)}"
 DRY="${FREEAITOKENS_DRY_RUN:-}"
@@ -23,11 +23,11 @@ case "$OS" in
     case "$ARCH" in
       x86_64|amd64) FILE="FreeAITokens-linux-x86_64.AppImage" ;;
       aarch64|arm64) FILE="FreeAITokens-linux-arm64.AppImage" ;;
-      *) fail "this computer's processor ($ARCH) is not supported. See https://freeaitokens.co/download" ;;
+      *) fail "this computer's processor ($ARCH) is not supported. See https://{{domain}}/download" ;;
     esac
     DEST="$HOME/.local/bin/freeaitokens-app"
     ;;
-  *) fail "$OS is not supported by this script. On Windows, use the PowerShell line at https://freeaitokens.co/download" ;;
+  *) fail "$OS is not supported by this script. On Windows, use the PowerShell line at https://{{domain}}/download" ;;
 esac
 
 URL="$BASE/$FILE"
@@ -45,7 +45,7 @@ if [ "$OS" = Darwin ]; then
   APP="$(find "$TMP/app" -maxdepth 1 -name '*.app' | head -n 1)"
   [ -n "$APP" ] || fail "the download did not contain the app."
   # An older copy may be running; quit it so the new one starts.
-  osascript -e 'quit app id "io.github.timchosen.freeaitokens"' >/dev/null 2>&1 || true
+  osascript -e 'quit app id "{{appId}}"' >/dev/null 2>&1 || true
   mkdir -p "$DEST"
   rm -rf "$DEST/$(basename "$APP")"
   mv "$APP" "$DEST/"

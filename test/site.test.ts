@@ -110,9 +110,39 @@ test('review fixes: release deploy blocks placeholders, Windows download is quie
   const pkg = JSON.parse(readFileSync(new URL('../site/package.json', import.meta.url), 'utf8'));
   assert.match(pkg.scripts.deploy, /SITE_RELEASE=1 node build\.mjs/);
   assert.match(readFileSync(new URL('../site/static/install.ps1', import.meta.url), 'utf8'), /\$ProgressPreference = 'SilentlyContinue'/);
-  assert.match(readFileSync(new URL('../site/static/install', import.meta.url), 'utf8'), /quit app id "io\.github\.timchosen\.freeaitokens"/);
+  assert.match(readFileSync(new URL('../site/static/install', import.meta.url), 'utf8'), /quit app id "\{\{appId\}\}"/);
   assert.equal(downloadFor('linux', true).file, 'FreeAITokens-linux-arm64.AppImage');
   const out = mkdtempSync(join(tmpdir(), 'site-'));
   process.env.SITE_RELEASE = '1';
   try { build(out); } finally { delete process.env.SITE_RELEASE; }
+});
+
+test('owner links live only in site.config.json, so a fork changes one file', async () => {
+  const { readdirSync: ls, statSync } = await import('node:fs');
+  const root = new URL('../site/', import.meta.url).pathname;
+  const walk = (d: string): string[] => ls(d).flatMap((f) => {
+    const p = join(d, f);
+    if (['dist', '.wrangler', 'node_modules', 'site.config.json', 'wrangler.jsonc'].includes(f)) return [];
+    return statSync(p).isDirectory() ? walk(p) : [p];
+  });
+  for (const f of walk(root)) assert.doesNotMatch(readFileSync(f, 'utf8'), /timchosen|buymeacoffee\.com|freeaitokens\.co\b/, f);
+  const cfg = JSON.parse(readFileSync(join(root, 'site.config.json'), 'utf8'));
+  const out = mkdtempSync(join(tmpdir(), 'site-'));
+  build(out);
+  for (const f of ['index.html', 'install', 'install.ps1', 'setup.md', 'site.js']) {
+    const t = readFileSync(join(out, f), 'utf8');
+    assert.doesNotMatch(t, /\{\{\w+\}\}/, f);
+  }
+  const home = readFileSync(join(out, 'index.html'), 'utf8');
+  assert.ok(home.includes(cfg.coffee) && home.includes(`github.com/${cfg.repo}`));
+  assert.match(readFileSync(join(out, 'install'), 'utf8'), new RegExp(`github\\.com/${cfg.repo}/releases/latest/download`));
+});
+
+test('the footer links to Terms, Privacy and Disclaimer, and the disclaimer lists every provider', () => {
+  const out = mkdtempSync(join(tmpdir(), 'site-'));
+  build(out);
+  const home = readFileSync(join(out, 'index.html'), 'utf8');
+  for (const href of ['/terms', '/privacy', '/disclaimer', '/docs#providers']) assert.ok(home.includes(`href="${href}"`), href);
+  const disc = readFileSync(join(out, 'disclaimer.html'), 'utf8');
+  for (const p of catalogue) assert.ok(disc.includes(p.name.replace(/&/g, '&amp;')), p.name);
 });

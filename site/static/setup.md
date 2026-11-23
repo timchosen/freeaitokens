@@ -14,10 +14,10 @@ You are an AI assistant helping a person, who may not be technical, install and 
 
 Check the operating system, then run the matching command and show the user what it printed.
 
-- macOS or Linux: `curl -fsSL https://freeaitokens.co/install | sh`
-- Windows (PowerShell): `irm https://freeaitokens.co/install.ps1 | iex`
+- macOS or Linux: `curl -fsSL https://{{domain}}/install | sh`
+- Windows (PowerShell): `irm https://{{domain}}/install.ps1 | iex`
 
-The script only downloads the latest app from https://github.com/timchosen/freeaitokens/releases and installs it. Its source is at https://freeaitokens.co/install.
+The script only downloads the latest app from {{repoUrl}}/releases and installs it. Its source is at https://{{domain}}/install.
 
 On macOS the app appears in the menu bar; on Windows and Linux, in the system tray. If Node.js 20 or newer is installed and the user prefers no app, `npx freeaitokens` runs the same thing in a terminal.
 
@@ -59,4 +59,4 @@ Run `npx freeaitokens list` (or open the app's Providers menu) and tell the user
 
 - It is free, runs on their computer, and their keys never leave it except to the provider they belong to.
 - Free tiers are for personal use and trying things, not for running a business.
-- More help: https://freeaitokens.co/setup and https://freeaitokens.co/docs
+- More help: https://{{domain}}/setup and https://{{domain}}/docs
