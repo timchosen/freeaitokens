@@ -26,6 +26,7 @@
       "main.js",
       "logic.js",
       "chats.js",
+      "syncsvc.js",
       "preload.cjs",
       "add.html",
       "app.html",

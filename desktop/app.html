@@ -101,6 +101,43 @@
     <div class="row set"><span data-i18n="set_lang">Language</span><p data-i18n="set_lang_text">The language FreeAITokens uses.</p><select id="lang" data-i18n-label="set_lang" aria-label="Language"></select></div>
     <div class="row set"><span data-i18n="set_login">Start at login</span><p data-i18n="set_login_text">Open FreeAITokens in the background when you log in.</p><input type="checkbox" id="login" data-i18n-label="set_login" aria-label="Start at login"></div>
     <div class="row set"><span data-i18n="set_updates">Updates</span><p id="updText"></p><button class="copy" id="checkUpd" type="button" data-i18n="check_now">Check now</button></div>
+    <div class="row set sync" id="sync">
+      <span data-i18n="sync_title">Sync</span>
+      <div class="sync-body">
+        <div id="syncOff" hidden>
+          <p data-i18n="sync_off_text">Keep your chats and provider keys the same on all your computers.</p>
+          <div class="btns"><button class="copy" id="syncYear" type="button" data-i18n="sync_get_year">Get sync for a year</button><button class="copy" id="syncLife" type="button" data-i18n="sync_get_life">Get sync for life</button><button class="copy" id="syncHave" type="button" data-i18n="sync_have_key">I already have a key</button></div>
+        </div>
+        <div id="syncWait" hidden>
+          <p data-i18n="sync_waiting">Finish paying in your browser.</p>
+          <div class="btns"><button class="copy" id="syncCancel" type="button" data-i18n="sync_cancel">Cancel</button></div>
+        </div>
+        <form id="syncForm" hidden>
+          <p id="syncGot" data-i18n="sync_key_got" hidden>This is your sync key.</p>
+          <label id="syncKeyRow"><span data-i18n="sync_key">Sync key</span><input id="syncKey" autocomplete="off" spellcheck="false" dir="ltr" placeholder="FAT-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX"></label>
+          <label id="syncCodeRow" hidden><span data-i18n="sync_code">Recovery code</span><input id="syncCode" autocomplete="off" spellcheck="false" dir="ltr"></label>
+          <label><span data-i18n="sync_pass">Passphrase</span><input id="syncPass" type="password" autocomplete="new-password" maxlength="200"></label>
+          <label id="syncPass2Row" hidden><span data-i18n="sync_pass_again">Passphrase again</span><input id="syncPass2" type="password" autocomplete="new-password" maxlength="200"></label>
+          <p class="hint" data-i18n="sync_pass_hint">At least 10 characters.</p>
+          <div class="btns"><button class="copy primary" id="syncGo" type="submit" data-i18n="sync_start">Start syncing</button><button class="copy" id="syncBack" type="button" data-i18n="sync_cancel">Cancel</button><button class="link" id="syncForgot" type="button" data-i18n="sync_forgot">Forgot the passphrase?</button></div>
+        </form>
+        <div id="syncCodeView" hidden>
+          <p><strong data-i18n="sync_recovery_title">Your recovery code</strong></p>
+          <p data-i18n="sync_recovery_text">If you forget your passphrase, this code lets you set a new one.</p>
+          <code id="syncCodeText" dir="ltr"></code>
+          <div class="btns"><button class="copy" id="syncCodeCopy" type="button" data-i18n="copy">Copy</button><button class="copy primary" id="syncCodeDone" type="button" data-i18n="sync_saved">I've saved it</button></div>
+        </div>
+        <div id="syncOn" hidden>
+          <p id="syncInfo"></p>
+          <div class="btns"><button class="copy" id="syncNow" type="button" data-i18n="sync_now">Sync now</button><button class="copy" id="syncShow" type="button" data-i18n="sync_show_code">Show recovery code</button><button class="copy" id="syncPassBtn" type="button" data-i18n="sync_change_pass">Change passphrase</button><button class="copy" id="syncManage" type="button" data-i18n="sync_manage">Manage plan</button><button class="copy" id="syncOffBtn" type="button" data-i18n="sync_turn_off">Turn off on this computer</button></div>
+        </div>
+        <div id="syncEnded" hidden>
+          <p id="syncEndedText"></p>
+          <div class="btns"><button class="copy" id="syncRenew" type="button" data-i18n="sync_renew">Renew for a year</button><button class="copy" id="syncUpgrade" type="button" data-i18n="sync_upgrade">Get lifetime</button><button class="copy" id="syncOffBtn2" type="button" data-i18n="sync_turn_off">Turn off on this computer</button></div>
+        </div>
+        <p class="status" id="syncMsg" role="status"></p>
+      </div>
+    </div>
     <div class="row set"><span data-i18n="set_chats">Chats</span><p data-i18n="set_chats_text">Saved chats stay on this computer only.</p><button class="copy" id="clearChats" type="button" data-i18n="delete_chats">Delete all chats</button></div>
     <div class="row set"><span data-i18n="row_address">Address</span><p><code id="endpoint2"></code></p><button class="copy" data-copy="endpoint" data-i18n="copy">Copy</button></div>
     <div class="row set"><span data-i18n="row_key">API key</span><p data-i18n="set_key_text">The local token your apps use.</p><button class="copy" data-copy="token" data-i18n="copy">Copy</button></div>

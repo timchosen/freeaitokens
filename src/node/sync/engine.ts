@@ -14,7 +14,7 @@ type Reason = 'expired' | 'revoked' | 'offline' | 'corrupt' | 'unauthorized' | '
 export type SyncResult = { ok: true; pulled: number; pushed: number } | { ok: false; reason: Reason; detail?: string };
 type Conn = { base: string; license: string; fetch: typeof fetch };
 
-class SyncFail extends Error { constructor(readonly reason: Reason, readonly detail?: string) { super(detail ?? reason); } }
+export class SyncFail extends Error { constructor(readonly reason: Reason, readonly detail?: string) { super(detail ?? reason); } }
 
 async function api(c: Conn, method: string, path: string, init: { body?: BodyInit; headers?: Record<string, string> } = {}): Promise<Response> {
   let r: Response;
@@ -144,6 +144,11 @@ async function putVault(c: Conn, body: string, version: number | null): Promise<
   if (r.status === 412) throw new Error('This sync account changed on another computer. Try again.');
   if (!r.ok) throw new SyncFail('offline', `The sync server answered ${r.status}.`);
 }
+
+export async function hasVault(o: Conn): Promise<boolean> { return (await getVault(o)) != null; }
+
+// For the desktop: one import gives everything sync needs.
+export { recoveryCode, encryptItem, decryptItem, WrongPassphraseError } from './crypto.js';
 
 export async function setupNew(o: Conn & { passphrase: string }): Promise<{ dataKey: Buffer; recovery: string }> {
   if (await getVault(o)) throw new Error('This sync key is already set up. Choose "I already have a key" and enter its passphrase.');

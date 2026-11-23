@@ -339,8 +339,105 @@ $('clearChats').addEventListener('click', () => {
 });
 $('lang').addEventListener('change', () => api.lang($('lang').value)); // the main process reloads this window
 
+// Settings › Sync. The main process does the work; this shows which of its states we are in.
+let syncStatus = { state: 'off' }, syncForm = null; // form: 'new' | 'have' | 'recover' | 'change'
+const SYNC_PANELS = ['syncOff', 'syncWait', 'syncForm', 'syncCodeView', 'syncOn', 'syncEnded'];
+const showPanel = (id) => { for (const p of SYNC_PANELS) $(p).hidden = p !== id; };
+const syncSay = (text, bad = false) => { $('syncMsg').textContent = text ?? ''; $('syncMsg').classList.toggle('bad', bad); };
+function fmtSize(bytes = 0) {
+  const mb = bytes >= 1_000_000;
+  return new Intl.NumberFormat(tag, { style: 'unit', unit: mb ? 'megabyte' : 'kilobyte', maximumFractionDigits: 1 }).format(mb ? bytes / 1_000_000 : Math.max(bytes / 1000, bytes ? 0.1 : 0));
+}
+function renderSync() {
+  if (syncForm || !$('syncCodeView').hidden) return; // the person is in the middle of something
+  const s = syncStatus;
+  if (s.key) return openSyncForm('new', s.key);
+  if (s.state === 'waiting') return showPanel('syncWait');
+  if (s.state === 'off') return showPanel('syncOff');
+  if (s.state === 'expired' || s.state === 'revoked') {
+    $('syncEndedText').textContent = t(s.state === 'expired' ? 'sync_expired' : 'sync_revoked');
+    $('syncRenew').hidden = $('syncUpgrade').hidden = s.state === 'revoked';
+    return showPanel('syncEnded');
+  }
+  const when = s.last ? t('sync_last', { time: new Date(s.last).toLocaleString(tag) }) : t('sync_never');
+  const plan = s.plan === 'life' ? t('sync_plan_life') : s.paidUntil ? t('sync_plan_year', { date: new Date(s.paidUntil).toLocaleDateString(tag) }) : '';
+  $('syncInfo').textContent = [when, s.items != null ? t('sync_usage', { items: s.items, size: fmtSize(s.bytes) }) : '', plan].filter(Boolean).join(' · ');
+  $('syncManage').hidden = s.plan !== 'year';
+  showPanel('syncOn');
+  if (s.state === 'error') syncSay(s.reason === 'offline' ? t('sync_offline') : s.reason === 'full' ? t('sync_full') : t('sync_failed', { reason: s.detail ?? s.reason ?? '' }), true);
+}
+function openSyncForm(kind, key = '') {
+  syncForm = kind;
+  $('syncGot').hidden = kind !== 'new';
+  $('syncKeyRow').hidden = kind === 'change';
+  $('syncKey').value = key;
+  $('syncKey').readOnly = kind === 'new';
+  $('syncCodeRow').hidden = kind !== 'recover';
+  $('syncPass2Row').hidden = kind === 'have';
+  $('syncForgot').hidden = kind !== 'have';
+  $('syncGo').textContent = t(kind === 'change' || kind === 'recover' ? 'sync_use_code' : 'sync_start');
+  if (kind === 'change') $('syncGo').textContent = t('sync_change_pass');
+  $('syncPass').value = $('syncPass2').value = $('syncCode').value = '';
+  syncSay('');
+  showPanel('syncForm');
+  (kind === 'have' ? $('syncKey') : kind === 'recover' ? $('syncCode') : $('syncPass')).focus();
+}
+function showCode(code) {
+  $('syncCodeText').textContent = code;
+  showPanel('syncCodeView');
+}
+async function syncDo(btn, fn) {
+  btn.disabled = true;
+  syncSay(t('sync_working'));
+  try {
+    const r = await fn();
+    if (r && r.ok === false) { syncSay(r.error, true); return null; }
+    syncSay('');
+    return r;
+  } finally { btn.disabled = false; }
+}
+const refreshSync = async () => { syncStatus = await api.sync.status(); renderSync(); };
+api.onSync((s) => { syncStatus = s; renderSync(); });
+api.onChats(async () => {
+  const id = current?.id;
+  chats = await api.chats.list();
+  current = chats.find((c) => c.id === id) ?? null;
+  if (current) openChat(current); else listChats();
+});
+$('syncYear').addEventListener('click', (e) => syncDo(e.currentTarget, () => api.sync.buy('year')));
+$('syncLife').addEventListener('click', (e) => syncDo(e.currentTarget, () => api.sync.buy('life')));
+$('syncRenew').addEventListener('click', (e) => syncDo(e.currentTarget, () => api.sync.buy('year')));
+$('syncUpgrade').addEventListener('click', (e) => syncDo(e.currentTarget, () => api.sync.buy('life')));
+$('syncHave').addEventListener('click', () => openSyncForm('have'));
+$('syncCancel').addEventListener('click', () => api.sync.cancel());
+$('syncBack').addEventListener('click', () => { syncForm = null; refreshSync(); });
+$('syncForgot').addEventListener('click', () => openSyncForm('recover', $('syncKey').value));
+$('syncForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const kind = syncForm, pass = $('syncPass').value;
+  if (!$('syncPass2Row').hidden && pass !== $('syncPass2').value) return syncSay(t('sync_pass_mismatch'), true);
+  const r = await syncDo($('syncGo'), () =>
+    kind === 'change' ? api.sync.pass(pass)
+    : kind === 'recover' ? api.sync.recover($('syncCode').value, pass, $('syncKey').value)
+    : api.sync.setup($('syncKey').value, pass));
+  if (!r) return;
+  syncForm = null;
+  $('syncPass').value = $('syncPass2').value = '';
+  if (r.recovery) return showCode(r.recovery);
+  await refreshSync();
+  if (kind === 'change' || kind === 'recover') syncSay(t('sync_pass_changed'));
+});
+$('syncCodeCopy').addEventListener('click', () => navigator.clipboard.writeText($('syncCodeText').textContent));
+$('syncCodeDone').addEventListener('click', () => { $('syncCodeText').textContent = ''; showPanel(null); refreshSync(); });
+$('syncNow').addEventListener('click', async (e) => { await syncDo(e.currentTarget, () => api.sync.now()); refreshSync(); });
+$('syncShow').addEventListener('click', async () => { const c = await api.sync.recovery(); if (c) showCode(c); });
+$('syncPassBtn').addEventListener('click', () => openSyncForm('change'));
+$('syncManage').addEventListener('click', (e) => syncDo(e.currentTarget, () => api.sync.billing()));
+for (const id of ['syncOffBtn', 'syncOffBtn2']) $(id).addEventListener('click', () => { if (confirm(t('sync_confirm_off'))) api.sync.off(); });
+
 applyStrings().then(loadChats).then(() => {
   listChats();
+  refreshSync();
   refresh();
   setInterval(() => { if (document.hidden) return; refresh(); if (!$('usage').hidden) showUsage(); }, 15_000);
   window.addEventListener('focus', refresh);
