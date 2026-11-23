@@ -160,7 +160,7 @@ function wireResend() {
     e.preventDefault();
     const b = form.querySelector('button');
     b.disabled = true;
-    try { await fetch(form.action, { method: 'POST', body: new FormData(form) }); } catch { /* same answer either way */ }
+    try { await fetch(form.action, { method: 'POST', body: new FormData(form), headers: { accept: 'application/json' } }); } catch { /* same answer either way */ }
     document.getElementById('resend-done').hidden = false;
     b.disabled = false;
   });

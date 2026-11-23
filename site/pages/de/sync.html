@@ -47,6 +47,7 @@
   <h2 id="key">Schick mir meinen Schlüssel</h2>
   <p>Schlüssel verloren oder auf dieser Website gekauft? Gib die E-Mail-Adresse ein, mit der du bezahlt hast, und wir schicken dir alle damit gekauften Schlüssel.</p>
   <form id="resend" class="resend" action="https://sync.{{domain}}/resend" method="post">
+    <input type="hidden" name="lang" value="de">
     <label for="resend-email">E-Mail</label>
     <input id="resend-email" name="email" type="email" required autocomplete="email">
     <button class="btn small-btn" type="submit">Schlüssel senden</button>

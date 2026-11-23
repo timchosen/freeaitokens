@@ -47,6 +47,7 @@
   <h2 id="key">أرسل لي مفتاحي</h2>
   <p>فقدت مفتاح المزامنة، أو اشتريته من هذا الموقع؟ أدخل البريد الذي دفعت به وسنرسل كل المفاتيح المشتراة به.</p>
   <form id="resend" class="resend" action="https://sync.{{domain}}/resend" method="post">
+    <input type="hidden" name="lang" value="ar">
     <label for="resend-email">البريد الإلكتروني</label>
     <input id="resend-email" name="email" type="email" required autocomplete="email">
     <button class="btn small-btn" type="submit">أرسل مفتاحي</button>

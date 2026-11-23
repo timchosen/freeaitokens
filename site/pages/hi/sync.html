@@ -47,6 +47,7 @@
   <h2 id="key">मेरी कुंजी भेजें</h2>
   <p>सिंक कुंजी खो गई, या इस वेबसाइट से खरीदी थी? भुगतान वाला ईमेल डालें, हम उससे खरीदी गई हर कुंजी भेज देंगे।</p>
   <form id="resend" class="resend" action="https://sync.{{domain}}/resend" method="post">
+    <input type="hidden" name="lang" value="hi">
     <label for="resend-email">ईमेल</label>
     <input id="resend-email" name="email" type="email" required autocomplete="email">
     <button class="btn small-btn" type="submit">मेरी कुंजी भेजें</button>

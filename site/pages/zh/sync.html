@@ -47,6 +47,7 @@
   <h2 id="key">把密钥发给我</h2>
   <p>弄丢了同步密钥,或者是在本网站购买的?输入付款时用的邮箱,我们会把用它购买的所有密钥发给你。</p>
   <form id="resend" class="resend" action="https://sync.{{domain}}/resend" method="post">
+    <input type="hidden" name="lang" value="zh">
     <label for="resend-email">邮箱</label>
     <input id="resend-email" name="email" type="email" required autocomplete="email">
     <button class="btn small-btn" type="submit">发送我的密钥</button>

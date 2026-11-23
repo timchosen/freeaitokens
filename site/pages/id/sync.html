@@ -47,6 +47,7 @@
   <h2 id="key">Kirimi saya kunci</h2>
   <p>Kehilangan kunci sinkronisasi, atau membelinya di situs ini? Masukkan email yang Anda pakai membayar dan kami akan mengirim semua kunci yang dibeli dengannya.</p>
   <form id="resend" class="resend" action="https://sync.{{domain}}/resend" method="post">
+    <input type="hidden" name="lang" value="id">
     <label for="resend-email">Email</label>
     <input id="resend-email" name="email" type="email" required autocomplete="email">
     <button class="btn small-btn" type="submit">Kirim kunci saya</button>

@@ -19,7 +19,7 @@ type Ctx = { waitUntil(p: Promise<unknown>): void };
 
 async function route(req: Request, env: Env, now: number, ctx: Ctx): Promise<Response> {
   const { pathname } = new URL(req.url);
-  if (pathname === '/buy' && req.method === 'GET') return buy(req, env);
+  if (pathname === '/buy' && req.method === 'GET') return buy(req, env, now);
   if (pathname === '/stripe/webhook' && req.method === 'POST') return webhook(req, env, now);
   if (pathname === '/resend' && req.method === 'POST') return resend(req, env, now, (p) => ctx.waitUntil(p));
   if (pathname === '/resend' && req.method === 'OPTIONS') return new Response(null, { status: 204, headers: { 'access-control-allow-origin': env.SITE_URL, 'access-control-allow-methods': 'POST', 'access-control-max-age': '86400' } });

@@ -47,6 +47,7 @@
   <h2 id="key">キーを送ってもらう</h2>
   <p>同期キーをなくした、またはこのサイトで購入しましたか? 支払いに使ったメールアドレスを入力すると、そのアドレスで買ったすべてのキーを送ります。</p>
   <form id="resend" class="resend" action="https://sync.{{domain}}/resend" method="post">
+    <input type="hidden" name="lang" value="ja">
     <label for="resend-email">メールアドレス</label>
     <input id="resend-email" name="email" type="email" required autocomplete="email">
     <button class="btn small-btn" type="submit">キーを送る</button>

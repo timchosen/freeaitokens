@@ -310,6 +310,7 @@ test('sync pages exist in every language, buy both plans from the sync Worker, a
     const sync = readFileSync(join(dir, 'sync.html'), 'utf8');
     for (const plan of ['year', 'life']) assert.ok(sync.includes(`href="https://sync.freeaitokens.co/buy?plan=${plan}"`), `${l.code} buys ${plan}`);
     assert.match(sync, /<form[^>]*id="resend"/, `${l.code} has the send-my-key form`);
+    if (l.code !== 'en') assert.ok(sync.includes(`<input type="hidden" name="lang" value="${l.code}">`), `${l.code} form says its language, for the no-JavaScript return`);
     assert.ok(existsSync(join(dir, 'sync-thanks.html')), `${l.code} thanks page`);
     assert.ok(readFileSync(join(dir, 'index.html'), 'utf8').includes(`href="${l.code === 'en' ? '' : `/${l.code}`}/sync"`), `${l.code} footer links to sync`);
   }

@@ -47,6 +47,7 @@
   <h2 id="key">Envoyez-moi ma clé</h2>
   <p>Clé de synchronisation perdue, ou achetée sur ce site ? Saisissez l'e-mail utilisé pour payer et nous enverrons toutes les clés achetées avec.</p>
   <form id="resend" class="resend" action="https://sync.{{domain}}/resend" method="post">
+    <input type="hidden" name="lang" value="fr">
     <label for="resend-email">E-mail</label>
     <input id="resend-email" name="email" type="email" required autocomplete="email">
     <button class="btn small-btn" type="submit">Envoyer ma clé</button>

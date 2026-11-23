@@ -47,6 +47,7 @@
   <h2 id="key">Envíame mi clave</h2>
   <p>¿Perdiste tu clave de sincronización o la compraste en esta web? Escribe el correo con el que pagaste y te enviaremos todas las claves compradas con él.</p>
   <form id="resend" class="resend" action="https://sync.{{domain}}/resend" method="post">
+    <input type="hidden" name="lang" value="es">
     <label for="resend-email">Correo</label>
     <input id="resend-email" name="email" type="email" required autocomplete="email">
     <button class="btn small-btn" type="submit">Enviar mi clave</button>

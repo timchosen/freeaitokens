@@ -264,7 +264,7 @@ test('items: concurrent writes cannot push a license over its storage cap', asyn
 import { cleanup } from '../sync/src/cleanup.ts';
 
 const resend = (env: any, email: string, ip = '1.2.3.4') =>
-  call(env, '/resend', { method: 'POST', body: new URLSearchParams({ email }), headers: { 'cf-connecting-ip': ip } });
+  call(env, '/resend', { method: 'POST', body: new URLSearchParams({ email }), headers: { 'cf-connecting-ip': ip, accept: 'application/json' } });
 
 test('resend: same answer for known and unknown addresses, one mail per license, rate-limited, no address stored', async () => {
   const { env, db, mail } = makeEnv();
@@ -387,5 +387,49 @@ test('webhook: renewing a lapsed yearly plan cancels the old subscription first,
   stripeReply = (url, method) => (method === 'DELETE' ? { __status: 404, error: { message: 'No such subscription: sub_2' } } : {});
   const again = completed({ id: 'cs_year_3', mode: 'subscription', subscription: 'sub_3', payment_intent: null, metadata: { license: kh } });
   assert.equal((await hook(env, 'checkout.session.completed', again)).status, 200);
+  globalThis.fetch = realFetch;
+});
+
+test('resend: a plain form post (no JavaScript) goes back to the page in its language, showing the sent message', async () => {
+  const { env } = makeEnv();
+  const post = (body: Record<string, string>) => call(env, '/resend', { method: 'POST', body: new URLSearchParams(body), headers: { 'cf-connecting-ip': '3.3.3.3' } });
+  const en = await post({ email: 'a@example.com' });
+  assert.equal(en.status, 303);
+  assert.equal(en.headers.get('location'), 'https://freeaitokens.co/sync#resend-done');
+  assert.equal((await post({ email: 'a@example.com', lang: 'de' })).headers.get('location'), 'https://freeaitokens.co/de/sync#resend-done');
+  assert.equal((await post({ email: 'a@example.com', lang: '//evil.example' })).headers.get('location'), 'https://freeaitokens.co/sync#resend-done');
+});
+
+test('/v1/checkout refuses to sell a yearly plan to a lifetime license', async () => {
+  stubStripe();
+  stripeReply = () => ({ id: 'cs_2', url: 'https://checkout.stripe.com/c/y' });
+  const { env, db } = makeEnv();
+  await addLicense(db, K(0), { plan: 'life', paid_until: null });
+  assert.equal((await call(env, '/v1/checkout', { method: 'POST', key: K(0), body: JSON.stringify({ plan: 'year' }) })).status, 409);
+  assert.equal((await call(env, '/v1/checkout', { method: 'POST', key: K(0), body: JSON.stringify({ plan: 'life' }) })).status, 409);
+  assert.equal(stripeCalls.length, 0);
+  globalThis.fetch = realFetch;
+});
+
+test('/buy is rate-limited per address, so crawlers cannot create checkout sessions without end', async () => {
+  stubStripe();
+  stripeReply = () => ({ id: 'cs_1', url: 'https://checkout.stripe.com/c/x' });
+  const { env } = makeEnv();
+  const get = (ip: string) => call(env, '/buy?plan=year', { headers: { 'cf-connecting-ip': ip } });
+  for (let i = 0; i < 20; i++) assert.equal((await get('4.4.4.4')).status, 303);
+  assert.equal((await get('4.4.4.4')).status, 429);
+  assert.equal((await get('5.5.5.5')).status, 303, 'other people still buy');
+  globalThis.fetch = realFetch;
+});
+
+test('webhook: refunding a yearly charge from before a renewal still revokes, though the renewal made a new Stripe customer', async () => {
+  stubStripe();
+  stripeReply = () => ({});
+  const { env, db } = makeEnv();
+  await hook(env, 'checkout.session.completed', completed({ id: 'cs_year_1', mode: 'subscription', subscription: 'sub_1', payment_intent: null, customer: 'cus_old' }));
+  const kh = (db.prepare('SELECT key_hash FROM licenses').get() as any).key_hash;
+  await hook(env, 'checkout.session.completed', completed({ id: 'cs_year_2', mode: 'subscription', subscription: 'sub_2', payment_intent: null, customer: 'cus_new', metadata: { license: kh } }));
+  await hook(env, 'charge.refunded', { id: 'ch_old', refunded: true, payment_intent: 'pi_old', customer: 'cus_old' });
+  assert.ok((db.prepare('SELECT revoked FROM licenses').get() as any).revoked);
   globalThis.fetch = realFetch;
 });

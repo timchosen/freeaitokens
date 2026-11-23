@@ -3,6 +3,7 @@ import { json, type LicenseRow } from './auth.ts';
 import { licenseKey, sha256hex, hmacHex } from './license.ts';
 import { stripe, verifyWebhook } from './stripe.ts';
 import type { Env } from './index.ts';
+import { rateOk } from './items.ts';
 
 const HEX64 = /^[0-9a-f]{64}$/;
 const DAY = 86_400_000;
@@ -22,10 +23,12 @@ async function checkout(env: Env, plan: string, claim: string | null, license: s
 }
 
 // GET /buy?plan=year|life&claim=<sha256 of the app's token>: a new purchase, from the site or the app.
-export async function buy(req: Request, env: Env): Promise<Response> {
+export async function buy(req: Request, env: Env, now: number): Promise<Response> {
   const q = new URL(req.url).searchParams;
   const plan = q.get('plan'), claim = q.get('claim');
   if ((plan !== 'year' && plan !== 'life') || (claim && !HEX64.test(claim))) return json({ error: 'bad request' }, 400);
+  // Each hit makes a Stripe Checkout session, so one address gets a few an hour.
+  if (!(await rateOk(env, `ip:b:${req.headers.get('cf-connecting-ip') ?? '?'}`, 20, 3_600_000, now))) return json({ error: 'too many requests' }, 429);
   return new Response(null, { status: 303, headers: { location: await checkout(env, plan, claim, null), 'cache-control': 'no-store' } });
 }
 
@@ -33,6 +36,7 @@ export async function buy(req: Request, env: Env): Promise<Response> {
 export async function renew(req: Request, env: Env, lic: LicenseRow): Promise<Response> {
   const plan = (await req.json().catch(() => ({})) as { plan?: string }).plan;
   if (plan !== 'year' && plan !== 'life') return json({ error: 'bad plan' }, 400);
+  if (lic.plan === 'life') return json({ error: 'this key is already lifetime' }, 409);
   return json({ url: await checkout(env, plan, null, lic.key_hash) });
 }
 
@@ -78,6 +82,7 @@ async function completed(env: Env, s: any, now: number): Promise<void> {
     // The new purchase replaces any old subscription, even one that looks lapsed (past_due can still be charged).
     // Cancelled before the license moves on, so if this fails, Stripe's retry of the event tries again.
     if (lic.stripe_ref?.startsWith('sub_')) await cancelSubscription(env, lic.stripe_ref);
+    if (s.customer) await env.SYNC_DB.prepare('INSERT INTO customers (customer, key_hash) VALUES (?, ?) ON CONFLICT DO NOTHING').bind(s.customer, upgrade).run();
     await env.SYNC_DB.prepare('UPDATE licenses SET plan = ?, stripe_ref = ?, stripe_customer = COALESCE(?, stripe_customer), email_hash = COALESCE(?, email_hash), paid_until = ? WHERE key_hash = ?')
       .bind(plan, ref, s.customer ?? null, emailHash, until, upgrade).run();
     return;
@@ -86,18 +91,21 @@ async function completed(env: Env, s: any, now: number): Promise<void> {
   const res = await env.SYNC_DB.batch([
     env.SYNC_DB.prepare('INSERT INTO licenses (key_hash, plan, stripe_customer, stripe_ref, first_session, email_hash, paid_until, revoked, created) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?) ON CONFLICT DO NOTHING')
       .bind(keyHash, plan, s.customer ?? null, ref, s.id, emailHash, until, now),
+    ...(s.customer ? [env.SYNC_DB.prepare('INSERT INTO customers (customer, key_hash) VALUES (?, ?) ON CONFLICT DO NOTHING').bind(s.customer, keyHash)] : []),
     ...(s.client_reference_id && HEX64.test(s.client_reference_id)
       ? [env.SYNC_DB.prepare('INSERT INTO claims (claim_hash, session, expires) VALUES (?, ?, ?) ON CONFLICT DO NOTHING').bind(s.client_reference_id, s.id, now + DAY)]
       : []),
   ]) as { meta: { changes: number } }[];
   // Another checkout took this claim first; the buyer still gets the key by email ("send me my key").
-  if (res[1] && res[1].meta.changes === 0) console.warn('claim already taken for session', s.id);
+  const claimRes = res[s.customer ? 2 : 1];
+  if (claimRes && claimRes.meta.changes === 0) console.warn('claim already taken for session', s.id);
 }
 
-// A charge maps to a lifetime license by payment intent, or to a yearly one by customer. Every charge that
+// A charge maps to a lifetime license by payment intent, or to a yearly one by customer (any customer the
+// license ever had: a renewal checkout can make a new one, and an older charge can still be refunded). Every charge that
 // revokes is recorded; a won dispute removes only its own dispute record, never a refund, and the license
 // comes back only when no record is left.
-const MATCH = "(stripe_ref = ?1 OR (plan = 'year' AND stripe_customer = ?2))";
+const MATCH = "(stripe_ref = ?1 OR (plan = 'year' AND (stripe_customer = ?2 OR key_hash IN (SELECT key_hash FROM customers WHERE customer = ?2))))";
 async function revoke(env: Env, charge: any, at: number, refund: boolean): Promise<void> {
   const ids = [charge.payment_intent ?? null, charge.customer ?? null];
   await env.SYNC_DB.batch([
