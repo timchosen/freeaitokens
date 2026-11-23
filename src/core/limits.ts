@@ -8,10 +8,14 @@ export interface LimitState {
   stats: Record<string, { ok: number; fail: number; msAvg: number }>;
   lastModel: Record<string, string>;
   paidDay: [number, number];
+  // Daily history for the app's Usage page, keyed by UTC date. Tokens and ms count successful calls only.
+  usage: Record<string, DayUsage>;
 }
+export interface DayUsage { ok: number; fail: number; tokens: number; ms: number; providers: Record<string, { ok: number; fail: number; tokens: number }> }
+const KEEP_DAYS = 90;
 
 export function emptyState(): LimitState {
-  return { windows: {}, cooling: {}, stats: {}, lastModel: {}, paidDay: [0, 0] };
+  return { windows: {}, cooling: {}, stats: {}, lastModel: {}, paidDay: [0, 0], usage: {} };
 }
 
 const MIN = 60_000;
@@ -63,6 +67,19 @@ export class LimitTracker {
     const n = s.ok + s.fail;
     s.msAvg = (s.msAvg * n + ms) / (n + 1);
     if (ok) s.ok++; else s.fail++;
+    this.addUsage(key.slice(0, key.indexOf('/')), tokens, ok, ms);
+  }
+
+  private addUsage(provider: string, tokens: number, ok: boolean, ms: number): void {
+    const usage = (this.state.usage ??= {});
+    const date = new Date(this.now()).toISOString().slice(0, 10);
+    if (!usage[date]) {
+      const oldest = new Date(this.now() - KEEP_DAYS * DAY).toISOString().slice(0, 10);
+      for (const d of Object.keys(usage)) if (d < oldest) delete usage[d];
+    }
+    const day = (usage[date] ??= { ok: 0, fail: 0, tokens: 0, ms: 0, providers: {} });
+    const p = (day.providers[provider] ??= { ok: 0, fail: 0, tokens: 0 });
+    if (ok) { day.ok++; p.ok++; day.tokens += tokens; p.tokens += tokens; day.ms += ms; } else { day.fail++; p.fail++; }
   }
 
   coolDown(key: string, ms: number): void {

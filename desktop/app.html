@@ -14,6 +14,7 @@
     <button role="tab" id="t-play" aria-controls="play" aria-selected="false" tabindex="-1">Playground</button>
     <button role="tab" id="t-tools" aria-controls="tools" aria-selected="false" tabindex="-1">Tools</button>
     <button role="tab" id="t-prov" aria-controls="prov" aria-selected="false" tabindex="-1">Providers</button>
+    <button role="tab" id="t-use" aria-controls="usage" aria-selected="false" tabindex="-1">Usage</button>
     <button role="tab" id="t-set" aria-controls="settings" aria-selected="false" tabindex="-1">Settings</button>
   </nav>
   <p class="running" id="running"></p>
@@ -73,6 +74,24 @@
     <div class="actions"><button class="btn" id="addProv">Add a free provider</button></div>
     <div class="list" id="provList"></div>
   </section>
+  <section role="tabpanel" id="usage" aria-labelledby="t-use" hidden>
+    <div class="convo-head">
+      <h1>Usage</h1>
+      <div class="range" role="group" aria-label="Time range"><button type="button" data-days="1">24h</button><button type="button" data-days="7" aria-pressed="true">7 days</button><button type="button" data-days="30">30 days</button><button type="button" data-days="90">90 days</button></div>
+    </div>
+    <p class="lead">Every call to a provider counts, including ones FreeAITokens retried elsewhere. Kept on this computer for 90 days.</p>
+    <div class="stats four">
+      <div class="stat"><b id="u-req">–</b><span>requests</span></div>
+      <div class="stat"><b id="u-rate">–</b><span>succeeded</span></div>
+      <div class="stat"><b id="u-tok">–</b><span>tokens, estimated</span></div>
+      <div class="stat"><b id="u-ms">–</b><span>average answer time</span></div>
+    </div>
+    <h2>Requests per day</h2>
+    <div class="chart" id="u-chart"></div>
+    <h2>By provider</h2>
+    <div class="list" id="u-prov"></div>
+  </section>
+
   <section role="tabpanel" id="settings" aria-labelledby="t-set" hidden>
     <h1>Settings</h1>
     <div class="row set"><span>Start at login</span><p>Open FreeAITokens in the background when you log in.</p><input type="checkbox" id="login" aria-label="Start at login"></div>

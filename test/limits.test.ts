@@ -85,3 +85,20 @@ test('paid cap', () => {
   c.t += 24 * 3600_000;
   assert.equal(t.paidAllowed(200), true);
 });
+
+test('usage keeps a daily history per provider, and drops days older than 90', () => {
+  let now = Date.UTC(2026, 10, 23, 12);
+  const t = new LimitTracker(emptyState(), () => now);
+  t.record('groq/m1', 100, true, 400);
+  t.record('groq/m1', 50, false, 100);
+  t.record('kilo/k', 10, true, 200);
+  const day = t.state.usage['2026-11-23'];
+  assert.deepEqual({ ok: day.ok, fail: day.fail, tokens: day.tokens, ms: day.ms }, { ok: 2, fail: 1, tokens: 110, ms: 600 });
+  assert.deepEqual(day.providers.groq, { ok: 1, fail: 1, tokens: 100 });
+  t.state.usage['2026-08-01'] = { ok: 1, fail: 0, tokens: 1, ms: 1, providers: {} };
+  now = Date.UTC(2026, 10, 24, 1);
+  t.record('kilo/k', 5, true, 10);
+  assert.ok(t.state.usage['2026-11-24']);
+  assert.ok(!t.state.usage['2026-08-01'], 'old days are dropped');
+  assert.ok(t.state.usage['2026-11-23'], 'recent days stay');
+});

@@ -14,6 +14,7 @@ function select(t) {
     $(x.getAttribute('aria-controls')).hidden = !on;
   }
   if (t.id === 't-play') $('prompt').focus();
+  if (t.id === 't-use') showUsage();
 }
 tabs.forEach((t, i) => {
   t.addEventListener('click', () => select(t));
@@ -171,6 +172,57 @@ function fillModels(models) {
   sel.value = [...sel.options].some((o) => o.value === keep) ? keep : 'free';
 }
 
+// Usage
+let usageDays = 7;
+const NS = 'http://www.w3.org/2000/svg';
+const svg = (tag, attrs, text) => { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); if (text != null) e.textContent = text; return e; };
+const compact = (n) => n.toLocaleString(undefined, { notation: 'compact', maximumFractionDigits: 1 });
+const dayLabel = (d) => new Date(`${d}T00:00:00Z`).toLocaleDateString(undefined, { day: 'numeric', month: 'short', timeZone: 'UTC' });
+async function showUsage() {
+  const u = await api.usage(usageDays);
+  $('u-req').textContent = num(u.totals.requests);
+  $('u-rate').textContent = u.totals.successRate == null ? '–' : `${Math.round(u.totals.successRate * 100)}%`;
+  $('u-tok').textContent = compact(u.totals.tokens);
+  $('u-ms').textContent = u.totals.avgMs ? `${(u.totals.avgMs / 1000).toFixed(1)} s` : '–';
+  const W = 760, H = 200, pad = 24, n = u.days.length;
+  const max = Math.max(1, ...u.days.map((d) => d.ok + d.fail));
+  const bw = (W - pad * 2) / n;
+  const chart = svg('svg', { viewBox: `0 0 ${W} ${H + 24}`, role: 'img', 'aria-label': `Requests per day: ${u.totals.requests} in total` });
+  chart.append(svg('line', { x1: pad, x2: W - pad, y1: H, y2: H, class: 'axis' }), svg('text', { x: 0, y: 12, class: 'tick' }, compact(max)));
+  u.days.forEach((d, i) => {
+    const x = pad + i * bw + bw * 0.15, w = Math.max(1, bw * 0.7);
+    const hOk = (d.ok / max) * (H - 20), hFail = (d.fail / max) * (H - 20);
+    const g = svg('g', {});
+    g.append(svg('title', {}, `${dayLabel(d.date)}: ${d.ok} succeeded, ${d.fail} failed`));
+    if (d.ok) g.append(svg('rect', { x, y: H - hOk, width: w, height: hOk, rx: 2, class: 'ok' }));
+    if (d.fail) g.append(svg('rect', { x, y: H - hOk - hFail, width: w, height: hFail, rx: 2, class: 'fail' }));
+    if (!d.ok && !d.fail) g.append(svg('rect', { x, y: H - 2, width: w, height: 2, class: 'none' }));
+    chart.append(g);
+    if (i === 0 || i === n - 1 || (n > 7 && i === Math.floor(n / 2))) chart.append(svg('text', { x: x + w / 2, y: H + 18, class: 'tick', 'text-anchor': n === 1 ? 'middle' : i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle' }, dayLabel(d.date)));
+  });
+  const legend = el('div', 'legend');
+  legend.append(el('span', 'k ok', 'Succeeded'), el('span', 'k fail', 'Failed'));
+  $('u-chart').replaceChildren(chart, legend);
+  $('u-prov').replaceChildren(...(u.providers.length ? u.providers.map((p) => {
+    const row = el('div', 'prov');
+    const name = el('div', 'name');
+    name.append(el('b', '', p.name), el('small', '', `${num(p.ok)} succeeded · ${num(p.fail)} failed · ${compact(p.tokens)} tokens`));
+    const share = el('div', 'bar');
+    const fill = el('i');
+    fill.style.width = `${Math.round((p.ok + p.fail) / Math.max(1, u.totals.requests) * 100)}%`;
+    share.append(fill);
+    row.append(name, share);
+    return row;
+  }) : [el('p', 'lead', 'No requests in this range yet.')]));
+}
+for (const b of document.querySelectorAll('[data-days]')) {
+  b.addEventListener('click', () => {
+    usageDays = Number(b.dataset.days);
+    for (const x of document.querySelectorAll('[data-days]')) x.setAttribute('aria-pressed', String(x === b));
+    showUsage();
+  });
+}
+
 // Settings
 $('login').addEventListener('change', async () => { $('login').checked = await api.login($('login').checked); });
 $('checkUpd').addEventListener('click', async () => {
@@ -194,5 +246,5 @@ $('clearChats').addEventListener('click', () => {
 listChats();
 
 refresh();
-setInterval(() => { if (!document.hidden) refresh(); }, 15_000);
+setInterval(() => { if (document.hidden) return; refresh(); if (!$('usage').hidden) showUsage(); }, 15_000);
 window.addEventListener('focus', refresh);

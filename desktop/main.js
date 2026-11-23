@@ -8,11 +8,11 @@ import { loadCatalogue, makeDeps, parseArgs } from 'freeaitokens/dist/node/cli.j
 import { startServer, DEFAULT_PORT } from 'freeaitokens/dist/node/server.js';
 import { currentCatalogue, updateCatalogue } from 'freeaitokens/dist/node/remote.js';
 import { openKeyStore } from 'freeaitokens/dist/node/keys.js';
-import { localToken, saveState, stateDir } from 'freeaitokens/dist/node/state.js';
+import { localToken, saveState, loadState, stateDir } from 'freeaitokens/dist/node/state.js';
 import { validateKey, keySteps, connectOpenRouter } from 'freeaitokens/dist/node/add.js';
 import { launchSpec, LAUNCH_TOOLS } from 'freeaitokens/dist/node/harness.js';
 import { route, NoCapacityError } from 'freeaitokens/dist/core/orchestrator.js';
-import { allowedUrl, choices, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion } from './logic.js';
+import { allowedUrl, choices, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary } from './logic.js';
 import { needsAccount, joinAccount } from 'freeaitokens/dist/core/catalogue.js';
 
 const here = (f) => fileURLToPath(new URL(f, import.meta.url));
@@ -123,6 +123,8 @@ ipcMain.handle('app:chat', async (_e, list, choice = 'free') => {
     saveState(deps.tracker.state);
   }
 });
+// When another copy holds the port, its requests are in the saved state, not in this process.
+ipcMain.handle('app:usage', (_e, days) => usageSummary((srv.reused ? loadState() : deps.tracker.state).usage, [1, 7, 30, 90].includes(days) ? days : 7, deps.catalogue));
 ipcMain.handle('app:login', (_e, on) => { app.setLoginItemSettings({ openAtLogin: on === true }); refresh(); return app.getLoginItemSettings().openAtLogin; });
 ipcMain.handle('app:updates', async () => {
   try {

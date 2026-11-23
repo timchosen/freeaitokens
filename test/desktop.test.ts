@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 // @ts-ignore plain JS module
-import { allowedUrl, choices, menuLine, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion } from '../desktop/logic.js';
+import { allowedUrl, choices, menuLine, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary } from '../desktop/logic.js';
 
 const cat = [
   { id: 'kilo', name: 'Kilo', keyless: true },
@@ -144,4 +144,20 @@ test('markdown renders headings, bold, lists and code, and escapes everything el
   assert.match(html, /<a href="https:\/\/example\.com">site<\/a>/);
   assert.doesNotMatch(html, /href="javascript/);
   assert.doesNotMatch(html, /<img/);
+});
+
+test('usageSummary fills every day in the range and totals it, busiest provider first', () => {
+  const usage = {
+    '2026-11-21': { ok: 3, fail: 1, tokens: 300, ms: 1500, providers: { groq: { ok: 3, fail: 1, tokens: 300 } } },
+    '2026-11-23': { ok: 1, fail: 0, tokens: 50, ms: 500, providers: { kilo: { ok: 1, fail: 0, tokens: 50 } } },
+    '2026-10-01': { ok: 9, fail: 9, tokens: 9, ms: 9, providers: {} },
+  };
+  const cat = [{ id: 'groq', name: 'Groq' }];
+  const s = usageSummary(usage, 7, cat, Date.UTC(2026, 10, 23, 9));
+  assert.equal(s.days.length, 7);
+  assert.deepEqual(s.days.at(-1), { date: '2026-11-23', ok: 1, fail: 0, tokens: 50 });
+  assert.deepEqual(s.days.at(-2), { date: '2026-11-22', ok: 0, fail: 0, tokens: 0 });
+  assert.deepEqual(s.totals, { requests: 5, ok: 4, fail: 1, tokens: 350, avgMs: 500, successRate: 0.8 });
+  assert.deepEqual(s.providers.map((p: any) => [p.name, p.ok, p.fail]), [['Groq', 3, 1], ['kilo', 1, 0]]);
+  assert.equal(usageSummary({}, 7, cat, Date.UTC(2026, 10, 23)).totals.successRate, null);
 });

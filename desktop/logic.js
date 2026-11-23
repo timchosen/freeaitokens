@@ -111,3 +111,27 @@ export function newerVersion(current, tag) {
   for (let i = 0; i < 3; i++) if (a[i] !== b[i]) return b[i] > a[i];
   return false;
 }
+
+// The Usage page: the last `days` days (empty days included), totals, and providers by requests.
+export function usageSummary(usage, days, catalogue, now = Date.now()) {
+  const list = [];
+  const totals = { requests: 0, ok: 0, fail: 0, tokens: 0, avgMs: 0, successRate: null };
+  const prov = new Map();
+  let ms = 0;
+  for (let i = days - 1; i >= 0; i--) {
+    const date = new Date(now - i * 86_400_000).toISOString().slice(0, 10);
+    const d = usage?.[date];
+    list.push({ date, ok: d?.ok ?? 0, fail: d?.fail ?? 0, tokens: d?.tokens ?? 0 });
+    if (!d) continue;
+    totals.ok += d.ok; totals.fail += d.fail; totals.tokens += d.tokens; ms += d.ms;
+    for (const [id, p] of Object.entries(d.providers ?? {})) {
+      const t = prov.get(id) ?? { id, name: catalogue.find((c) => c.id === id)?.name ?? id, ok: 0, fail: 0, tokens: 0 };
+      t.ok += p.ok; t.fail += p.fail; t.tokens += p.tokens;
+      prov.set(id, t);
+    }
+  }
+  totals.requests = totals.ok + totals.fail;
+  totals.avgMs = totals.ok ? Math.round(ms / totals.ok) : 0;
+  totals.successRate = totals.requests ? totals.ok / totals.requests : null;
+  return { days: list, totals, providers: [...prov.values()].sort((a, b) => b.ok + b.fail - (a.ok + a.fail)) };
+}
