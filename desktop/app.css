@@ -139,6 +139,23 @@ select { max-width: 100%; }
   section.play:not([hidden]) { grid-template-columns: 1fr; }
   .history { position: static; max-height: 30vh; }
 }
+/* Playground: the header and message box stay put; only the conversation scrolls. */
+main:has(> #play:not([hidden])) { display: flex; flex-direction: column; overflow: hidden; padding-bottom: 20px; }
+section.play:not([hidden]) { flex: 1; min-height: 0; width: 100%; grid-template-rows: minmax(0, 1fr); }
+#play .history { position: static; max-height: none; min-height: 0; }
+#play .history ul { min-height: 0; }
+#play .convo { display: flex; flex-direction: column; min-height: 0; }
+#play .chat { flex: 1; min-height: 0; overflow-y: auto; margin-bottom: 14px; padding-inline-end: 4px; }
+@media (max-width: 900px) {
+  section.play:not([hidden]) { grid-template-rows: auto minmax(0, 1fr); gap: 12px; }
+  #play .history { max-height: 22vh; }
+}
+/* Keep the mode switch and model picker on one line; short windows get a smaller message box. */
+#play .convo-head select { width: 240px; }
+@media (max-height: 640px) {
+  #play textarea { height: 64px; }
+  #play .history { max-height: 18vh; }
+}
 
 /* Settings › Sync */
 .row.set.sync { align-items: flex-start; }
