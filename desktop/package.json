@@ -8,6 +8,7 @@
   "main": "main.js",
   "license": "MIT",
   "author": "Timchosen Uzua",
+  "homepage": "https://github.com/timchosen/freeaitokens",
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --publish never"
@@ -25,7 +26,7 @@
     "icon": "icons/icon.png",
     "mac": { "target": ["dmg", "zip"], "category": "public.app-category.developer-tools", "identity": null, "extendInfo": { "LSUIElement": true } },
     "win": { "target": ["nsis"] },
-    "linux": { "target": ["AppImage", "deb"], "category": "Development" },
+    "linux": { "target": ["AppImage", "deb"], "category": "Development", "maintainer": "Timchosen Uzua" },
     "publish": { "provider": "github", "owner": "timchosen", "repo": "freeaitokens" }
   }
 }
