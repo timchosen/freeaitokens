@@ -12,8 +12,9 @@
   <nav role="tablist" data-i18n-label="nav_label" aria-label="Sections" aria-orientation="vertical">
     <button role="tab" id="t-home" aria-controls="home" aria-selected="true" data-i18n="tab_home">Home</button>
     <button role="tab" id="t-play" aria-controls="play" aria-selected="false" tabindex="-1" data-i18n="tab_play">Playground</button>
-    <button role="tab" id="t-tools" aria-controls="tools" aria-selected="false" tabindex="-1" data-i18n="tab_tools">Tools</button>
-    <button role="tab" id="t-prov" aria-controls="prov" aria-selected="false" tabindex="-1" data-i18n="tab_prov">Providers</button>
+    <button role="tab" id="t-models" aria-controls="models" aria-selected="false" tabindex="-1" data-i18n="tab_models">Models</button>
+    <button role="tab" id="t-tools" aria-controls="tools" aria-selected="false" tabindex="-1" data-i18n="tab_agents">Agents</button>
+    <button role="tab" id="t-prov" aria-controls="prov" aria-selected="false" tabindex="-1" data-i18n="tab_keys">Keys</button>
     <button role="tab" id="t-use" aria-controls="usage" aria-selected="false" tabindex="-1" data-i18n="tab_usage">Usage</button>
     <button role="tab" id="t-sync" aria-controls="syncTab" aria-selected="false" tabindex="-1" data-i18n="tab_sync">Sync</button>
     <button role="tab" id="t-set" aria-controls="settings" aria-selected="false" tabindex="-1" data-i18n="tab_settings">Settings</button>
@@ -69,20 +70,45 @@
     </div>
   </section>
 
+  <section role="tabpanel" id="models" aria-labelledby="t-models" hidden>
+    <div class="head-row"><h1 data-i18n="models_title">Models</h1><input type="search" id="mSearch" class="search" data-i18n-placeholder="models_search" placeholder="Search models" data-i18n-label="models_search" aria-label="Search models"></div>
+    <div class="range kinds" role="group" id="mKinds" data-i18n-label="models_kind" aria-label="Kind of model"></div>
+    <div class="filters">
+      <label class="toggle"><input type="checkbox" id="mReady" checked> <span data-i18n="models_ready">Ready to use</span></label>
+      <label class="toggle"><input type="checkbox" id="mTools"> <span data-i18n="cap_tools">Tools</span></label>
+      <label class="toggle"><input type="checkbox" id="mVision"> <span data-i18n="cap_vision">Vision</span></label>
+      <span class="count" id="mCount"></span>
+    </div>
+    <div class="list" id="mList"></div>
+    <p class="empty" id="mEmpty" hidden></p>
+  </section>
+
   <section role="tabpanel" id="tools" aria-labelledby="t-tools" hidden>
-    <h1 data-i18n="tools_title">Tools</h1>
-    <p class="lead" data-i18n="tools_lead">Open a coding tool in a new terminal window, already set up to use free models. Your tool's own settings stay as they are.</p>
-    <div class="grid" id="toolGrid"></div>
+    <h1 data-i18n="agents_title">Agents</h1>
+    <p class="lead" data-i18n="agents_lead">Run a coding agent on free models. Open it in a new terminal window, or copy the command and run it yourself. Your agent's own settings stay as they are.</p>
+    <div class="grid agents" id="toolGrid"></div>
     <p class="status" id="toolStatus" role="status"></p>
     <h2 data-i18n="other_apps">Other apps</h2>
-    <p data-i18n-html="other_apps_text">Zed, JetBrains, VS Code, Cline, Continue and any app that takes an OpenAI-compatible address: paste the address and key from <a href="#" data-go="t-home">Home</a>, and use the model <code>free</code>.</p>
+    <p data-i18n="agents_other">Zed, JetBrains, VS Code, Cline, Continue and any app that takes an OpenAI-compatible address can use these:</p>
+    <div class="row"><span data-i18n="row_address">Address</span><code id="endpoint3"></code><button class="copy" data-copy="endpoint" data-i18n="copy">Copy</button></div>
+    <div class="row"><span data-i18n="row_key">API key</span><code data-i18n="row_key_value">Your local token</code><button class="copy" data-copy="token" data-i18n="copy">Copy</button></div>
+    <div class="row"><span data-i18n="row_model">Model</span><code>free</code><button class="copy" data-copy-text="free" data-i18n="copy">Copy</button></div>
   </section>
 
   <section role="tabpanel" id="prov" aria-labelledby="t-prov" hidden>
-    <h1 data-i18n="prov_title">Providers</h1>
+    <div class="head-row"><h1 data-i18n="keys_title">Keys</h1><button class="btn" id="addProv" data-i18n="btn_add">Add a free provider</button></div>
     <p class="lead" data-i18n="prov_lead">Each provider you add gives you more free use. Keys stay in your computer's keychain.</p>
-    <div class="actions"><button class="btn" id="addProv" data-i18n="btn_add">Add a free provider</button></div>
+    <div class="filters">
+      <div class="range" role="group" id="kShow" data-i18n-label="keys_show" aria-label="Show">
+        <button type="button" data-show="all" aria-pressed="true" data-i18n="keys_all">All</button><button type="button" data-show="added" data-i18n="keys_added">Added</button><button type="button" data-show="add" data-i18n="keys_not_added">Not added</button><button type="button" data-show="trouble" data-i18n="keys_trouble">Having trouble</button>
+      </div>
+      <div class="range" role="group" id="kDoes" data-i18n-label="keys_does" aria-label="Does">
+        <button type="button" data-does="" aria-pressed="true" data-i18n="keys_any">Anything</button><button type="button" data-does="chat" data-i18n="does_chat">Chat</button><button type="button" data-does="images" data-i18n="does_images">Images</button><button type="button" data-does="voice" data-i18n="does_voice">Voice</button>
+      </div>
+    </div>
+    <p class="summary" id="kSummary"></p>
     <div class="list" id="provList"></div>
+    <p class="empty" id="kEmpty" hidden data-i18n="keys_none">No providers match.</p>
   </section>
   <section role="tabpanel" id="usage" aria-labelledby="t-use" hidden>
     <div class="convo-head">

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import { randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
 // @ts-ignore plain JS module
-import { allowedUrl, choices, menuLine, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType, privateAddress, guessKind, sortedKind, audioType, mediaOptions, pcmToWav, pickRelease, docMessage, joinUsers, voiceSetup } from '../desktop/logic.js';
+import { allowedUrl, choices, menuLine, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType, privateAddress, guessKind, sortedKind, audioType, mediaOptions, pcmToWav, pickRelease, docMessage, joinUsers, voiceSetup, modelRows } from '../desktop/logic.js';
 import { readFileSync as readText } from 'node:fs';
 import vm from 'node:vm';
 
@@ -724,4 +724,35 @@ test('voiceSetup names who does dictation and spoken answers now, and the free p
     transcription: { using: ['OVH', 'Groq'], add: null },
     speech: { using: ['Groq'], add: { id: 'cf', name: 'Cloudflare' } },
   });
+});
+
+test('modelRows lists every model with its kind, limits, readiness, cooling and track record', () => {
+  const now = Date.UTC(2026, 10, 24, 12);
+  const tracker = { now: () => now, state: { cooling: { 'groq/g1': now + 60_000, 'groq/g2': now - 1 }, stats: { 'groq/g1': { ok: 9, fail: 1, msAvg: 1200 } } } };
+  const c = [
+    { id: 'groq', name: 'Groq', keyless: false, limits: { rpm: 30 }, models: [{ id: 'g1', context: 131072, tools: true, images: false, quality: 8, limits: { rpd: 1000 } }, { id: 'g2', context: 8192, tools: false, images: true, quality: 5 }],
+      media: [{ id: 'whisper', kind: 'transcription', quality: 5 }] },
+    { id: 'cf', name: 'Cloudflare', keyless: false, models: [{ id: 'c1', context: 4096, tools: false, images: false, quality: 3 }] },
+  ];
+  const rows = modelRows(c, { get: (id: string) => (id === 'groq' ? 'k' : null) }, tracker);
+  assert.deepEqual(rows.map((r: any) => [r.value, r.kind, r.ready]), [['groq/g1', 'chat', true], ['groq/g2', 'chat', true], ['groq/whisper', 'transcription', true], ['cf/c1', 'chat', false]]);
+  assert.deepEqual([rows[0].context, rows[0].tools, rows[0].vision, rows[0].rpd, rows[0].rpm, rows[0].provider], [131072, true, false, 1000, 30, 'Groq']);
+  assert.equal(rows[0].cooling, now + 60_000);
+  assert.equal(rows[1].cooling, 0, 'a cool-down in the past is over');
+  assert.deepEqual([rows[0].ok, rows[0].fail, rows[0].ms], [9, 1, 1200]);
+  assert.deepEqual([rows[1].ok, rows[1].fail, rows[1].ms], [0, 0, 0]);
+  assert.equal(rows[1].vision, true);
+});
+
+test('providerRows says what each provider does and whether it is having trouble', () => {
+  const now = Date.UTC(2026, 10, 24, 12);
+  const tracker = { now: () => now, state: { windows: {}, cooling: { 'groq/g1': now + 60_000 } } };
+  const c = [
+    { id: 'groq', name: 'Groq', keyless: false, models: [{ id: 'g1' }], media: [{ id: 'w', kind: 'transcription' }, { id: 's', kind: 'speech' }] },
+    { id: 'or', name: 'OpenRouter', keyless: false, models: [{ id: 'o1' }], media: [{ id: 'i', kind: 'image' }] },
+    { id: 'emb', name: 'Emb', keyless: false, models: [], media: [{ id: 'e', kind: 'embedding' }] },
+  ];
+  const rows = providerRows(c, { get: () => 'k' }, tracker);
+  assert.deepEqual(rows.map((r: any) => r.does), [['chat', 'voice'], ['chat', 'images'], []]);
+  assert.deepEqual(rows.map((r: any) => r.trouble), [true, false, false]);
 });

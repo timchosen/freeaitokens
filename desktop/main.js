@@ -17,7 +17,7 @@ import { validateKey, keySteps, connectOpenRouter } from 'freeaitokens/dist/node
 import { launchSpec, LAUNCH_TOOLS } from 'freeaitokens/dist/node/harness.js';
 import { route, NoCapacityError } from 'freeaitokens/dist/core/orchestrator.js';
 import { routeMedia, NoProviderError } from 'freeaitokens/dist/core/media.js';
-import { allowedUrl, choices, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType, privateAddress, mediaOptions, guessKind, sortedKind, audioType, pcmToWav, pickRelease, docMessage, joinUsers, voiceSetup } from './logic.js';
+import { allowedUrl, choices, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType, privateAddress, mediaOptions, guessKind, sortedKind, audioType, pcmToWav, pickRelease, docMessage, joinUsers, voiceSetup, modelRows } from './logic.js';
 import { docText } from './docs.js';
 import './t.js';
 import { openChatStore, cleanChat, migrateChats } from './chats.js';
@@ -125,6 +125,7 @@ ipcMain.handle('app:status', () => ({
   providers: providerRows(deps.catalogue, keys, deps.tracker),
   tools: Object.entries(LAUNCH_TOOLS).map(([id, name]) => ({ id, name, note: strings[`note_${id}`] ?? '' })),
   models: modelOptions(deps.catalogue, keys),
+  catalogue: modelRows(deps.catalogue, keys, deps.tracker),
   images: imageOptions(deps.catalogue, keys),
   voice: voiceSetup(deps.catalogue, keys),
   version: app.getVersion(),
@@ -497,8 +498,24 @@ ipcMain.handle('app:lang', (_e, code) => {
   addWindow?.setTitle(t('add_title'));
   for (const w of [mainWindow, addWindow]) w?.webContents.reload();
 });
+ipcMain.handle('app:copyText', (_e, text) => { if (typeof text === 'string' && text.length <= 200) clipboard.writeText(text); });
 ipcMain.handle('app:copy', (_e, what) => { if (what === 'endpoint') clipboard.writeText(endpoint()); else if (what === 'token') clipboard.writeText(localToken()); });
 ipcMain.handle('app:add', (_e, id) => openAdd(id));
+// Keys page: check a saved key with its provider, or forget it.
+const keyed = (id) => deps.catalogue.find((p) => p.id === id && !p.keyless);
+ipcMain.handle('app:testKey', async (_e, id) => {
+  const prov = keyed(id), key = prov && keys.get(prov.id);
+  if (!key) return { ok: false, reason: t('err_nothing') };
+  return validateKey(prov, key, fetch);
+});
+ipcMain.handle('app:removeKey', (_e, id) => {
+  const prov = keyed(id);
+  if (!prov) return false;
+  keys.remove(prov.id);
+  sync?.nudge();
+  refresh();
+  return true;
+});
 
 function run(cmd, args, opts = {}) {
   return new Promise((ok, fail) => {

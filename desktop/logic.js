@@ -54,7 +54,27 @@ export function providerRows(catalogue, keys, tracker) {
       const w = tracker.state.windows[`${p.id}/${m.id}`];
       left += Math.max(0, rpd - (w && w.day[0] === today ? w.day[1] : 0));
     }
-    return { id: p.id, name: p.name, status, left: status === 'add' ? 0 : left, models: p.models.length + (p.media?.length ?? 0), note: p.termsNote ?? '', media: [...new Set((p.media ?? []).map((m) => m.kind))] };
+    const kinds = new Set((p.media ?? []).map((m) => m.kind));
+    const does = [p.models.length && 'chat', kinds.has('image') && 'images', (kinds.has('speech') || kinds.has('transcription')) && 'voice'].filter(Boolean);
+    const trouble = [...p.models, ...(p.media ?? [])].some((m) => (tracker.state.cooling?.[`${p.id}/${m.id}`] ?? 0) > tracker.now());
+    return { id: p.id, name: p.name, status, left: status === 'add' ? 0 : left, models: p.models.length + (p.media?.length ?? 0), note: p.termsNote ?? '', media: [...kinds], does, trouble };
+  });
+}
+
+// Every model in the catalogue for the Models page: what it is, its limits, whether you can use it now,
+// whether it is cooling down after errors, and how it has done on this computer.
+export function modelRows(catalogue, keys, tracker) {
+  return catalogue.flatMap((p) => {
+    const ready = !!(p.keyless || keys.get(p.id));
+    return [...p.models.map((m) => ({ m, kind: 'chat' })), ...(p.media ?? []).map((m) => ({ m, kind: m.kind }))].map(({ m, kind }) => {
+      const key = `${p.id}/${m.id}`, until = tracker.state.cooling?.[key] ?? 0, s = tracker.state.stats?.[key];
+      return {
+        value: key, id: m.id, provider: p.name, providerId: p.id, kind, ready,
+        context: m.context ?? 0, tools: !!m.tools, vision: !!m.images, quality: m.quality ?? 0,
+        rpd: m.limits?.rpd ?? p.limits?.rpd ?? 0, rpm: m.limits?.rpm ?? p.limits?.rpm ?? 0,
+        cooling: until > tracker.now() ? until : 0, ok: s?.ok ?? 0, fail: s?.fail ?? 0, ms: s?.msAvg ?? 0,
+      };
+    });
   });
 }
 

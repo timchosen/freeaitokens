@@ -68,22 +68,17 @@ async function refresh() {
   $('s-ready').textContent = num(usable.length);
   $('s-left').textContent = num(usable.reduce((n, p) => n + p.left, 0));
   $('s-add').textContent = num(s.providers.length - usable.length);
-  $('provList').replaceChildren(...s.providers.map((p) => {
-    const row = el('div', 'prov');
-    const name = el('div', 'name');
-    name.append(el('b', '', p.name), el('small', '', [t('prov_models', { n: p.models }), p.status !== 'add' && p.left ? t('prov_left', { n: p.left }) : '', p.media.length ? t('prov_also', { kinds: new Intl.ListFormat(tag).format(p.media.map((k) => t(`kind_${k}`))) }) : ''].filter(Boolean).join(' · ')));
-    row.append(name, el('span', `badge ${p.status}`, t(`status_${p.status}`)));
-    if (p.status === 'add') {
-      const b = el('button', 'btn quiet', t('add'));
-      b.addEventListener('click', () => api.add(p.id));
-      row.append(b);
-    }
-    return row;
-  }));
+  provs = s.providers;
+  catalogue = s.catalogue;
+  $('endpoint3').textContent = s.endpoint;
+  const trouble = provs.filter((p) => p.trouble).length;
+  $('kSummary').textContent = [t('keys_count', { n: usable.length, total: provs.length }), trouble ? t('keys_trouble_n', { n: trouble }) : ''].filter(Boolean).join(' · ');
+  showKeys();
+  showModels();
   if (!$('toolGrid').children.length) {
     $('toolGrid').replaceChildren(...s.tools.map((tool) => {
       const card = el('div', 'tool');
-      const b = el('button', 'btn', t('open_terminal'));
+      const b = el('button', 'btn quiet', t('open_terminal'));
       b.addEventListener('click', async () => {
         b.disabled = true;
         const r = await api.launch(tool.id);
@@ -91,11 +86,131 @@ async function refresh() {
         $('toolStatus').className = r.ok ? 'status' : 'status bad';
         $('toolStatus').textContent = r.ok ? t('tool_opening', { name: tool.name }) : t('tool_failed', { name: tool.name, reason: r.reason });
       });
-      card.append(el('b', '', tool.name), el('small', '', tool.note), b);
+      const cmd = `npx freeaitokens ${tool.id}`, line = el('div', 'cmd');
+      const copy = el('button', 'copy', t('copy'));
+      copy.addEventListener('click', () => copied(copy, cmd));
+      line.append(el('code', '', cmd), copy);
+      card.append(el('b', '', tool.name), el('small', '', tool.note), line, b);
       return card;
     }));
   }
 }
+
+// Keys page: every provider, filtered by whether it is added and what it does.
+let provs = [], keyShow = 'all', keyDoes = '';
+function showKeys() {
+  const rows = provs.filter((p) => (keyShow === 'all' || (keyShow === 'added' ? p.status !== 'add' : keyShow === 'add' ? p.status === 'add' : p.trouble)) && (!keyDoes || p.does.includes(keyDoes)));
+  $('kEmpty').hidden = rows.length > 0;
+  $('provList').replaceChildren(...rows.map((p) => {
+    const row = el('div', 'prov');
+    const state = p.status === 'add' ? 'add' : p.trouble ? 'trouble' : 'ready';
+    row.append(el('span', `dot ${state}`));
+    const name = el('div', 'name');
+    const does = el('span', 'does');
+    does.append(...p.does.map((d) => el('span', 'chip', t(`does_${d}`))));
+    const head = el('div', 'line');
+    head.append(el('b', '', p.name), does);
+    const facts = p.status === 'add' ? [t('prov_models', { n: p.models }), t('keys_free')]
+      : [p.trouble ? t('keys_cooling') : p.left ? t('prov_left', { n: p.left }) : '', t('prov_models', { n: p.models })];
+    name.append(head, el('small', '', facts.filter(Boolean).join(' · ')));
+    row.append(name);
+    const say = el('small', 'say');
+    say.setAttribute('role', 'status');
+    if (p.status === 'add') {
+      const b = el('button', 'btn quiet', t('add'));
+      b.addEventListener('click', () => api.add(p.id));
+      row.append(b);
+    } else if (p.status === 'keyless') {
+      row.append(el('span', 'badge keyless', t('status_keyless')));
+    } else {
+      const test = el('button', 'btn quiet', t('keys_test'));
+      test.addEventListener('click', async () => {
+        test.disabled = true; say.className = 'say'; say.textContent = t('keys_testing');
+        const r = await api.testKey(p.id);
+        test.disabled = false;
+        say.className = r.ok ? 'say ok' : 'say bad';
+        say.textContent = r.ok ? t('keys_works') : r.reason;
+      });
+      const rm = el('button', 'btn quiet danger', t('keys_remove'));
+      let armed = 0;
+      rm.addEventListener('click', async () => {
+        if (!armed) { rm.textContent = t('keys_remove_sure'); armed = setTimeout(() => { armed = 0; rm.textContent = t('keys_remove'); }, 4000); return; }
+        clearTimeout(armed);
+        await api.removeKey(p.id);
+        refresh();
+      });
+      row.append(say, test, rm);
+    }
+    return row;
+  }));
+}
+const pressOne = (group, b) => { for (const x of group.querySelectorAll('button')) x.setAttribute('aria-pressed', String(x === b)); };
+$('kShow').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; keyShow = b.dataset.show; pressOne($('kShow'), b); showKeys(); });
+$('kDoes').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; keyDoes = b.dataset.does; pressOne($('kDoes'), b); showKeys(); });
+
+// Models page: every model, by kind, with limits, readiness and how it has done on this computer.
+let catalogue = [], modelKind = 'chat';
+const KINDS = ['chat', 'image', 'speech', 'transcription', 'embedding', 'video', 'completion'];
+const contextSize = (n) => (n >= 1_000_000 ? `${+(n / 1_048_576).toFixed(1)}M` : `${Math.round(n / 1024)}K`);
+function showModels() {
+  const kinds = KINDS.filter((k) => catalogue.some((m) => m.kind === k));
+  if (!kinds.includes(modelKind)) modelKind = kinds[0] ?? 'chat';
+  $('mKinds').replaceChildren(...kinds.map((k) => {
+    const b = el('button', '', `${t(`mkind_${k}`)} ${num(catalogue.filter((m) => m.kind === k && (!$('mReady').checked || m.ready)).length)}`);
+    b.type = 'button'; b.dataset.kind = k; b.setAttribute('aria-pressed', String(k === modelKind));
+    return b;
+  }));
+  const q = $('mSearch').value.trim().toLowerCase();
+  const rows = catalogue.filter((m) => m.kind === modelKind && (!$('mReady').checked || m.ready) && (!$('mTools').checked || m.tools) && (!$('mVision').checked || m.vision)
+    && (!q || m.id.toLowerCase().includes(q) || m.provider.toLowerCase().includes(q)))
+    .sort((a, b) => b.ready - a.ready || b.quality - a.quality);
+  $('mCount').textContent = t('models_count', { n: rows.length });
+  $('mEmpty').hidden = rows.length > 0;
+  $('mEmpty').textContent = $('mReady').checked ? t('models_none_ready') : t('models_none');
+  $('mList').replaceChildren(...rows.slice(0, 300).map((m) => {
+    const row = el('div', 'prov model');
+    const state = !m.ready ? 'add' : m.cooling ? 'trouble' : 'ready';
+    row.append(el('span', `dot ${state}`));
+    const name = el('div', 'name');
+    const head = el('div', 'line');
+    const caps = el('span', 'does');
+    if (m.context) caps.append(el('span', 'chip', contextSize(m.context)));
+    if (m.tools) caps.append(el('span', 'chip', t('cap_tools')));
+    if (m.vision) caps.append(el('span', 'chip', t('cap_vision')));
+    head.append(el('b', 'mono', m.id), caps);
+    const limits = [m.rpd && t('models_per_day', { n: m.rpd }), m.rpm && t('models_per_min', { n: m.rpm })].filter(Boolean).join(' · ');
+    const record = m.ok + m.fail ? t('models_record', { pct: (m.ok / (m.ok + m.fail)).toLocaleString(tag, { style: 'percent' }), s: (m.ms / 1000).toLocaleString(tag, { maximumFractionDigits: 1 }) }) : '';
+    const status = !m.ready ? t('models_needs_key') : m.cooling ? t('models_cooling', { time: new Date(m.cooling).toLocaleTimeString(tag, { hour: 'numeric', minute: '2-digit' }) }) : '';
+    name.append(head, el('small', '', [m.provider, limits, record, status].filter(Boolean).join(' · ')));
+    row.append(name);
+    if (!m.ready) {
+      const b = el('button', 'btn quiet', t('add'));
+      b.addEventListener('click', () => api.add(m.providerId));
+      row.append(b);
+    } else if (m.kind === 'chat' || m.kind === 'image') {
+      const b = el('button', 'btn quiet', t('models_try'));
+      b.addEventListener('click', () => tryModel(m));
+      row.append(b);
+    }
+    return row;
+  }));
+}
+function tryModel(m) {
+  select($('t-play'));
+  setMode(m.kind === 'image' ? 'image' : 'chat');
+  if ([...$('model').options].some((o) => o.value === m.value)) $('model').value = chosen[mode] = m.value;
+  $('prompt').focus();
+}
+$('mKinds').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; modelKind = b.dataset.kind; showModels(); });
+for (const id of ['mReady', 'mTools', 'mVision']) $(id).addEventListener('change', showModels);
+$('mSearch').addEventListener('input', showModels);
+
+async function copied(b, text) {
+  await api.copyText(text);
+  b.textContent = t('copied');
+  setTimeout(() => { b.textContent = t('copy'); }, 1500);
+}
+for (const b of document.querySelectorAll('[data-copy-text]')) b.addEventListener('click', () => copied(b, b.dataset.copyText));
 
 for (const b of document.querySelectorAll('[data-copy]')) {
   b.addEventListener('click', async () => {

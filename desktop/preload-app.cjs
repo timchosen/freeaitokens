@@ -24,7 +24,10 @@ contextBridge.exposeInMainWorld('freeaitokens', {
   open: (url) => ipcRenderer.invoke('app:open', url),
   launch: (tool) => ipcRenderer.invoke('app:launch', tool),
   copy: (what) => ipcRenderer.invoke('app:copy', what),
+  copyText: (text) => ipcRenderer.invoke('app:copyText', text),
   add: (id) => ipcRenderer.invoke('app:add', id),
+  testKey: (id) => ipcRenderer.invoke('app:testKey', id),
+  removeKey: (id) => ipcRenderer.invoke('app:removeKey', id),
   sync: {
     status: () => ipcRenderer.invoke('sync:status'),
     buy: (plan) => ipcRenderer.invoke('sync:buy', plan),
