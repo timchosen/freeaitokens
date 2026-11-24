@@ -83,7 +83,8 @@ cd sync && npx wrangler d1 execute SYNC_DB --remote --file schema.sql && npx wra
 
 ## 5. Go live (Owner)
 
-- [ ] Switch to live mode: create the live products, the webhook endpoint and the portal. Then `wrangler secret put` the live `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`, and put the live price ids in `wrangler.jsonc`.
+- [x] Live mode: products, prices, webhook endpoint and portal created; live price ids are in `wrangler.jsonc`.
+- [ ] Go live: `wrangler secret bulk` the live secrets, then `wrangler deploy` (in that order).
 - [ ] Keep `LICENSE_SECRET` and `EMAIL_SECRET` unchanged, unless only test purchases exist so far.
 - [ ] Have the lifetime wording reviewed in the site terms (section 8, "for as long as the sync service runs"). It appears in all ten languages.
 - [ ] Decide what ends the lifetime **launch offer** (a date, a number of sales, or both). The site, terms and app only call it a "limited launch offer" for now; nothing stops lifetime sales yet, so ending it needs a code change.

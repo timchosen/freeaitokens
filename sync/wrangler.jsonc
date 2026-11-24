@@ -9,7 +9,7 @@
   "r2_buckets": [{ "binding": "SYNC_BLOBS", "bucket_name": "freeaitokens-sync" }],
   "send_email": [{ "name": "EMAIL" }],
   "triggers": { "crons": ["17 3 * * *"] },
-  // Stripe TEST mode price ids; swap for the live ones when going live.
-  "vars": { "SITE_URL": "https://freeaitokens.co", "STRIPE_PRICE_YEAR": "price_1UfGrQDeqZ4b9PUcS5Yv93rs", "STRIPE_PRICE_LIFE": "price_1UfGrRDeqZ4b9PUcp75JgLv3" }
+  // Stripe LIVE price ids (test mode: year price_1UfGrQDeqZ4b9PUcS5Yv93rs, lifetime price_1UfGrRDeqZ4b9PUcp75JgLv3). Deploy only with the live secrets in place.
+  "vars": { "SITE_URL": "https://freeaitokens.co", "STRIPE_PRICE_YEAR": "price_1UfJUJDeqZ4b9PUc2TADyeho", "STRIPE_PRICE_LIFE": "price_1UfJUKDeqZ4b9PUcBhYxU2rD" }
   // Secrets (wrangler secret put): STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, LICENSE_SECRET, EMAIL_SECRET
 }
