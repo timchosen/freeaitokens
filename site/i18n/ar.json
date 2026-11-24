@@ -106,6 +106,7 @@
   "js_copied": "تم النسخ",
   "js_select": "حدّد وانسخ",
   "js_count": "{n} من {total} نموذجًا",
+  "hero_kinds": "دردشة، صور، صوت",
   "hero_tokens": "رمز مجاني كل شهر",
   "hero_models": "نموذج ذكاء اصطناعي",
   "hero_providers": "مزوّدًا",

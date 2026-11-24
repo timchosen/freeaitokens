@@ -106,6 +106,7 @@
   "js_copied": "Tersalin",
   "js_select": "Pilih lalu salin",
   "js_count": "{n} dari {total} model",
+  "hero_kinds": "Chat, gambar, suara",
   "hero_tokens": "token gratis setiap bulan",
   "hero_models": "model AI",
   "hero_providers": "penyedia",

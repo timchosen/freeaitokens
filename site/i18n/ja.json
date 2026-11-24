@@ -106,6 +106,7 @@
   "js_copied": "コピーしました",
   "js_select": "選択してコピー",
   "js_count": "{total}個中{n}個のモデル",
+  "hero_kinds": "チャット・画像・音声",
   "hero_tokens": "毎月の無料トークン",
   "hero_models": "AIモデル",
   "hero_providers": "プロバイダー",

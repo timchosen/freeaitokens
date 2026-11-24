@@ -106,6 +106,7 @@
   "js_copied": "已复制",
   "js_select": "选中并复制",
   "js_count": "共 {total} 个模型，显示 {n} 个",
+  "hero_kinds": "对话、图片、语音",
   "hero_tokens": "每月免费 token",
   "hero_models": "AI 模型",
   "hero_providers": "提供商",

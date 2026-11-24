@@ -65,17 +65,8 @@ export function families(cat) {
     return { name, count: mine.length, kinds: [...new Set(mine.map((m) => m.kind))] };
   }).filter((f) => f.count).sort((a, b) => b.count - a.count);
 }
-const KIND_ORDER = ['chat', 'transcription', 'speech', 'image', 'video', 'embedding']; // completion models are chat models too
-function heroStats(cat, s, t, lang) {
-  const big = new Intl.NumberFormat(lang, { notation: 'compact', maximumFractionDigits: 1 });
-  const counts = kindCounts(cat);
-  const kinds = KIND_ORDER.filter((k) => counts[k]).map((k) => `<li>${esc(t[`kind_${k}`])} <b>${counts[k].toLocaleString(lang)}</b></li>`).join('');
-  return `<div class="hero-stats">
-  <div class="hs-big"><b>${big.format(s.monthlyTokens)}</b><span>${esc(t.hero_tokens)}</span></div>
-  <div><b>${s.models.toLocaleString(lang)}</b><span>${esc(t.hero_models)}</span></div>
-  <div><b>${s.providers.toLocaleString(lang)}</b><span>${esc(t.hero_providers)}</span></div>
-</div>
-<ul class="kinds" aria-label="${esc(t.hero_models)}">${kinds}</ul>`;
+function heroStats(s, t, lang) {
+  return `<p class="hero-stats"><span><b>${s.models.toLocaleString(lang)}</b> ${esc(t.hero_models)}</span><span><b>${s.providers.toLocaleString(lang)}</b> ${esc(t.hero_providers)}</span><span>${esc(t.hero_kinds)}</span></p>`;
 }
 function modelsSection(cat, t, lang, code) {
   // Filled in after render(), so links get the language prefix here.
@@ -179,7 +170,8 @@ function providerTable(cat, t = EN, lang = 'en') {
     cat.map((p) => [esc(p.name), p.keyless ? t.no : t.access_free, esc(limitText(p, t, lang)), esc(p.termsNote ?? '')]));
 }
 
-const approx = (n, t, lang) => fmt(t.about_n, { n: new Intl.NumberFormat(lang, { notation: 'compact', compactDisplay: 'long', maximumFractionDigits: 1 }).format(n) });
+const compactLong = (n, lang) => new Intl.NumberFormat(lang, { notation: 'compact', compactDisplay: 'long', maximumFractionDigits: 1 }).format(n);
+const approx = (n, t, lang) => fmt(t.about_n, { n: compactLong(n, lang) });
 
 // Everything that names the owner (GitHub repo, donation link, domain) comes from here, so a fork edits one file.
 const config = JSON.parse(readFileSync(join(here, 'site.config.json'), 'utf8'));
@@ -301,7 +293,7 @@ export function build(outDir = join(here, 'dist')) {
   const files = readdirSync(pagesDir).filter((f) => f.endsWith('.html'));
   for (const l of locales) {
     const t = strings(l.code);
-    const fill = { ...base, monthly: approx(s.monthlyTokens, t, l.lang), heroStats: heroStats(catalogue, s, t, l.lang), mobileSection: mobileSection(t, base.repoUrl), mobileSoon: mobileSoon(t, l.code), modelsSection: modelsSection(catalogue, t, l.lang, l.code), providerTable: providerTable(catalogue, t, l.lang), providerTerms: providerTerms(catalogue, t) };
+    const fill = { ...base, monthly: approx(s.monthlyTokens, t, l.lang), monthlyN: compactLong(s.monthlyTokens, l.lang), heroStats: heroStats(s, t, l.lang), mobileSection: mobileSection(t, base.repoUrl), mobileSoon: mobileSoon(t, l.code), modelsSection: modelsSection(catalogue, t, l.lang, l.code), providerTable: providerTable(catalogue, t, l.lang), providerTerms: providerTerms(catalogue, t) };
     const out = l.code === 'en' ? outDir : join(outDir, l.code);
     mkdirSync(out, { recursive: true });
     for (const f of files) {

@@ -106,6 +106,7 @@
   "js_copied": "कॉपी हो गया",
   "js_select": "चुनकर कॉपी करें",
   "js_count": "{total} में से {n} मॉडल",
+  "hero_kinds": "चैट, इमेज, आवाज़",
   "hero_tokens": "हर महीने मुफ़्त टोकन",
   "hero_models": "AI मॉडल",
   "hero_providers": "प्रोवाइडर",

@@ -106,6 +106,7 @@
   "js_copied": "Copied",
   "js_select": "Select and copy",
   "js_count": "{n} of {total} models",
+  "hero_kinds": "Chat, images, speech",
   "hero_tokens": "free tokens every month",
   "hero_models": "AI models",
   "hero_providers": "providers",

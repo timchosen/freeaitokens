@@ -259,7 +259,7 @@ test('the in-page script strings match en.json', () => {
 });
 
 
-test('home hero leads with monthly tokens, model count and model types, and lists model families in every language', async () => {
+test('home headline names the monthly tokens in words, then one row of model and provider counts, and lists model families in every language', async () => {
   const { kindCounts, families } = await import('../site/build.mjs');
   const cat = [{ id: 'a', models: [{ id: 'qwen3-32b' }, { id: 'llama-3.3-70b' }], media: [{ id: 'whisper-large-v3', kind: 'transcription' }, { id: 'flux-1', kind: 'image' }] }];
   assert.deepEqual(kindCounts(cat), { chat: 2, transcription: 1, image: 1 });
@@ -268,11 +268,11 @@ test('home hero leads with monthly tokens, model count and model types, and list
   const out = mkdtempSync(join(tmpdir(), 'site-hero-'));
   build(out);
   const en = readFileSync(join(out, 'index.html'), 'utf8');
-  assert.match(en, /class="hs-big"><b>[\d.]+[KMBT]<\/b><span>free tokens every month/);
-  assert.match(en, /Transcription <b>\d+/);
+  assert.match(en, /<h1>Up to [\d.]+ (million|billion|trillion) free tokens every month<\/h1>/);
+  assert.match(en, /class="hero-stats"><span><b>\d+<\/b> AI models<\/span><span><b>\d+<\/b> providers<\/span><span>Chat, images, speech<\/span>/);
   assert.match(en, /id="models"[\s\S]*class="tool fam" href="\/models"/);
   const es = readFileSync(join(out, 'es', 'index.html'), 'utf8');
-  assert.match(es, /tokens gratis cada mes/);
+  assert.match(es, /<h1>Hasta [\d,]+ (millones|mil millones|billones) de tokens gratis cada mes<\/h1>/);
   assert.match(es, /class="tool fam" href="\/es\/models"/);
 });
 
