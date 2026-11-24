@@ -288,5 +288,7 @@
   "models_record": "{pct} réussis · {s} s en moyenne",
   "models_needs_key": "Nécessite une clé",
   "models_cooling": "En pause jusqu’à {time}",
-  "models_try": "Essayer"
+  "models_try": "Essayer",
+  "hide_chats": "Masquer les discussions",
+  "show_chats": "Afficher les discussions"
 }

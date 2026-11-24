@@ -288,5 +288,7 @@
   "models_record": "成功 {pct} · 平均 {s} 秒",
   "models_needs_key": "需要密钥",
   "models_cooling": "暂停至 {time}",
-  "models_try": "试用"
+  "models_try": "试用",
+  "hide_chats": "隐藏对话",
+  "show_chats": "显示对话"
 }

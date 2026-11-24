@@ -288,5 +288,7 @@
   "models_record": "{pct} worked · {s}s average",
   "models_needs_key": "Needs a key",
   "models_cooling": "Cooling down until {time}",
-  "models_try": "Try"
+  "models_try": "Try",
+  "hide_chats": "Hide chats",
+  "show_chats": "Show chats"
 }

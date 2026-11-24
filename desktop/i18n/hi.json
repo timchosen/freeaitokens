@@ -288,5 +288,7 @@
   "models_record": "{pct} सफल · औसत {s} सेकंड",
   "models_needs_key": "कुंजी चाहिए",
   "models_cooling": "{time} तक रुका है",
-  "models_try": "आज़माएँ"
+  "models_try": "आज़माएँ",
+  "hide_chats": "चैट छिपाएँ",
+  "show_chats": "चैट दिखाएँ"
 }

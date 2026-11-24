@@ -288,5 +288,7 @@
   "models_record": "{pct} berhasil · rata-rata {s} dtk",
   "models_needs_key": "Perlu kunci",
   "models_cooling": "Dijeda sampai {time}",
-  "models_try": "Coba"
+  "models_try": "Coba",
+  "hide_chats": "Sembunyikan chat",
+  "show_chats": "Tampilkan chat"
 }

@@ -450,6 +450,22 @@ async function send() {
 $('ask').addEventListener('submit', (e) => { e.preventDefault(); send(); });
 $('prompt').addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); send(); } });
 $('newChat').addEventListener('click', () => openChat(null));
+$('newChat2').addEventListener('click', () => openChat(null));
+let sideOff = false;
+try { sideOff = localStorage.getItem('chatsHidden') === '1'; } catch { /* no storage: panel shows */ }
+function showSide() {
+  $('play').classList.toggle('side-off', sideOff);
+  $('newChat2').hidden = !sideOff;
+  const b = $('sideToggle'), label = t(sideOff ? 'show_chats' : 'hide_chats');
+  b.setAttribute('aria-expanded', String(!sideOff));
+  b.setAttribute('aria-label', label);
+  b.title = label;
+}
+$('sideToggle').addEventListener('click', () => {
+  sideOff = !sideOff;
+  try { localStorage.setItem('chatsHidden', sideOff ? '1' : '0'); } catch { /* not kept */ }
+  showSide();
+});
 // Attach: the person picks a file in the system dialog. Audio is transcribed into the chat; a document joins
 // the chat as a message, and the model reads it with the next question.
 $('attach').addEventListener('click', async () => {
@@ -761,6 +777,7 @@ applyStrings().then(loadChats).then(() => {
   $('priceYear').textContent = money(PRICES.year);
   $('priceLife').textContent = money(PRICES.life);
   talkState();
+  showSide();
   listChats();
   refreshSync();
   refresh();

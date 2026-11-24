@@ -68,7 +68,7 @@ textarea { width: 100%; font: inherit; color: var(--ink); background: var(--card
 .badge.keyless { background: var(--chip); color: var(--ink); }
 .badge.add { background: none; border: 1px solid var(--line); color: var(--muted); }
 
-.convo-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.convo-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .pick { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
 select { font: inherit; font-size: 13px; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; max-width: 320px; }
 
@@ -274,3 +274,10 @@ section.play:not([hidden]) { flex: 1; min-height: 0; max-width: none; display: g
 .summary { font-size: 13px; color: var(--muted); margin: -4px 0 10px; }
 .prov.model { padding-block: 9px; }
 @media (max-width: 640px) { .prov { flex-wrap: wrap; } .say { max-width: none; text-align: start; flex-basis: 100%; order: 9; } }
+
+/* The saved-chats panel can be hidden; the header keeps a New chat button while it is. */
+#play .convo-head { justify-content: flex-start; gap: 6px; }
+#play .convo-head h1 { margin-inline-start: 4px; }
+section.play.side-off:not([hidden]) { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+section.play.side-off #playHistory { display: none; }
+.icon-btn[hidden] { display: none; }

@@ -300,5 +300,7 @@
   "models_record": "نجاح {pct} · متوسط {s} ث",
   "models_needs_key": "يحتاج مفتاحًا",
   "models_cooling": "متوقف حتى {time}",
-  "models_try": "جرّب"
+  "models_try": "جرّب",
+  "hide_chats": "إخفاء المحادثات",
+  "show_chats": "إظهار المحادثات"
 }

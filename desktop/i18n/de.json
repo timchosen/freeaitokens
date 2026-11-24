@@ -288,5 +288,7 @@
   "models_record": "{pct} erfolgreich · Ø {s} s",
   "models_needs_key": "Braucht einen Schlüssel",
   "models_cooling": "Pausiert bis {time}",
-  "models_try": "Ausprobieren"
+  "models_try": "Ausprobieren",
+  "hide_chats": "Chats ausblenden",
+  "show_chats": "Chats einblenden"
 }

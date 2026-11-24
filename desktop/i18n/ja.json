@@ -288,5 +288,7 @@
   "models_record": "成功率 {pct} · 平均 {s} 秒",
   "models_needs_key": "キーが必要",
   "models_cooling": "{time} まで一時停止",
-  "models_try": "試す"
+  "models_try": "試す",
+  "hide_chats": "チャットを隠す",
+  "show_chats": "チャットを表示"
 }
