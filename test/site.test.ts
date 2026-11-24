@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, readdirSync, existsSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -79,6 +79,21 @@ test('install script picks the right file and place for each system', () => {
   assert.match(l.stdout, /FreeAITokens-linux-x86_64\.AppImage/);
   assert.match(l.stdout, /\/home\/u\/\.local\/bin\/freeaitokens-app/);
   assert.match(dry('Linux', 'aarch64').stdout, /FreeAITokens-linux-arm64\.AppImage/);
+});
+
+test('Linux install: the command runs the AppImage without FUSE when fusermount is missing, and says when there is no screen', () => {
+  const home = mkdtempSync(join(tmpdir(), 'inst-')), bin = join(home, 'fakebin');
+  mkdirSync(bin);
+  // A fake curl that "downloads" a stand-in AppImage which prints how it was started.
+  writeFileSync(join(bin, 'curl'), '#!/bin/sh\nwhile [ "$1" != "-o" ]; do shift; done\nprintf \'#!/bin/sh\\necho "extract=${APPIMAGE_EXTRACT_AND_RUN:-} args=$*"\\n\' > "$2"\n', { mode: 0o755 });
+  const env = { PATH: `${bin}:/usr/bin:/bin`, HOME: home, FREEAITOKENS_OS: 'Linux', FREEAITOKENS_ARCH: 'x86_64' };
+  const r = spawnSync('sh', [SCRIPT], { encoding: 'utf8', env });
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /npx freeaitokens/, 'no DISPLAY: points to the command-line version');
+  const cmd = join(home, '.local/bin/freeaitokens-app');
+  const run = spawnSync(cmd, ['--x'], { encoding: 'utf8', env: { PATH: '/usr/bin:/bin', HOME: home } });
+  assert.equal(run.stdout.trim(), 'extract=1 args=--x');
+  assert.ok(existsSync(join(home, '.local/share/freeaitokens/FreeAITokens.AppImage')));
 });
 
 test('install script refuses an unsupported system and changes nothing', () => {

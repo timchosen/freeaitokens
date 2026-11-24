@@ -1,7 +1,7 @@
 #!/bin/sh
 # Installs the FreeAITokens desktop app from its latest GitHub release. Nothing else is changed.
 #   macOS: the app goes into /Applications (or ~/Applications if that is not writable) and opens.
-#   Linux: the AppImage goes to ~/.local/bin/freeaitokens-app.
+#   Linux: the AppImage goes to ~/.local/share/freeaitokens, started by the command ~/.local/bin/freeaitokens-app.
 # Source and explanation: https://{{domain}}/install-script
 set -eu
 
@@ -54,11 +54,18 @@ if [ "$OS" = Darwin ]; then
   echo "Installed $DEST/$(basename "$APP"). Opening it now; look for it in your menu bar."
   open "$DEST/$(basename "$APP")"
 else
-  mkdir -p "$(dirname "$DEST")"
+  # The command is a small launcher: without FUSE (containers, many VMs) the AppImage unpacks itself and runs.
+  APPIMAGE="$HOME/.local/share/freeaitokens/FreeAITokens.AppImage"
+  mkdir -p "$(dirname "$DEST")" "$(dirname "$APPIMAGE")"
   chmod +x "$TMP/$FILE"
-  mv -f "$TMP/$FILE" "$DEST"
-  echo "Installed $DEST. Start it with: $DEST"
-  echo "(Some systems need libfuse2 to run AppImages: sudo apt install libfuse2, or libfuse2t64 on Ubuntu 24.04 and newer)"
+  mv -f "$TMP/$FILE" "$APPIMAGE"
+  rm -f "$DEST"
+  printf '#!/bin/sh\ncommand -v fusermount >/dev/null 2>&1 && exec "%s" "$@"\n# No FUSE: unpack and run, without listing every unpacked file.\nAPPIMAGE_EXTRACT_AND_RUN=1 "%s" "$@" | grep -v /appimage_extracted_\n' "$APPIMAGE" "$APPIMAGE" > "$DEST"
+  chmod +x "$DEST"
+  echo "Installed. Start it with: $DEST"
+  if [ -z "${DISPLAY:-}" ] && [ -z "${WAYLAND_DISPLAY:-}" ]; then
+    echo "This computer has no screen, and the app needs one. On a server, use the command-line version instead (Node.js 20 or newer): npx freeaitokens"
+  fi
 fi
 }
 
