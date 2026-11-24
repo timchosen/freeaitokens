@@ -6,9 +6,9 @@ Steps marked **Owner** need your accounts, payment details or secrets. Only you 
 
 ## 1. Cloudflare (Owner)
 
-- [ ] Move the account to the **Workers Paid** plan ($5 a month). Sending email to any address needs it.
-- [ ] Onboard `freeaitokens.co` as an **Email Service sending domain**. Keys are sent from `sync@freeaitokens.co`.
-- [ ] Create the database and the bucket:
+- [x] Move the account to the **Workers Paid** plan ($5 a month). Sending email to any address needs it.
+- [x] Onboard `freeaitokens.co` as an **Email Service sending domain**. Keys are sent from `sync@freeaitokens.co`.
+- [x] Create the database and the bucket:
 
 ```bash
 cd sync
