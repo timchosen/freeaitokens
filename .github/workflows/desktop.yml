@@ -19,7 +19,8 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 26
-      - run: npm ci && npm test && npm run build
+      # Desktop modules the tests load (unpdf) need desktop's packages; scripts skipped, Electron comes with the install below.
+      - run: npm ci && (cd desktop && npm ci --ignore-scripts) && npm test && npm run build
       - run: npm ci
         working-directory: desktop
       # The universal Mac app needs the keychain module for both chips; npm only installs the runner's.
