@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, readdirSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, existsSync, mkdirSync, writeFileSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -81,7 +81,7 @@ test('install script picks the right file and place for each system', () => {
   assert.match(dry('Linux', 'aarch64').stdout, /FreeAITokens-linux-arm64\.AppImage/);
 });
 
-test('Linux install: the command runs the AppImage without FUSE when fusermount is missing, and says when there is no screen', () => {
+test('Linux install: the command runs the AppImage without FUSE when fusermount is missing, and says when there is no screen', { skip: process.platform === 'win32' && 'needs a POSIX shell' }, () => {
   const home = mkdtempSync(join(tmpdir(), 'inst-')), bin = join(home, 'fakebin');
   mkdirSync(bin);
   // A fake curl that "downloads" a stand-in AppImage which prints how it was started.
@@ -91,7 +91,11 @@ test('Linux install: the command runs the AppImage without FUSE when fusermount 
   assert.equal(r.status, 0, r.stderr);
   assert.match(r.stdout, /npx freeaitokens/, 'no DISPLAY: points to the command-line version');
   const cmd = join(home, '.local/bin/freeaitokens-app');
-  const run = spawnSync(cmd, ['--x'], { encoding: 'utf8', env: { PATH: '/usr/bin:/bin', HOME: home } });
+  // The launcher sees only grep, so there is no fusermount whatever this machine has.
+  const only = join(home, 'onlygrep');
+  mkdirSync(only);
+  symlinkSync(spawnSync('sh', ['-c', 'command -v grep'], { encoding: 'utf8' }).stdout.trim(), join(only, 'grep'));
+  const run = spawnSync(cmd, ['--x'], { encoding: 'utf8', env: { PATH: only, HOME: home } });
   assert.equal(run.stdout.trim(), 'extract=1 args=--x');
   assert.ok(existsSync(join(home, '.local/share/freeaitokens/FreeAITokens.AppImage')));
 });
