@@ -222,6 +222,22 @@ test('webhook: a refund or dispute revokes; a won dispute restores', async () =>
   globalThis.fetch = realFetch;
 });
 
+test('webhook: a dispute that beats its checkout is retried until the license exists; an old unknown charge is not', async () => {
+  stubStripe();
+  const created = Math.floor(Date.now() / 1000);
+  stripeReply = (url) => url.includes('/v1/charges/ch_old') ? { id: 'ch_old', payment_intent: 'pi_x', customer: 'cus_x', created: created - 2 * 86400 }
+    : url.includes('/v1/charges/') ? { id: 'ch_1', payment_intent: 'pi_1', customer: 'cus_1', created } : {};
+  const { env } = makeEnv();
+  assert.equal((await hook(env, 'charge.dispute.created', { id: 'dp_1', charge: 'ch_1' }, 'evt_d')).status, 500, 'no license yet: Stripe retries');
+  await hook(env, 'charge.refunded', { id: 'ch_1', refunded: true, payment_intent: 'pi_1', customer: 'cus_1', created }, 'evt_r');
+  await hook(env, 'checkout.session.completed', completed());
+  const key = await (await import('../sync/src/license.ts')).licenseKey('lic-secret', 'cs_life_1');
+  assert.equal((await hook(env, 'charge.dispute.created', { id: 'dp_1', charge: 'ch_1' }, 'evt_d')).status, 200);
+  assert.deepEqual(await (await call(env, '/v1/usage', { key })).json(), { error: 'revoked' });
+  assert.equal((await hook(env, 'charge.dispute.created', { id: 'dp_9', charge: 'ch_old' })).status, 200, 'an old charge no license uses is not retried');
+  globalThis.fetch = realFetch;
+});
+
 test('/v1/checkout renews or upgrades the bearer license; /v1/billing opens the portal', async () => {
   stubStripe();
   stripeReply = (url) => url.includes('billing_portal') ? { url: 'https://billing.stripe.com/p/x' } : { id: 'cs_2', url: 'https://checkout.stripe.com/c/y' };

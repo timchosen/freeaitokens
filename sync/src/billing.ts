@@ -108,10 +108,13 @@ async function completed(env: Env, s: any, now: number): Promise<void> {
 const MATCH = "(stripe_ref = ?1 OR (plan = 'year' AND (stripe_customer = ?2 OR key_hash IN (SELECT key_hash FROM customers WHERE customer = ?2))))";
 async function revoke(env: Env, charge: any, at: number, refund: boolean): Promise<void> {
   const ids = [charge.payment_intent ?? null, charge.customer ?? null];
-  await env.SYNC_DB.batch([
+  const [rec] = await env.SYNC_DB.batch([
     env.SYNC_DB.prepare(`INSERT INTO revocations (key_hash, charge, refund) SELECT key_hash, ?3, ?4 FROM licenses WHERE ${MATCH} ON CONFLICT(key_hash, charge) DO UPDATE SET refund = MAX(refund, excluded.refund)`).bind(...ids, charge.id ?? '?', refund ? 1 : 0),
     env.SYNC_DB.prepare(`UPDATE licenses SET revoked = COALESCE(revoked, ?3) WHERE ${MATCH}`).bind(...ids, at),
-  ]);
+  ]) as { meta: { changes: number } }[];
+  // A dispute or refund can beat its checkout event (a disputed test card does): 500, so Stripe retries after the
+  // license lands. Only for a recent charge, so a charge no license will ever use is not retried for days.
+  if (rec.meta.changes === 0 && at - (charge.created ?? 0) * 1000 < 3_600_000) throw new Error('charge for a license not created yet');
 }
 async function disputeWon(env: Env, charge: any): Promise<void> {
   const ids = [charge.payment_intent ?? null, charge.customer ?? null, charge.id ?? '?'];
