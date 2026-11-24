@@ -16,7 +16,7 @@ npx wrangler d1 create freeaitokens-sync
 npx wrangler r2 bucket create freeaitokens-sync
 ```
 
-- [ ] Paste the `database_id` that `d1 create` prints into `wrangler.jsonc` in place of `SET_AFTER_D1_CREATE`.
+- [x] Paste the `database_id` that `d1 create` prints into `wrangler.jsonc`.
 
 ## 2. Stripe (Owner)
 
@@ -42,8 +42,6 @@ Run each command from `sync/`. Wrangler asks for the value, so it never lands in
 |---|---|
 | `STRIPE_SECRET_KEY` | Stripe secret key (`sk_test_…` first) |
 | `STRIPE_WEBHOOK_SECRET` | The endpoint's signing secret (`whsec_…`) |
-| `STRIPE_PRICE_YEAR` | Price id of the yearly product (`price_…`) |
-| `STRIPE_PRICE_LIFE` | Price id of the lifetime product (`price_…`) |
 | `LICENSE_SECRET` | 32 random bytes, for example from `openssl rand -hex 32` |
 | `EMAIL_SECRET` | Another 32 random bytes, different from the one above |
 
@@ -51,7 +49,7 @@ Run each command from `sync/`. Wrangler asks for the value, so it never lands in
 npx wrangler secret put STRIPE_SECRET_KEY
 ```
 
-Repeat that command for each of the six names.
+Repeat that command for each of the four names. The two price ids are plain settings in `wrangler.jsonc` (`vars`), not secrets.
 
 **Never change `LICENSE_SECRET` or `EMAIL_SECRET` once anyone has bought sync.**
 - Every sync key is made from `LICENSE_SECRET`. Changing it breaks "Send me my key" for every existing buyer.
@@ -85,7 +83,7 @@ cd sync && npx wrangler d1 execute SYNC_DB --remote --file schema.sql && npx wra
 
 ## 5. Go live (Owner)
 
-- [ ] Switch to live mode: create the live products, the webhook endpoint and the portal. Then `wrangler secret put` the live `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` and both price ids.
+- [ ] Switch to live mode: create the live products, the webhook endpoint and the portal. Then `wrangler secret put` the live `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`, and put the live price ids in `wrangler.jsonc`.
 - [ ] Keep `LICENSE_SECRET` and `EMAIL_SECRET` unchanged, unless only test purchases exist so far.
 - [ ] Have the lifetime wording reviewed in the site terms (section 8, "for as long as the sync service runs"). It appears in all ten languages.
 - [ ] Decide what ends the lifetime **launch offer** (a date, a number of sales, or both). The site, terms and app only call it a "limited launch offer" for now; nothing stops lifetime sales yet, so ending it needs a code change.

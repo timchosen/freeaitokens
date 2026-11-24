@@ -5,10 +5,11 @@
   "compatibility_date": "2026-10-15",
   "routes": [{ "pattern": "sync.freeaitokens.co", "custom_domain": true }],
   // database_id comes from `wrangler d1 create freeaitokens-sync` (owner step).
-  "d1_databases": [{ "binding": "SYNC_DB", "database_name": "freeaitokens-sync", "database_id": "SET_AFTER_D1_CREATE" }],
+  "d1_databases": [{ "binding": "SYNC_DB", "database_name": "freeaitokens-sync", "database_id": "89065b5c-32aa-4135-8218-8fcd26baee13" }],
   "r2_buckets": [{ "binding": "SYNC_BLOBS", "bucket_name": "freeaitokens-sync" }],
   "send_email": [{ "name": "EMAIL" }],
   "triggers": { "crons": ["17 3 * * *"] },
-  "vars": { "SITE_URL": "https://freeaitokens.co" }
-  // Secrets (wrangler secret put): STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, LICENSE_SECRET, EMAIL_SECRET, STRIPE_PRICE_YEAR, STRIPE_PRICE_LIFE
+  // Stripe TEST mode price ids; swap for the live ones when going live.
+  "vars": { "SITE_URL": "https://freeaitokens.co", "STRIPE_PRICE_YEAR": "price_1UfGrQDeqZ4b9PUcS5Yv93rs", "STRIPE_PRICE_LIFE": "price_1UfGrRDeqZ4b9PUcp75JgLv3" }
+  // Secrets (wrangler secret put): STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, LICENSE_SECRET, EMAIL_SECRET
 }
