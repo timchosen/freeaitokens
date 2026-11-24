@@ -130,7 +130,7 @@ export function render(body, { title, description, path, url = path, code = 'en'
       '<meta name="twitter:card" content="summary_large_image">',
       `<meta name="twitter:title" content="${esc(fullTitle)}">`,
       `<meta name="twitter:description" content="${esc(description)}">`,
-      '<meta name="twitter:image" content="https://{{domain}}/og.png">',
+      '<meta name="twitter:image" content="https://{{domain}}/x-preview.png">',
       `<meta name="twitter:image:alt" content="${esc(t.og_alt)}">`,
     ].join('\n'),
     alternates: locales.map((x) => `<link rel="alternate" hreflang="${x.lang}" href="https://{{domain}}${pageUrl(x.code, url)}">`).join('\n') + `\n<link rel="alternate" hreflang="x-default" href="https://{{domain}}${url}">`,

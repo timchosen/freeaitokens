@@ -276,19 +276,23 @@ test('home headline names the monthly tokens in words, then one row of model and
   assert.match(es, /class="tool fam" href="\/es\/models"/);
 });
 
-test('every page carries link-preview tags pointing at the 1200x630 card', () => {
+test('every page carries link-preview tags pointing at the 1200x630 card, and X at its 2:1 card', () => {
   const out = mkdtempSync(join(tmpdir(), 'site-og-'));
   build(out);
   for (const f of ['index.html', join('es', 'index.html'), 'models.html']) {
     const html = readFileSync(join(out, f), 'utf8');
     assert.match(html, /<meta property="og:image" content="https:\/\/[^"]+\/og\.png">/, f);
     assert.match(html, /<meta name="twitter:card" content="summary_large_image">/, f);
+    assert.match(html, /<meta name="twitter:image" content="https:\/\/[^"]+\/x-preview\.png">/, f);
     assert.match(html, /<meta property="og:title" content="[^"{}]+">/, f);
   }
   assert.match(readFileSync(join(out, 'es', 'index.html'), 'utf8'), /og:url" content="https:\/\/[^"]+\/es\/"/);
   const png = readFileSync(join(out, 'og.png'));
   assert.equal(png.readUInt32BE(16), 1200);
   assert.equal(png.readUInt32BE(20), 630);
+  const x = readFileSync(join(out, 'x-preview.png'));
+  assert.equal(x.readUInt32BE(16), 1200);
+  assert.equal(x.readUInt32BE(20), 600, "X's large card is 2:1");
 });
 
 test('mobile apps are shown as coming soon on the home and download pages in every language', () => {
