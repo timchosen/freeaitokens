@@ -23,7 +23,7 @@ export async function resend(req: Request, env: Env, now: number, later: (p: Pro
   // Sent after answering, so the response time does not tell a buyer's address from a stranger's.
   later(Promise.all(results.map(async (r) => env.EMAIL.send({
     to: email,
-    from: 'sync@freeaitokens.co',
+    from: { email: 'sync@freeaitokens.co', name: 'FreeAITokens' },
     subject: 'Your FreeAITokens sync key',
     text: `Here is your FreeAITokens sync key:\n\n${await licenseKey(env.LICENSE_SECRET, r.first_session)}\n\nIn FreeAITokens, open Settings › Sync, choose "I already have a key", and enter it with your sync passphrase.\n\nIf you did not ask for this, you can ignore this email.`,
   }))).catch((e) => console.error('resend failed', e)));

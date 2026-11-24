@@ -280,6 +280,7 @@ test('resend: same answer for known and unknown addresses, one mail per license,
   assert.equal(mail.length, 2);
   const { licenseKey } = await import('../sync/src/license.ts');
   assert.ok(mail.every((m) => m.to === 'ana@example.com'));
+  assert.ok(mail.every((m) => m.from?.name === 'FreeAITokens' && m.from?.email === 'sync@freeaitokens.co'), 'the email shows FreeAITokens as the sender');
   const keys = await Promise.all([licenseKey('lic-secret', 'cs_a'), licenseKey('lic-secret', 'cs_b')]);
   for (const k of keys) assert.ok(mail.some((m) => m.text.includes(k)), 'each license key is mailed');
   for (let i = 0; i < 3; i++) await resend(env, 'ana@example.com', `9.9.9.${i}`);
