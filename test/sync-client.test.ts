@@ -8,7 +8,7 @@ test('the data key wraps under a passphrase and only that passphrase unwraps it'
   const dk = newDataKey();
   assert.equal(dk.length, 32);
   const body = await wrapDataKey(dk, 'correct horse battery', fast);
-  assert.doesNotMatch(body, new RegExp(dk.toString('base64').slice(0, 20)));
+  assert.ok(!body.includes(dk.toString('base64').slice(0, 20)));
   assert.deepEqual(await unwrapDataKey(body, 'correct horse battery'), dk);
   await assert.rejects(unwrapDataKey(body, 'wrong horse battery'), WrongPassphraseError);
   assert.equal(JSON.parse(body).N, 2 ** 14);
