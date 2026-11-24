@@ -17,7 +17,8 @@ import { validateKey, keySteps, connectOpenRouter } from 'freeaitokens/dist/node
 import { launchSpec, LAUNCH_TOOLS } from 'freeaitokens/dist/node/harness.js';
 import { route, NoCapacityError } from 'freeaitokens/dist/core/orchestrator.js';
 import { routeMedia, NoProviderError } from 'freeaitokens/dist/core/media.js';
-import { allowedUrl, choices, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType, privateAddress, mediaOptions, guessKind, sortedKind, audioType, pcmToWav, pickRelease } from './logic.js';
+import { allowedUrl, choices, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType, privateAddress, mediaOptions, guessKind, sortedKind, audioType, pcmToWav, pickRelease, docMessage, joinUsers } from './logic.js';
+import { docText } from './docs.js';
 import './t.js';
 import { openChatStore, cleanChat, migrateChats } from './chats.js';
 import { createSyncService } from './syncsvc.js';
@@ -137,7 +138,7 @@ ipcMain.handle('app:chat', async (_e, list, choice = 'free') => {
   if (!catalogue || (choice !== 'free' && !modelOptions(catalogue, keys).length)) return { ok: false, reason: t('err_model') };
   const start = Date.now();
   try {
-    const { response, candidate } = await route({ messages, max_tokens: 4096 }, { ...deps, catalogue });
+    const { response, candidate } = await route({ messages: joinUsers(messages), max_tokens: 4096 }, { ...deps, catalogue });
     const text = await response.text();
     if (response.status !== 200) return { ok: false, reason: t('err_said_no', { name: candidate.provider.name, text: text.slice(0, 300) }) };
     const body = JSON.parse(text);
@@ -369,18 +370,30 @@ ipcMain.handle('app:saveAudio', async (_e, audio) => {
 });
 // Transcription: the person picks an audio file here, in the main process; the window never sends a path.
 // The file goes to the router on this computer and is not kept.
-ipcMain.handle('app:transcribe', async () => {
-  if (!mediaOptions(deps.catalogue, keys, 'transcription').length) return { ok: false, reason: t('no_transcription_providers') };
-  const pick = await dialog.showOpenDialog(mainWindow, { properties: ['openFile'], filters: [{ name: t('attach_audio'), extensions: Object.keys(AUDIO_MIME) }] });
+// Attach: the person picks a file here, in the main process; the window never sends a path.
+// Audio is transcribed; a text, data, code or Word file becomes a message the model reads with the next question.
+const DOC_TYPES = ['pdf', 'txt', 'md', 'csv', 'tsv', 'json', 'jsonl', 'xml', 'html', 'htm', 'yaml', 'yml', 'toml', 'ini', 'log', 'rtf', 'tex', 'docx',
+  'js', 'mjs', 'ts', 'tsx', 'jsx', 'py', 'rb', 'go', 'rs', 'java', 'kt', 'swift', 'c', 'h', 'cpp', 'cs', 'php', 'sh', 'sql', 'css'];
+const MAX_DOC = 20 * 1024 * 1024;
+ipcMain.handle('app:attach', async () => {
+  const pick = await dialog.showOpenDialog(mainWindow, { properties: ['openFile'], filters: [
+    { name: t('attach_file'), extensions: [...DOC_TYPES, ...Object.keys(AUDIO_MIME)] }, { name: t('all_files'), extensions: ['*'] }] });
   if (pick.canceled || !pick.filePaths[0]) return { ok: false, canceled: true };
   const path = pick.filePaths[0], name = path.split(/[\\/]/).pop();
   let bytes;
   try {
-    if (statSync(path).size > MAX_AUDIO) return { ok: false, reason: t('audio_too_big'), name };
+    if (statSync(path).size > Math.max(MAX_AUDIO, MAX_DOC)) return { ok: false, reason: t('file_too_big'), name };
     bytes = readFileSync(path);
   } catch (e) { return { ok: false, reason: t('err_generic', { reason: e.message }), name }; }
   const type = audioType(bytes);
-  if (!type) return { ok: false, reason: t('err_audio'), name };
+  if (!type) {
+    let doc = null;
+    try { doc = await docText(bytes, name); } catch { /* a damaged file reads as unreadable */ }
+    if (doc?.empty) return { ok: false, reason: t('doc_empty'), name };
+    return doc ? { ok: true, kind: 'doc', name, content: docMessage(name, doc.text), cut: doc.cut } : { ok: false, reason: t('err_file'), name };
+  }
+  if (bytes.length > MAX_AUDIO) return { ok: false, reason: t('audio_too_big'), name };
+  if (!mediaOptions(deps.catalogue, keys, 'transcription').length) return { ok: false, reason: t('no_transcription_providers'), name };
   const start = Date.now();
   try {
     const form = new FormData();
@@ -390,7 +403,7 @@ ipcMain.handle('app:transcribe', async () => {
     if (response.status !== 200) return { ok: false, reason: t('err_said_no', { name: candidate.provider.name, text: raw.slice(0, 300) }), name };
     let text = raw;
     try { text = String(JSON.parse(raw)?.text ?? ''); } catch { /* plain text answer */ }
-    return { ok: true, text: text.trim(), name, ms: Date.now() - start, provider: candidate.provider.name, model: candidate.model.id };
+    return { ok: true, kind: 'audio', text: text.trim(), name, ms: Date.now() - start, provider: candidate.provider.name, model: candidate.model.id };
   } catch (e) {
     return { ok: false, reason: e instanceof NoProviderError ? t('no_transcription_providers') : t('err_generic', { reason: e.message }), name };
   } finally {
@@ -437,6 +450,8 @@ ipcMain.handle('sync:cancel', () => sync.cancelClaim());
 ipcMain.handle('sync:setup', syncCall((key, pass, confirmed) => sync.setup(key, pass, confirmed !== false)));
 ipcMain.handle('sync:now', syncCall(async () => { const r = await sync.syncNow(); return r.ok ? {} : { result: r }; }));
 ipcMain.handle('sync:recovery', () => sync.recovery());
+// The key goes straight to the clipboard; the window never holds it.
+ipcMain.handle('sync:copyKey', () => { const k = sync.key(); if (k) clipboard.writeText(k); return !!k; });
 ipcMain.handle('sync:pass', syncCall((pass) => sync.changePassphrase(pass)));
 ipcMain.handle('sync:recover', syncCall((code, pass, key) => sync.recover(code, pass, typeof key === 'string' && key ? key.trim().toUpperCase() : undefined)));
 ipcMain.handle('sync:billing', syncCall(async () => { await shell.openExternal(await sync.billingUrl()); }));

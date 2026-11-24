@@ -208,6 +208,7 @@ export function createSyncService({ base, keys, chats, stateFile, fetch, engine,
   return {
     status, buy, pollClaim, cancelClaim: () => { clearInterval(polling); write({ claim: undefined }); }, setup, syncNow, changePassphrase, recover, billingUrl, turnOff, start, stop,
     recovery: () => (dataKey() ? engine.recoveryCode(dataKey()) : null),
+    key: () => (dataKey() ? license() : null),
     nudge: () => { if (started && license()) { clearTimeout(nudge); nudge = setTimeout(() => void syncNow(), 3000); } },
   };
 }

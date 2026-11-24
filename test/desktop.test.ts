@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import { randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
 // @ts-ignore plain JS module
-import { allowedUrl, choices, menuLine, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType, privateAddress, guessKind, sortedKind, audioType, mediaOptions, pcmToWav, pickRelease } from '../desktop/logic.js';
+import { allowedUrl, choices, menuLine, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType, privateAddress, guessKind, sortedKind, audioType, mediaOptions, pcmToWav, pickRelease, docMessage, joinUsers } from '../desktop/logic.js';
 import { readFileSync as readText } from 'node:fs';
 import vm from 'node:vm';
 
@@ -406,6 +406,7 @@ test('sync service: buy and claim a key, set up, a second computer pulls chats a
   const [c] = migrateChats([{ title: 'hi', model: 'free', updated: 5, messages: [{ role: 'user', content: 'yo' }] }]);
   A.chats.put(c);
   assert.equal(A.svc.status().state, 'off');
+  assert.equal(A.svc.key(), null, 'no key to copy before sync is set up');
 
   const url = await A.svc.buy('year');
   assert.match(url, /^https:\/\/sync\.test\/buy\?plan=year&claim=[0-9a-f]{64}$/);
@@ -425,6 +426,7 @@ test('sync service: buy and claim a key, set up, a second computer pulls chats a
   assert.equal(A.svc.status().state, 'on');
   assert.equal(A.svc.status().plan, 'year');
   assert.equal(A.keys.get('sync:license'), key);
+  assert.equal(A.svc.key(), key, 'the sync key can be copied again once sync is on');
 
   const B = mk();
   B.keys.set('cf', 'acct:cf_2');
@@ -642,4 +644,65 @@ test('pickRelease offers pre-releases only to early access, never drafts, only n
   assert.deepEqual(pickRelease(list, '0.3.10', false), { tag: 'v0.3.11', url: 'https://github.com/x/releases/tag/v0.3.11', early: false });
   assert.equal(pickRelease(list, '0.4.0', true), null);
   assert.equal(pickRelease('junk', '0.1.0', true), null);
+});
+
+// Attaching documents: text-like files and Word documents become text for the chat.
+// @ts-ignore plain JS module
+import { docText, DOC_CHARS } from '../desktop/docs.js';
+import { deflateRawSync } from 'node:zlib';
+
+// A minimal zip (one deflated entry per file), enough to stand in for a .docx.
+function zip(files: Record<string, string>) {
+  const parts: Buffer[] = [], central: Buffer[] = [];
+  let off = 0;
+  for (const [name, text] of Object.entries(files)) {
+    const data = deflateRawSync(Buffer.from(text)), n = Buffer.from(name);
+    const local = Buffer.alloc(30); local.writeUInt32LE(0x04034b50, 0); local.writeUInt16LE(8, 8);
+    local.writeUInt32LE(data.length, 18); local.writeUInt32LE(Buffer.byteLength(text), 22); local.writeUInt16LE(n.length, 26);
+    const c = Buffer.alloc(46); c.writeUInt32LE(0x02014b50, 0); c.writeUInt16LE(8, 10);
+    c.writeUInt32LE(data.length, 20); c.writeUInt32LE(Buffer.byteLength(text), 24); c.writeUInt16LE(n.length, 28); c.writeUInt32LE(off, 42);
+    parts.push(local, n, data); central.push(c, n); off += 30 + n.length + data.length;
+  }
+  const cd = Buffer.concat(central), end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50, 0); end.writeUInt16LE(central.length / 2, 8); end.writeUInt16LE(central.length / 2, 10);
+  end.writeUInt32LE(cd.length, 12); end.writeUInt32LE(off, 16);
+  return Buffer.concat([...parts, cd, end]);
+}
+
+test('docText reads text, data and code files, Word documents, and refuses other binary files', async () => {
+  assert.deepEqual(await docText(Buffer.from('name,count\nfox,3\n'), 'a.csv'), { text: 'name,count\nfox,3\n', cut: false });
+  assert.equal((await docText(Buffer.from('\uFEFF# Notes'), 'n.md')).text, '# Notes', 'byte-order mark dropped');
+  const docx = zip({ 'word/document.xml': '<w:document><w:body><w:p><w:r><w:t>Hello</w:t></w:r><w:r><w:t xml:space="preserve"> &amp; bye</w:t></w:r></w:p><w:p><w:r><w:t>Line 2</w:t></w:r></w:p></w:body></w:document>' });
+  assert.deepEqual(await docText(docx, 'r.docx'), { text: 'Hello & bye\nLine 2', cut: false });
+  assert.equal(await docText(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0, 0, 1, 2]), 'x.png'), null);
+  assert.equal(await docText(zip({ 'other.xml': '<a/>' }), 'x.docx'), null);
+  const big = await docText(Buffer.from('x'.repeat(DOC_CHARS + 10)), 'big.txt');
+  assert.equal(big.text.length, DOC_CHARS); assert.equal(big.cut, true);
+});
+
+test('docMessage keeps the file name on its first line and joinUsers merges a document with the question after it', () => {
+  assert.equal(docMessage('a.csv', 'x,y'), 'File: a.csv\n\n```\nx,y\n```');
+  assert.deepEqual(joinUsers([{ role: 'user', content: 'File: a.csv' }, { role: 'user', content: 'sum it' }, { role: 'assistant', content: '3' }]),
+    [{ role: 'user', content: 'File: a.csv\n\nsum it' }, { role: 'assistant', content: '3' }]);
+});
+
+// A one-page PDF with real text, written by hand (pdf.js rebuilds the cross-reference table itself).
+function pdf(text: string) {
+  const stream = text ? `BT /F1 12 Tf 72 720 Td (${text}) Tj ET` : '';
+  return Buffer.from(`%PDF-1.4
+1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj
+2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj
+3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >> endobj
+4 0 obj << /Length ${stream.length} >> stream
+${stream}
+endstream endobj
+5 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj
+trailer << /Root 1 0 R >>
+%%EOF`);
+}
+
+test('docText reads the text of a PDF, and a PDF with no text (a scan) says it is empty', async () => {
+  assert.deepEqual(await docText(pdf('Hello from a PDF'), 'a.pdf'), { text: 'Hello from a PDF', cut: false });
+  assert.deepEqual(await docText(pdf(''), 'scan.pdf'), { text: '', cut: false, empty: true });
+  assert.equal(await docText(Buffer.from('%PDF-1.4 broken'), 'b.pdf'), null);
 });

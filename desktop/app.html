@@ -55,7 +55,7 @@
         <label for="prompt" class="sr" data-i18n="your_message">Your message</label>
         <textarea id="prompt" rows="2" data-i18n-placeholder="prompt_placeholder" placeholder="Write a message… (⌘/Ctrl + Enter to send)"></textarea>
         <div class="bar">
-          <button class="icon-btn" id="attach" type="button" data-i18n-label="attach_audio" data-i18n-title="attach_audio" aria-label="Transcribe an audio file" title="Transcribe an audio file"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M10.5 4.5 5.8 9.2a1.6 1.6 0 0 0 2.3 2.3l5-5a3 3 0 0 0-4.3-4.3l-5 5a4.4 4.4 0 0 0 6.2 6.2l4-4"/></svg></button>
+          <button class="icon-btn" id="attach" type="button" data-i18n-label="attach_file" data-i18n-title="attach_file" aria-label="Attach a document, data file or audio" title="Attach a document, data file or audio"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M10.5 4.5 5.8 9.2a1.6 1.6 0 0 0 2.3 2.3l5-5a3 3 0 0 0-4.3-4.3l-5 5a4.4 4.4 0 0 0 6.2 6.2l4-4"/></svg></button>
           <div class="range" role="group" data-i18n-label="mode_label" aria-label="Mode"><button type="button" data-mode="auto" aria-pressed="true" data-i18n="mode_auto">Auto</button><button type="button" data-mode="chat" aria-pressed="false" data-i18n="mode_chat">Chat</button><button type="button" data-mode="image" aria-pressed="false" data-i18n="mode_image">Image</button></div>
           <label class="pick"><span class="sr" data-i18n="model">Model</span><select id="model"></select></label>
           <button class="btn" id="send" type="submit" data-i18n="send">Send</button>
@@ -131,7 +131,7 @@
         </div>
         <div id="syncOn" hidden>
           <p id="syncInfo"></p>
-          <div class="btns"><button class="copy" id="syncNow" type="button" data-i18n="sync_now">Sync now</button><button class="copy" id="syncShow" type="button" data-i18n="sync_show_code">Show recovery code</button><button class="copy" id="syncPassBtn" type="button" data-i18n="sync_change_pass">Change passphrase</button><button class="copy" id="syncManage" type="button" data-i18n="sync_manage">Manage plan</button><button class="copy" id="syncUpgradeOn" type="button" data-i18n="sync_upgrade">Get lifetime</button><button class="copy" id="syncOffBtn" type="button" data-i18n="sync_turn_off">Turn off on this computer</button></div>
+          <div class="btns"><button class="copy" id="syncNow" type="button" data-i18n="sync_now">Sync now</button><button class="copy" id="syncCopyKey" type="button" data-i18n="sync_copy_key">Copy sync key</button><button class="copy" id="syncShow" type="button" data-i18n="sync_show_code">Show recovery code</button><button class="copy" id="syncPassBtn" type="button" data-i18n="sync_change_pass">Change passphrase</button><button class="copy" id="syncManage" type="button" data-i18n="sync_manage">Manage plan</button><button class="copy" id="syncUpgradeOn" type="button" data-i18n="sync_upgrade">Get lifetime</button><button class="copy" id="syncOffBtn" type="button" data-i18n="sync_turn_off">Turn off on this computer</button></div>
         </div>
         <div id="syncEnded" hidden>
           <p id="syncEndedText"></p>

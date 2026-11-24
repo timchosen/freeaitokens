@@ -69,6 +69,20 @@ export function cleanMessages(list) {
   return out;
 }
 
+// An attached document as a chat message: its name on the first line, its text in a fence the model can read.
+export const docMessage = (name, text) => `File: ${name}\n\n\`\`\`\n${text}\n\`\`\``;
+
+// Back-to-back user messages (a document, then the question about it) as one, for providers that want turns to alternate.
+export function joinUsers(list) {
+  const out = [];
+  for (const m of list) {
+    const last = out.at(-1);
+    if (last && last.role === 'user' && m.role === 'user') last.content += `\n\n${m.content}`;
+    else out.push({ ...m });
+  }
+  return out;
+}
+
 const INSTALL = {
   claude: 'npm install -g @anthropic-ai/claude-code',
   codex: 'npm install -g @openai/codex',

@@ -150,6 +150,7 @@ function listChats() {
 function bubble(m) {
   const box = el('div', `msg ${m.role === 'user' ? 'user' : m.error ? 'err' : 'ai'}`);
   if (m.image) box.append(picture(m));
+  else if (m.kind === 'file' && m.content.includes('\n')) box.append(attached(m.content)); // a document: its name, text folded away
   else if (m.role === 'assistant' && !m.error) {
     box.classList.add('md');
     box.innerHTML = renderMarkdown(m.content); // renderMarkdown escapes everything it does not create itself
@@ -175,6 +176,13 @@ function bubble(m) {
   chat.append(box);
   chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' });
   return box;
+}
+// An attached document (see docMessage in logic.js): the "File: name" line, with the text folded underneath.
+function attached(content) {
+  const d = el('details', 'doc');
+  const [head, ...rest] = content.split('\n');
+  d.append(el('summary', '', head), el('pre', '', rest.join('\n').replace(/^\n*```\n/, '').replace(/\n```$/, '')));
+  return d;
 }
 // A made image: shown from the file the main process saved, with Save and Copy.
 const srcs = new Map(); // image id → data URL, so a fresh image shows without reading it back
@@ -316,25 +324,31 @@ async function send() {
 $('ask').addEventListener('submit', (e) => { e.preventDefault(); send(); });
 $('prompt').addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); send(); } });
 $('newChat').addEventListener('click', () => openChat(null));
-// Attach: the person picks an audio file in the system dialog; its transcript joins the chat.
+// Attach: the person picks a file in the system dialog. Audio is transcribed into the chat; a document joins
+// the chat as a message, and the model reads it with the next question.
 $('attach').addEventListener('click', async () => {
   if (busy) return;
   $('send').disabled = $('attach').disabled = busy = true;
-  const wait = bubble({ role: 'assistant', content: `_${t('transcribing')}_` });
-  const r = await api.transcribe();
+  const wait = bubble({ role: 'assistant', content: `_${t('reading_file')}_` });
+  const r = await api.attach();
   wait.remove();
   $('attach').disabled = busy = false;
   fillModels();
   if (r.canceled) return;
-  if (!current) { current = { id: crypto.randomUUID(), title: t('transcribe_file', { name: r.name ?? '' }).slice(0, 60), model: $('model').value, mode, messages: [], updated: Date.now() }; chats.unshift(current); }
-  const chat = current;
-  const at = Date.now();
-  chat.messages.push({ id: crypto.randomUUID(), at, role: 'user', content: t('transcribe_file', { name: r.name ?? '' }), kind: 'file' },
-    { id: crypto.randomUUID(), at, ...(r.ok ? { role: 'assistant', content: r.text, meta: { provider: r.provider, model: r.model, ms: r.ms } } : { role: 'assistant', content: r.reason, error: true }) });
+  if (!r.ok) { bubble({ role: 'assistant', content: r.reason, error: true }); return; } // shown, not stored
+  const doc = r.kind === 'doc', label = doc ? r.name : t('transcribe_file', { name: r.name ?? '' });
+  if (!current) { current = { id: crypto.randomUUID(), title: label.slice(0, 60), model: $('model').value, mode, messages: [], updated: Date.now() }; chats.unshift(current); }
+  const chat = current, at = Date.now();
+  const added = doc ? [{ id: crypto.randomUUID(), at, role: 'user', content: r.content, kind: 'file' }]
+    : [{ id: crypto.randomUUID(), at, role: 'user', content: label, kind: 'file' },
+      { id: crypto.randomUUID(), at, role: 'assistant', content: r.text, meta: { provider: r.provider, model: r.model, ms: r.ms } }];
+  chat.messages.push(...added);
   chat.updated = Date.now();
   chats = [chat, ...chats.filter((c) => c.id !== chat.id)];
-  save(chat);
-  if (current === chat) { bubble(chat.messages.at(-2)); bubble(chat.messages.at(-1)); }
+  const saved = await save(chat);
+  if (current === chat) for (const m of added) bubble(m);
+  if (!saved && current === chat) bubble({ role: 'assistant', content: t('chat_too_long'), error: true });
+  else if (doc) { if (r.cut) bubble({ role: 'assistant', content: t('doc_cut'), error: true }); $('prompt').focus(); }
   listChats();
   refresh();
 });
@@ -536,6 +550,7 @@ $('syncForm').addEventListener('submit', async (e) => {
 $('syncCodeCopy').addEventListener('click', () => navigator.clipboard.writeText($('syncCodeText').textContent));
 $('syncCodeDone').addEventListener('click', () => { $('syncCodeText').textContent = ''; showPanel(null); refreshSync(); });
 $('syncNow').addEventListener('click', async (e) => { await syncDo(e.currentTarget, () => api.sync.now()); refreshSync(); });
+$('syncCopyKey').addEventListener('click', async () => { const b = $('syncCopyKey'); if (await api.sync.copyKey()) { b.textContent = t('copied'); setTimeout(() => { b.textContent = t('sync_copy_key'); }, 1500); } });
 $('syncShow').addEventListener('click', async () => { const c = await api.sync.recovery(); if (c) showCode(c); });
 $('syncPassBtn').addEventListener('click', () => openSyncForm('change'));
 $('syncManage').addEventListener('click', (e) => syncDo(e.currentTarget, () => api.sync.billing()));

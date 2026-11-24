@@ -14,7 +14,8 @@
     "dist": "electron-builder --publish never"
   },
   "dependencies": {
-    "freeaitokens": "file:.."
+    "freeaitokens": "file:..",
+    "unpdf": "2.1.0"
   },
   "devDependencies": {
     "electron": "45.2.0",
@@ -26,6 +27,7 @@
       "main.js",
       "logic.js",
       "chats.js",
+      "docs.js",
       "syncsvc.js",
       "preload.cjs",
       "add.html",

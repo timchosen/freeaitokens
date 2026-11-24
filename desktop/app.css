@@ -204,3 +204,6 @@ section.play:not([hidden]) { flex: 1; min-height: 0; max-width: none; display: g
 .link { font: inherit; font-size: 13px; color: var(--coral-ink); background: none; border: 0; padding: 4px 0; cursor: pointer; text-decoration: underline; }
 .sync-body .status { margin: 6px 0 0; font-size: 13px; }
 .sync-body [hidden] { display: none; }
+/* An attached document: its name, with the text folded underneath. */
+.msg .doc summary { cursor: pointer; }
+.msg .doc pre { margin: .5em 0 0; max-height: 320px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; }
