@@ -59,7 +59,7 @@ async function refresh() {
   $('login').checked = s.startAtLogin;
   $('theme').value = s.theme ?? 'system';
   lists = { auto: s.models, chat: s.models, image: s.images };
-  const v = s.voice, list = (names) => (names.length ? new Intl.ListFormat(tag).format(names) : t('voice_none'));
+  const v = voice = s.voice, list = (names) => (names.length ? new Intl.ListFormat(tag).format(names) : t('voice_none'));
   $('voiceText').textContent = `${t('voice_dictation', { list: list(v.transcription.using) })} · ${t('voice_speech', { list: list(v.speech.using) })}`;
   const adds = [v.transcription.add, v.speech.add].filter((p, i, a) => p && a.findIndex((q) => q?.id === p.id) === i);
   $('voiceAdd').replaceChildren(...adds.map(addButton));
@@ -316,14 +316,18 @@ async function send() {
   chat.updated = Date.now();
   chats = [chat, ...chats.filter((c) => c.id !== chat.id)]; // by id: sync may have swapped in a fresh copy meanwhile
   const saved = await save(chat);
-  const shown = current === chat ? bubble(chat.messages.at(-1)) : null;
-  if (talk && shown && r.ok && r.text && !r.audio && !r.image) shown.querySelector('.speak')?.click(); // Talk mode reads the answer out
+  if (current === chat) bubble(chat.messages.at(-1));
   if (!saved && current === chat) bubble({ role: 'assistant', content: t('chat_too_long'), error: true }); // shown, not stored
   else if (current?.id === chat.id) {
     // Sync refreshed this chat while we waited: show the stored copy, which now holds both sides.
     chats = await api.chats.list();
     current = chats.find((c) => c.id === chat.id) ?? null;
     if (current) openChat(current);
+  }
+  // Talk mode reads the answer out, from the bubble on screen now (the chat may have been redrawn above).
+  if (talk && r.ok && r.text && !r.audio && !r.image && current?.id === chat.id) {
+    if (!voice?.speech.using.length) voiceNote(t('no_speech_providers'), voice?.speech.add);
+    else [...$('chat').querySelectorAll('.speak')].at(-1)?.click();
   }
   listChats();
   refresh();
@@ -362,7 +366,14 @@ $('attach').addEventListener('click', async () => {
 
 // Mic: record in the window, transcribe through your providers, and put the words in the box to edit.
 // In Talk mode the words are sent at once and the answer is read out.
-let rec = null, talk = false;
+let rec = null, talk = false, voice = null;
+// The line above the box that says what voice is doing: listening, transcribing, or what to fix.
+function voiceNote(text, add, busyNow = false) {
+  const n = $('voiceNote');
+  n.hidden = !text;
+  n.classList.toggle('working', busyNow);
+  n.replaceChildren(...(text ? [el('span', '', text)] : []), ...(add ? [' ', addButton(add)] : []));
+}
 try { talk = localStorage.getItem('talk') === '1'; } catch { /* no storage: Talk starts off */ }
 const micState = (on) => {
   $('mic').setAttribute('aria-pressed', String(on));
@@ -370,31 +381,53 @@ const micState = (on) => {
   $('mic').setAttribute('aria-label', $('mic').title);
 };
 const talkState = () => $('talk').setAttribute('aria-pressed', String(talk));
-$('talk').addEventListener('click', () => { talk = !talk; talkState(); try { localStorage.setItem('talk', talk ? '1' : '0'); } catch { /* not kept */ } });
+$('talk').addEventListener('click', () => {
+  talk = !talk;
+  talkState();
+  try { localStorage.setItem('talk', talk ? '1' : '0'); } catch { /* not kept */ }
+  voiceNote(talk && voice && !voice.speech.using.length ? t('no_speech_providers') : '', talk ? voice?.speech.add : null);
+});
 $('mic').addEventListener('click', async () => {
   if (rec) return rec.stop();
   if (busy) return;
   let stream;
-  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch { bubble({ role: 'assistant', content: t('mic_denied'), error: true }); return; }
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch { voiceNote(t('mic_denied')); return; }
   const type = ['audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/webm'].find((x) => MediaRecorder.isTypeSupported(x));
   const parts = [], r = rec = new MediaRecorder(stream, type ? { mimeType: type } : {});
   const cap = setTimeout(() => r.state === 'recording' && r.stop(), 5 * 60_000); // 5 minutes stays far under the 25 MB upload limit
+  // While recording: a running time and a level bar, so it is clear the mic hears you.
+  const ctx = new AudioContext(), meter = ctx.createAnalyser(), wave = new Uint8Array(512), began = Date.now();
+  ctx.createMediaStreamSource(stream).connect(meter);
+  const level = el('i'), clock = el('span', 'clock');
+  voiceNote(t('listening'), null, true);
+  const bar = el('span', 'level');
+  bar.append(level);
+  $('voiceNote').append(' ', clock, bar);
+  const tick = setInterval(() => {
+    meter.getByteTimeDomainData(wave);
+    let peak = 0; for (const v of wave) peak = Math.max(peak, Math.abs(v - 128));
+    level.style.width = `${Math.min(100, peak * 1.6)}%`;
+    const sec = Math.floor((Date.now() - began) / 1000);
+    clock.textContent = `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+  }, 100);
   r.ondataavailable = (e) => parts.push(e.data);
   r.onstop = async () => {
     clearTimeout(cap);
+    clearInterval(tick);
+    ctx.close();
     for (const tr of stream.getTracks()) tr.stop();
     rec = null;
     micState(false);
     const blob = new Blob(parts);
-    if (blob.size < 2000) return; // a tap, not speech
+    if (blob.size < 2000) return voiceNote(''); // a tap, not speech
     $('send').disabled = $('mic').disabled = busy = true;
-    const wait = bubble({ role: 'assistant', content: `_${t('transcribing')}_` });
+    voiceNote(t('transcribing'), null, true);
     const got = await api.transcribe(new Uint8Array(await blob.arrayBuffer()));
-    wait.remove();
     $('mic').disabled = busy = false;
     fillModels();
-    if (!got.ok) { bubble({ role: 'assistant', content: got.reason, error: true, add: got.add }); return; } // shown, not stored
-    if (!got.text) return;
+    if (!got.ok) return voiceNote(got.reason, got.add);
+    if (!got.text) return voiceNote(t('heard_nothing'));
+    voiceNote('');
     const box = $('prompt');
     box.value = box.value.trim() ? `${box.value.trimEnd()} ${got.text}` : got.text;
     if (talk) send(); else box.focus();

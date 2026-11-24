@@ -53,6 +53,7 @@
       </div>
       <div class="chat" id="chat" aria-live="polite"><div class="empty" id="empty"><img src="icons/logo.svg" alt="" width="40" height="40"><p data-i18n="play_empty">Ask anything. Each answer shows which provider and model gave it, and how long it took.</p></div></div>
       <p class="status" id="imgNote" hidden><span data-i18n="no_image_providers">To create images, add Cloudflare or OpenRouter. Both are free.</span> <button class="copy" id="addImg" type="button" data-i18n="btn_add">Add a free provider</button></p>
+      <p class="status voice-note" id="voiceNote" role="status" hidden></p>
       <form id="ask" class="composer">
         <label for="prompt" class="sr" data-i18n="your_message">Your message</label>
         <textarea id="prompt" rows="2" data-i18n-placeholder="prompt_placeholder" placeholder="Write a message… (⌘/Ctrl + Enter to send)"></textarea>

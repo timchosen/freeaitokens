@@ -233,3 +233,11 @@ section.play:not([hidden]) { flex: 1; min-height: 0; max-width: none; display: g
 .talk svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .talk[aria-pressed="true"] { color: var(--coral-ink); border-color: var(--coral); background: var(--chip); font-weight: 600; }
 .talk:focus-visible { outline: 2px solid var(--coral); outline-offset: 1px; }
+
+/* The voice line above the box: listening (time and level), transcribing, or what to fix. */
+.voice-note { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 8px; font-size: 14px; }
+.voice-note.working > span:first-child::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-inline-end: 8px; border-radius: 50%; background: var(--bad); vertical-align: 1px; }
+.voice-note .clock { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+.voice-note .level { width: 120px; height: 6px; background: var(--chip); border-radius: 999px; overflow: hidden; }
+.voice-note .level i { display: block; height: 100%; width: 0; background: var(--coral); transition: width .1s linear; }
+@media (prefers-reduced-motion: reduce) { .voice-note .level i { transition: none; } }

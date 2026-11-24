@@ -236,5 +236,7 @@
   "sync_perk_early": "Versi baru lebih dulu dari yang lain",
   "sync_per_year": "per tahun",
   "sync_once": "sekali bayar, selamanya",
-  "sync_bought": "Sudah membeli?"
+  "sync_bought": "Sudah membeli?",
+  "listening": "Mendengarkan…",
+  "heard_nothing": "Tidak ada kata yang tertangkap. Coba lagi sedikit lebih dekat ke mikrofon."
 }

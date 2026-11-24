@@ -236,5 +236,7 @@
   "sync_perk_early": "New versions before everyone else",
   "sync_per_year": "a year",
   "sync_once": "once, yours for good",
-  "sync_bought": "Already bought it?"
+  "sync_bought": "Already bought it?",
+  "listening": "Listening…",
+  "heard_nothing": "I didn't catch any words. Try again a little closer to the mic."
 }

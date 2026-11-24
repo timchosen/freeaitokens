@@ -236,5 +236,7 @@
   "sync_perk_early": "新しいバージョンをいち早く",
   "sync_per_year": "1 年",
   "sync_once": "1 回払いでずっと",
-  "sync_bought": "購入済みですか？"
+  "sync_bought": "購入済みですか？",
+  "listening": "聞いています…",
+  "heard_nothing": "言葉を聞き取れませんでした。マイクに少し近づいてもう一度お試しください。"
 }

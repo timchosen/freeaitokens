@@ -236,5 +236,7 @@
   "sync_perk_early": "Las nuevas versiones antes que nadie",
   "sync_per_year": "al año",
   "sync_once": "un solo pago, para siempre",
-  "sync_bought": "¿Ya lo compraste?"
+  "sync_bought": "¿Ya lo compraste?",
+  "listening": "Escuchando…",
+  "heard_nothing": "No he entendido ninguna palabra. Inténtalo de nuevo un poco más cerca del micrófono."
 }

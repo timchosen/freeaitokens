@@ -236,5 +236,7 @@
   "sync_perk_early": "抢先获得新版本",
   "sync_per_year": "每年",
   "sync_once": "一次付费，永久使用",
-  "sync_bought": "已经买了？"
+  "sync_bought": "已经买了？",
+  "listening": "正在听…",
+  "heard_nothing": "没有听到任何话。请靠近麦克风再试一次。"
 }
