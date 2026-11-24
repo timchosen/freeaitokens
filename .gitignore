@@ -4,3 +4,7 @@ reference/
 .superpowers/
 spike/.env
 *.log
+
+# Secrets: never commit
+.env
+.env.*
