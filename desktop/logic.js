@@ -179,6 +179,16 @@ export function mediaOptions(catalogue, keys, kind) {
     .flatMap((p) => (p.media ?? []).filter((m) => m.kind === kind).map((m) => ({ value: `${p.id}/${m.id}`, label: m.id, provider: p.name })));
 }
 export const imageOptions = (catalogue, keys) => mediaOptions(catalogue, keys, 'image');
+// Voice in the playground: who does dictation and spoken answers now, and the first free provider not yet added that could.
+export function voiceSetup(catalogue, keys) {
+  const one = (kind) => {
+    const can = catalogue.filter((p) => (p.media ?? []).some((m) => m.kind === kind));
+    const ready = (p) => p.keyless || keys.get(p.id);
+    const next = can.find((p) => !ready(p) && !p.paid);
+    return { using: can.filter(ready).map((p) => p.name), add: next ? { id: next.id, name: next.name } : null };
+  };
+  return { transcription: one('transcription'), speech: one('speech') };
+}
 
 // Word rules for Auto mode, used when no chat model can sort the message. They only match a request
 // at the start ("draw a fox", not "draw conclusions") or a picture noun with "of"/"make me a".

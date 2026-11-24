@@ -158,8 +158,10 @@ section.play:not([hidden]) { flex: 1; min-height: 0; max-width: none; display: g
 .composer:focus-within { border-color: color-mix(in srgb, var(--coral) 55%, var(--line)); box-shadow: 0 3px 14px rgba(196, 81, 43, .12); }
 .composer textarea { display: block; border: 0; background: none; padding: 4px 2px; resize: none; field-sizing: content; min-height: 52px; max-height: 30vh; }
 .composer textarea:focus-visible { outline: none; }
-.composer .bar { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
-.composer .pick { min-width: 0; }
+.composer .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; }
+.composer .pick { min-width: 150px; flex: 0 1 auto; }
+.composer .pick select { min-width: 0; max-width: 100%; text-overflow: ellipsis; }
+.composer .btn { flex: none; }
 .composer select { max-width: 220px; background: var(--chip); border-color: transparent; border-radius: 999px; padding: 5px 10px; }
 .composer select:hover { border-color: var(--line); }
 .composer .btn { margin-inline-start: auto; padding: 7px 18px; }
@@ -207,3 +209,27 @@ section.play:not([hidden]) { flex: 1; min-height: 0; max-width: none; display: g
 /* An attached document: its name, with the text folded underneath. */
 .msg .doc summary { cursor: pointer; }
 .msg .doc pre { margin: .5em 0 0; max-height: 320px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; }
+
+/* Sync tab: what you get, then the two plans side by side. */
+.sync { max-width: 640px; }
+.perks { list-style: none; padding: 0; margin: 0 0 18px; display: grid; gap: 8px; }
+.perks li { position: relative; padding-inline-start: 24px; font-size: 15px; }
+.perks li::before { content: ""; position: absolute; inset-inline-start: 4px; top: .35em; width: 10px; height: 6px; border-left: 2px solid var(--ok); border-bottom: 2px solid var(--ok); transform: rotate(-45deg); }
+.plans { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+.plan { display: flex; flex-direction: column; gap: 4px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+.plan.best { border-color: var(--coral); }
+.plan b { font-family: var(--serif); font-size: 32px; font-weight: 400; color: var(--coral-ink); line-height: 1.1; }
+.plan span { color: var(--muted); font-size: 13px; margin-bottom: 10px; }
+.plan .btn { margin-top: auto; }
+@media (max-width: 560px) { .plans { grid-template-columns: 1fr; } }
+.nudge { margin: 4px 0 24px; color: var(--muted); font-size: 14px; }
+.row.set .btns { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Mic: red while recording. Talk: a small switch-like toggle beside it. */
+.icon-btn.mic[aria-pressed="true"] { color: #fff; background: var(--bad); animation: rec 1.4s ease-in-out infinite; }
+@keyframes rec { 50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--bad) 25%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .icon-btn.mic[aria-pressed="true"] { animation: none; } }
+.talk { display: inline-flex; align-items: center; gap: 5px; font: inherit; font-size: 13px; color: var(--muted); background: none; border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; cursor: pointer; }
+.talk svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.talk[aria-pressed="true"] { color: var(--coral-ink); border-color: var(--coral); background: var(--chip); font-weight: 600; }
+.talk:focus-visible { outline: 2px solid var(--coral); outline-offset: 1px; }

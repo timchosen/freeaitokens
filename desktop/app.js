@@ -59,6 +59,10 @@ async function refresh() {
   $('login').checked = s.startAtLogin;
   $('theme').value = s.theme ?? 'system';
   lists = { auto: s.models, chat: s.models, image: s.images };
+  const v = s.voice, list = (names) => (names.length ? new Intl.ListFormat(tag).format(names) : t('voice_none'));
+  $('voiceText').textContent = `${t('voice_dictation', { list: list(v.transcription.using) })} · ${t('voice_speech', { list: list(v.speech.using) })}`;
+  const adds = [v.transcription.add, v.speech.add].filter((p, i, a) => p && a.findIndex((q) => q?.id === p.id) === i);
+  $('voiceAdd').replaceChildren(...adds.map(addButton));
   fillModels();
   const usable = s.providers.filter((p) => p.status !== 'add');
   $('s-ready').textContent = num(usable.length);
@@ -156,12 +160,7 @@ function bubble(m) {
     box.innerHTML = renderMarkdown(m.content); // renderMarkdown escapes everything it does not create itself
     previewSvgs(box);
   } else box.textContent = m.content;
-  if (m.error && [t('no_speech_providers'), t('no_transcription_providers')].includes(m.content)) {
-    const add = el('button', 'copy', t('btn_add'));
-    add.type = 'button';
-    add.addEventListener('click', () => api.add());
-    box.append(' ', add);
-  }
+  if (m.error && (m.add || [t('no_speech_providers'), t('no_transcription_providers')].includes(m.content))) box.append(' ', addButton(m.add));
   if (m.audio) box.append(player(m));
   if (m.meta) {
     const meta = el('div', 'meta');
@@ -183,6 +182,13 @@ function attached(content) {
   const [head, ...rest] = content.split('\n');
   d.append(el('summary', '', head), el('pre', '', rest.join('\n').replace(/^\n*```\n/, '').replace(/\n```$/, '')));
   return d;
+}
+// The fix for a voice problem: add the named free provider (or pick one, for errors saved before names were).
+function addButton(p) {
+  const b = el('button', 'copy', p ? t('add_free', { name: p.name }) : t('btn_add'));
+  b.type = 'button';
+  b.addEventListener('click', () => api.add(p?.id));
+  return b;
 }
 // A made image: shown from the file the main process saved, with Save and Copy.
 const srcs = new Map(); // image id → data URL, so a fresh image shows without reading it back
@@ -229,7 +235,7 @@ function speakButton(m, box) {
     const r = await api.speech(m.content.replace(/[*_`#>|]/g, '').slice(0, 4000));
     b.disabled = false;
     b.title = t('read_aloud');
-    if (!r.ok) { box.append(el('p', 'status err-line', r.reason)); return; }
+    if (!r.ok) { const line = el('p', 'status err-line', r.reason); if (r.add) line.append(' ', addButton(r.add)); box.append(line); return; }
     audioSrcs.set(r.audio, r.src);
     m.audio = r.audio;
     if (current) { current.updated = Date.now(); save(current); }
@@ -301,7 +307,7 @@ async function send() {
   if (r.ok && r.audio) audioSrcs.set(r.audio, r.src);
   const meta = r.ok ? { provider: r.provider, model: r.model, ms: r.ms, ...(r.tokens ? { tokens: r.tokens } : {}), ...(auto && auto !== 'chat' ? { auto } : {}) } : null;
   const stamp = { id: crypto.randomUUID(), at: Date.now() };
-  chat.messages.push(!r.ok ? { ...stamp, role: 'assistant', content: r.reason, error: true }
+  chat.messages.push(!r.ok ? { ...stamp, role: 'assistant', content: r.reason, error: true, ...(r.add ? { add: r.add } : {}) }
     : r.image ? { ...stamp, role: 'assistant', content: '', image: r.image, prompt: text, meta }
     : r.audio ? { ...stamp, role: 'assistant', kind: 'speech', content: r.text ?? '', audio: r.audio, meta }
     : { ...stamp, role: 'assistant', content: r.text, meta });
@@ -310,7 +316,8 @@ async function send() {
   chat.updated = Date.now();
   chats = [chat, ...chats.filter((c) => c.id !== chat.id)]; // by id: sync may have swapped in a fresh copy meanwhile
   const saved = await save(chat);
-  if (current === chat) bubble(chat.messages.at(-1));
+  const shown = current === chat ? bubble(chat.messages.at(-1)) : null;
+  if (talk && shown && r.ok && r.text && !r.audio && !r.image) shown.querySelector('.speak')?.click(); // Talk mode reads the answer out
   if (!saved && current === chat) bubble({ role: 'assistant', content: t('chat_too_long'), error: true }); // shown, not stored
   else if (current?.id === chat.id) {
     // Sync refreshed this chat while we waited: show the stored copy, which now holds both sides.
@@ -335,7 +342,7 @@ $('attach').addEventListener('click', async () => {
   $('attach').disabled = busy = false;
   fillModels();
   if (r.canceled) return;
-  if (!r.ok) { bubble({ role: 'assistant', content: r.reason, error: true }); return; } // shown, not stored
+  if (!r.ok) { bubble({ role: 'assistant', content: r.reason, error: true, add: r.add }); return; } // shown, not stored
   const doc = r.kind === 'doc', label = doc ? r.name : t('transcribe_file', { name: r.name ?? '' });
   if (!current) { current = { id: crypto.randomUUID(), title: label.slice(0, 60), model: $('model').value, mode, messages: [], updated: Date.now() }; chats.unshift(current); }
   const chat = current, at = Date.now();
@@ -351,6 +358,49 @@ $('attach').addEventListener('click', async () => {
   else if (doc) { if (r.cut) bubble({ role: 'assistant', content: t('doc_cut'), error: true }); $('prompt').focus(); }
   listChats();
   refresh();
+});
+
+// Mic: record in the window, transcribe through your providers, and put the words in the box to edit.
+// In Talk mode the words are sent at once and the answer is read out.
+let rec = null, talk = false;
+try { talk = localStorage.getItem('talk') === '1'; } catch { /* no storage: Talk starts off */ }
+const micState = (on) => {
+  $('mic').setAttribute('aria-pressed', String(on));
+  $('mic').title = t(on ? 'mic_stop' : 'mic_start');
+  $('mic').setAttribute('aria-label', $('mic').title);
+};
+const talkState = () => $('talk').setAttribute('aria-pressed', String(talk));
+$('talk').addEventListener('click', () => { talk = !talk; talkState(); try { localStorage.setItem('talk', talk ? '1' : '0'); } catch { /* not kept */ } });
+$('mic').addEventListener('click', async () => {
+  if (rec) return rec.stop();
+  if (busy) return;
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch { bubble({ role: 'assistant', content: t('mic_denied'), error: true }); return; }
+  const type = ['audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/webm'].find((x) => MediaRecorder.isTypeSupported(x));
+  const parts = [], r = rec = new MediaRecorder(stream, type ? { mimeType: type } : {});
+  const cap = setTimeout(() => r.state === 'recording' && r.stop(), 5 * 60_000); // 5 minutes stays far under the 25 MB upload limit
+  r.ondataavailable = (e) => parts.push(e.data);
+  r.onstop = async () => {
+    clearTimeout(cap);
+    for (const tr of stream.getTracks()) tr.stop();
+    rec = null;
+    micState(false);
+    const blob = new Blob(parts);
+    if (blob.size < 2000) return; // a tap, not speech
+    $('send').disabled = $('mic').disabled = busy = true;
+    const wait = bubble({ role: 'assistant', content: `_${t('transcribing')}_` });
+    const got = await api.transcribe(new Uint8Array(await blob.arrayBuffer()));
+    wait.remove();
+    $('mic').disabled = busy = false;
+    fillModels();
+    if (!got.ok) { bubble({ role: 'assistant', content: got.reason, error: true, add: got.add }); return; } // shown, not stored
+    if (!got.text) return;
+    const box = $('prompt');
+    box.value = box.value.trim() ? `${box.value.trimEnd()} ${got.text}` : got.text;
+    if (talk) send(); else box.focus();
+  };
+  r.start();
+  micState(true);
 });
 
 // Chat or Image: which models the picker lists, and what the box and button say.
@@ -462,7 +512,9 @@ function fmtSize(bytes = 0) {
   const mb = bytes >= 1_000_000;
   return new Intl.NumberFormat(tag, { style: 'unit', unit: mb ? 'megabyte' : 'kilobyte', maximumFractionDigits: 1 }).format(mb ? bytes / 1_000_000 : Math.max(bytes / 1000, bytes ? 0.1 : 0));
 }
+const PRICES = { year: 10, life: 49 }; // USD, as on the site and in Stripe
 function renderSync() {
+  $('syncNudge').hidden = syncStatus.state !== 'off';
   if (syncForm || !$('syncCodeView').hidden) return; // the person is in the middle of something
   const s = syncStatus;
   if (s.key) return openSyncForm('new', s.key);
@@ -557,6 +609,10 @@ $('syncManage').addEventListener('click', (e) => syncDo(e.currentTarget, () => a
 for (const id of ['syncOffBtn', 'syncOffBtn2']) $(id).addEventListener('click', () => { if (confirm(t('sync_confirm_off'))) api.sync.off(); });
 
 applyStrings().then(loadChats).then(() => {
+  const money = (n) => new Intl.NumberFormat(tag, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+  $('priceYear').textContent = money(PRICES.year);
+  $('priceLife').textContent = money(PRICES.life);
+  talkState();
   listChats();
   refreshSync();
   refresh();

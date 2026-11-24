@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import { randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
 // @ts-ignore plain JS module
-import { allowedUrl, choices, menuLine, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType, privateAddress, guessKind, sortedKind, audioType, mediaOptions, pcmToWav, pickRelease, docMessage, joinUsers } from '../desktop/logic.js';
+import { allowedUrl, choices, menuLine, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType, privateAddress, guessKind, sortedKind, audioType, mediaOptions, pcmToWav, pickRelease, docMessage, joinUsers, voiceSetup } from '../desktop/logic.js';
 import { readFileSync as readText } from 'node:fs';
 import vm from 'node:vm';
 
@@ -705,4 +705,23 @@ test('docText reads the text of a PDF, and a PDF with no text (a scan) says it i
   assert.deepEqual(await docText(pdf('Hello from a PDF'), 'a.pdf'), { text: 'Hello from a PDF', cut: false });
   assert.deepEqual(await docText(pdf(''), 'scan.pdf'), { text: '', cut: false, empty: true });
   assert.equal(await docText(Buffer.from('%PDF-1.4 broken'), 'b.pdf'), null);
+});
+
+test('voiceSetup names who does dictation and spoken answers now, and the free provider to add for each', () => {
+  const c = [
+    { id: 'ovh', name: 'OVH', keyless: true, media: [{ id: 'w', kind: 'transcription' }] },
+    { id: 'paidco', name: 'Paid', keyless: false, paid: true, media: [{ id: 'p', kind: 'speech' }] },
+    { id: 'groq', name: 'Groq', keyless: false, media: [{ id: 'w2', kind: 'transcription' }, { id: 's', kind: 'transcription' }, { id: 'v', kind: 'speech' }] },
+    { id: 'cf', name: 'Cloudflare', keyless: false, media: [{ id: 'v2', kind: 'speech' }] },
+  ];
+  const none = { get: () => undefined };
+  assert.deepEqual(voiceSetup(c, none), {
+    transcription: { using: ['OVH'], add: { id: 'groq', name: 'Groq' } },
+    speech: { using: [], add: { id: 'groq', name: 'Groq' } }, // never a paid provider
+  });
+  const withGroq = { get: (id) => (id === 'groq' ? 'k' : undefined) };
+  assert.deepEqual(voiceSetup(c, withGroq), {
+    transcription: { using: ['OVH', 'Groq'], add: null },
+    speech: { using: ['Groq'], add: { id: 'cf', name: 'Cloudflare' } },
+  });
 });

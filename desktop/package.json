@@ -62,8 +62,11 @@
       "identity": "-",
       "hardenedRuntime": false,
       "extendInfo": {
-        "LSUIElement": true
-      }
+        "LSUIElement": true,
+        "NSMicrophoneUsageDescription": "FreeAITokens uses the microphone only while you record with the mic button, to turn what you say into text."
+      },
+      "entitlements": "entitlements.mac.plist",
+      "entitlementsInherit": "entitlements.mac.plist"
     },
     "win": {
       "target": [

@@ -15,6 +15,7 @@
     <button role="tab" id="t-tools" aria-controls="tools" aria-selected="false" tabindex="-1" data-i18n="tab_tools">Tools</button>
     <button role="tab" id="t-prov" aria-controls="prov" aria-selected="false" tabindex="-1" data-i18n="tab_prov">Providers</button>
     <button role="tab" id="t-use" aria-controls="usage" aria-selected="false" tabindex="-1" data-i18n="tab_usage">Usage</button>
+    <button role="tab" id="t-sync" aria-controls="syncTab" aria-selected="false" tabindex="-1" data-i18n="tab_sync">Sync</button>
     <button role="tab" id="t-set" aria-controls="settings" aria-selected="false" tabindex="-1" data-i18n="tab_settings">Settings</button>
   </nav>
   <p class="running" id="running"></p>
@@ -34,6 +35,7 @@
       <button class="btn quiet" data-go="t-tools" data-i18n="btn_tools">Open Claude Code and more</button>
       <button class="btn quiet" id="addTop" data-i18n="btn_add">Add a free provider</button>
     </div>
+    <p class="nudge" id="syncNudge" hidden><span data-i18n="home_sync">Use FreeAITokens on more than one computer? Keep your chats and keys the same on all of them.</span> <button class="link" type="button" data-go="t-sync" data-i18n="home_sync_go">See Sync</button></p>
     <h2 data-i18n="home_use">Use it in any app</h2>
     <div class="row"><span data-i18n="row_address">Address</span><code id="endpoint"></code><button class="copy" data-copy="endpoint" data-i18n="copy">Copy</button></div>
     <div class="row"><span data-i18n="row_key">API key</span><code data-i18n="row_key_value">Your local token</code><button class="copy" data-copy="token" data-i18n="copy">Copy</button></div>
@@ -56,6 +58,8 @@
         <textarea id="prompt" rows="2" data-i18n-placeholder="prompt_placeholder" placeholder="Write a message… (⌘/Ctrl + Enter to send)"></textarea>
         <div class="bar">
           <button class="icon-btn" id="attach" type="button" data-i18n-label="attach_file" data-i18n-title="attach_file" aria-label="Attach a document, data file or audio" title="Attach a document, data file or audio"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M10.5 4.5 5.8 9.2a1.6 1.6 0 0 0 2.3 2.3l5-5a3 3 0 0 0-4.3-4.3l-5 5a4.4 4.4 0 0 0 6.2 6.2l4-4"/></svg></button>
+          <button class="icon-btn mic" id="mic" type="button" aria-pressed="false" data-i18n-label="mic_start" data-i18n-title="mic_start" aria-label="Speak your message" title="Speak your message"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="5.5" y="1.5" width="5" height="8" rx="2.5"/><path d="M3 7.5a5 5 0 0 0 10 0M8 12.5v2"/></svg></button>
+          <button class="talk" id="talk" type="button" aria-pressed="false" data-i18n-title="talk_title" title="Talk mode: speak, send, and hear the answer"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2.5 6v4h2.5l3.5 3V3L5 6zM11 5.5a3.5 3.5 0 0 1 0 5"/></svg><span data-i18n="talk">Talk</span></button>
           <div class="range" role="group" data-i18n-label="mode_label" aria-label="Mode"><button type="button" data-mode="auto" aria-pressed="true" data-i18n="mode_auto">Auto</button><button type="button" data-mode="chat" aria-pressed="false" data-i18n="mode_chat">Chat</button><button type="button" data-mode="image" aria-pressed="false" data-i18n="mode_image">Image</button></div>
           <label class="pick"><span class="sr" data-i18n="model">Model</span><select id="model"></select></label>
           <button class="btn" id="send" type="submit" data-i18n="send">Send</button>
@@ -97,18 +101,22 @@
     <div class="list" id="u-prov"></div>
   </section>
 
-  <section role="tabpanel" id="settings" aria-labelledby="t-set" hidden>
-    <h1 data-i18n="settings_title">Settings</h1>
-    <div class="row set"><span data-i18n="set_lang">Language</span><p data-i18n="set_lang_text">The language FreeAITokens uses.</p><select id="lang" data-i18n-label="set_lang" aria-label="Language"></select></div>
-    <div class="row set"><span data-i18n="set_theme">Appearance</span><p data-i18n="set_theme_text">Light, dark, or the same as this computer.</p><select id="theme" data-i18n-label="set_theme" aria-label="Appearance"><option value="system" data-i18n="theme_system">Same as this computer</option><option value="light" data-i18n="theme_light">Light</option><option value="dark" data-i18n="theme_dark">Dark</option></select></div>
-    <div class="row set"><span data-i18n="set_login">Start at login</span><p data-i18n="set_login_text">Open FreeAITokens in the background when you log in.</p><input type="checkbox" id="login" data-i18n-label="set_login" aria-label="Start at login"></div>
-    <div class="row set"><span data-i18n="set_updates">Updates</span><p id="updText"></p><button class="copy" id="checkUpd" type="button" data-i18n="check_now">Check now</button></div>
-    <div class="row set sync" id="sync">
-      <span data-i18n="sync_title">Sync</span>
+  <section role="tabpanel" id="syncTab" aria-labelledby="t-sync" hidden>
+    <h1 data-i18n="sync_title">Sync</h1>
+    <p class="lead" data-i18n="sync_lead">Your chats and provider keys on all your computers. The app and every provider stay free; Sync is the one paid part.</p>
+    <div class="sync" id="sync">
       <div class="sync-body">
         <div id="syncOff" hidden>
-          <p data-i18n="sync_off_text">Keep your chats and provider keys the same on all your computers.</p>
-          <div class="btns"><button class="copy" id="syncYear" type="button" data-i18n="sync_get_year">Get sync for a year</button><button class="copy" id="syncLife" type="button" data-i18n="sync_get_life">Get sync for life</button><button class="copy" id="syncHave" type="button" data-i18n="sync_have_key">I already have a key</button></div>
+          <ul class="perks">
+            <li data-i18n="sync_perk_same">Chats and provider keys the same on every computer</li>
+            <li data-i18n="sync_perk_private">Encrypted on your computer with your passphrase: no one else can read them, not even us</li>
+            <li data-i18n="sync_perk_early">New versions before everyone else</li>
+          </ul>
+          <div class="plans">
+            <div class="plan"><b id="priceYear">$10</b><span data-i18n="sync_per_year">a year</span><button class="btn quiet" id="syncYear" type="button" data-i18n="sync_get_year">Get sync for a year</button></div>
+            <div class="plan best"><b id="priceLife">$49</b><span data-i18n="sync_once">once, yours for good</span><button class="btn" id="syncLife" type="button" data-i18n="sync_get_life">Get sync for life</button></div>
+          </div>
+          <p class="hint"><span data-i18n="sync_bought">Already bought it?</span> <button class="link" id="syncHave" type="button" data-i18n="sync_have_key">I already have a key</button></p>
         </div>
         <div id="syncWait" hidden>
           <p data-i18n="sync_waiting">Finish paying in your browser.</p>
@@ -140,6 +148,15 @@
         <p class="status" id="syncMsg" role="status"></p>
       </div>
     </div>
+  </section>
+
+  <section role="tabpanel" id="settings" aria-labelledby="t-set" hidden>
+    <h1 data-i18n="settings_title">Settings</h1>
+    <div class="row set"><span data-i18n="set_lang">Language</span><p data-i18n="set_lang_text">The language FreeAITokens uses.</p><select id="lang" data-i18n-label="set_lang" aria-label="Language"></select></div>
+    <div class="row set"><span data-i18n="set_theme">Appearance</span><p data-i18n="set_theme_text">Light, dark, or the same as this computer.</p><select id="theme" data-i18n-label="set_theme" aria-label="Appearance"><option value="system" data-i18n="theme_system">Same as this computer</option><option value="light" data-i18n="theme_light">Light</option><option value="dark" data-i18n="theme_dark">Dark</option></select></div>
+    <div class="row set"><span data-i18n="set_login">Start at login</span><p data-i18n="set_login_text">Open FreeAITokens in the background when you log in.</p><input type="checkbox" id="login" data-i18n-label="set_login" aria-label="Start at login"></div>
+    <div class="row set"><span data-i18n="set_updates">Updates</span><p id="updText"></p><button class="copy" id="checkUpd" type="button" data-i18n="check_now">Check now</button></div>
+    <div class="row set"><span data-i18n="set_voice">Voice</span><p id="voiceText"></p><div class="btns" id="voiceAdd"></div></div>
     <div class="row set"><span data-i18n="set_chats">Chats</span><p data-i18n="set_chats_text">Saved chats stay on this computer only.</p><button class="copy" id="clearChats" type="button" data-i18n="delete_chats">Delete all chats</button></div>
     <div class="row set"><span data-i18n="row_address">Address</span><p><code id="endpoint2"></code></p><button class="copy" data-copy="endpoint" data-i18n="copy">Copy</button></div>
     <div class="row set"><span data-i18n="row_key">API key</span><p data-i18n="set_key_text">The local token your apps use.</p><button class="copy" data-copy="token" data-i18n="copy">Copy</button></div>

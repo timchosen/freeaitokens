@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('freeaitokens', {
   audioData: (audio) => ipcRenderer.invoke('app:audioData', audio),
   saveAudio: (audio) => ipcRenderer.invoke('app:saveAudio', audio),
   attach: () => ipcRenderer.invoke('app:attach'),
+  transcribe: (bytes) => ipcRenderer.invoke('app:transcribe', bytes),
   usage: (days) => ipcRenderer.invoke('app:usage', days),
   login: (on) => ipcRenderer.invoke('app:login', on),
   updates: () => ipcRenderer.invoke('app:updates'),

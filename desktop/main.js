@@ -17,7 +17,7 @@ import { validateKey, keySteps, connectOpenRouter } from 'freeaitokens/dist/node
 import { launchSpec, LAUNCH_TOOLS } from 'freeaitokens/dist/node/harness.js';
 import { route, NoCapacityError } from 'freeaitokens/dist/core/orchestrator.js';
 import { routeMedia, NoProviderError } from 'freeaitokens/dist/core/media.js';
-import { allowedUrl, choices, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType, privateAddress, mediaOptions, guessKind, sortedKind, audioType, pcmToWav, pickRelease, docMessage, joinUsers } from './logic.js';
+import { allowedUrl, choices, menuTemplate, providerRows, cleanMessages, launchFile, modelOptions, narrowTo, newerVersion, usageSummary, pickLang, imageOptions, imageFrom, imageType, privateAddress, mediaOptions, guessKind, sortedKind, audioType, pcmToWav, pickRelease, docMessage, joinUsers, voiceSetup } from './logic.js';
 import { docText } from './docs.js';
 import './t.js';
 import { openChatStore, cleanChat, migrateChats } from './chats.js';
@@ -66,6 +66,9 @@ function lockDown(win) {
   // Windows show only our own pages: no navigation, no new windows.
   win.webContents.on('will-navigate', (e) => e.preventDefault());
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  // The only permission any window gets is the microphone, for the main window's mic button.
+  win.webContents.session.setPermissionRequestHandler((wc, perm, ok, d) =>
+    ok(perm === 'media' && wc === mainWindow?.webContents && (d.mediaTypes ?? []).length > 0 && d.mediaTypes.every((m) => m === 'audio')));
 }
 
 function openMain() {
@@ -123,8 +126,7 @@ ipcMain.handle('app:status', () => ({
   tools: Object.entries(LAUNCH_TOOLS).map(([id, name]) => ({ id, name, note: strings[`note_${id}`] ?? '' })),
   models: modelOptions(deps.catalogue, keys),
   images: imageOptions(deps.catalogue, keys),
-  speech: mediaOptions(deps.catalogue, keys, 'speech').length > 0,
-  transcription: mediaOptions(deps.catalogue, keys, 'transcription').length > 0,
+  voice: voiceSetup(deps.catalogue, keys),
   version: app.getVersion(),
   startAtLogin: app.getLoginItemSettings().openAtLogin,
   theme: nativeTheme.themeSource,
@@ -336,12 +338,12 @@ async function wordsToSay(request) {
 }
 ipcMain.handle('app:speech', async (_e, text, write = false) => {
   if (typeof text !== 'string' || !text.trim() || text.length > 4000) return { ok: false, reason: t('err_send') };
-  if (!mediaOptions(deps.catalogue, keys, 'speech').length) return { ok: false, reason: t('no_speech_providers') };
+  if (!mediaOptions(deps.catalogue, keys, 'speech').length) return voiceFail('speech');
   const start = Date.now();
   try {
     const words = write === true ? await wordsToSay(text.trim()) : text.trim();
     const { response, candidate } = await routeMedia('speech', { json: { input: words } }, deps);
-    if (response.status !== 200) return { ok: false, reason: t('err_said_no', { name: candidate.provider.name, text: (await response.text()).slice(0, 300) }) };
+    if (response.status !== 200) return voiceFail('speech', candidate.provider.name, response.status, await response.text());
     const bytes = Buffer.from(pcmToWav(new Uint8Array(await response.arrayBuffer()), response.headers.get('content-type')));
     const type = bytes.length <= MAX_AUDIO ? audioType(bytes) : null;
     if (!type) return { ok: false, reason: t('err_speech') };
@@ -350,7 +352,7 @@ ipcMain.handle('app:speech', async (_e, text, write = false) => {
     writeFileSync(join(audioDir(), audio), bytes, { mode: 0o600 });
     return { ok: true, audio, src: audioUrl(type, bytes), text: write === true ? words : '', ms: Date.now() - start, provider: candidate.provider.name, model: candidate.model.id };
   } catch (e) {
-    return { ok: false, reason: e instanceof NoProviderError ? t('no_speech_providers') : t('err_generic', { reason: e.message }) };
+    return e instanceof NoProviderError ? voiceFail('speech') : e instanceof NoCapacityError ? voiceFail('speech', '', 429) : { ok: false, reason: t('err_generic', { reason: e.message }) };
   } finally {
     saveState(deps.tracker.state);
   }
@@ -393,23 +395,40 @@ ipcMain.handle('app:attach', async () => {
     return doc ? { ok: true, kind: 'doc', name, content: docMessage(name, doc.text), cut: doc.cut } : { ok: false, reason: t('err_file'), name };
   }
   if (bytes.length > MAX_AUDIO) return { ok: false, reason: t('audio_too_big'), name };
-  if (!mediaOptions(deps.catalogue, keys, 'transcription').length) return { ok: false, reason: t('no_transcription_providers'), name };
+  return { ...(await transcribe(bytes, type)), name };
+});
+// A recording from the playground's mic button: bytes from the window, checked here like a picked file.
+ipcMain.handle('app:transcribe', async (_e, data) => {
+  if (!(data instanceof Uint8Array) || data.length > MAX_AUDIO) return { ok: false, reason: t('audio_too_big') };
+  const bytes = Buffer.from(data), type = audioType(bytes);
+  return type ? transcribe(bytes, type) : { ok: false, reason: t('err_file') };
+});
+async function transcribe(bytes, type) {
+  if (!mediaOptions(deps.catalogue, keys, 'transcription').length) return voiceFail('transcription');
   const start = Date.now();
   try {
     const form = new FormData();
     form.append('file', new Blob([bytes], { type: AUDIO_MIME[type] }), `audio.${type}`);
     const { response, candidate } = await routeMedia('transcription', { form }, deps);
     const raw = await response.text();
-    if (response.status !== 200) return { ok: false, reason: t('err_said_no', { name: candidate.provider.name, text: raw.slice(0, 300) }), name };
+    if (response.status !== 200) return voiceFail('transcription', candidate.provider.name, response.status, raw);
     let text = raw;
     try { text = String(JSON.parse(raw)?.text ?? ''); } catch { /* plain text answer */ }
-    return { ok: true, kind: 'audio', text: text.trim(), name, ms: Date.now() - start, provider: candidate.provider.name, model: candidate.model.id };
+    return { ok: true, kind: 'audio', text: text.trim(), ms: Date.now() - start, provider: candidate.provider.name, model: candidate.model.id };
   } catch (e) {
-    return { ok: false, reason: e instanceof NoProviderError ? t('no_transcription_providers') : t('err_generic', { reason: e.message }), name };
+    return e instanceof NoProviderError ? voiceFail('transcription') : e instanceof NoCapacityError ? voiceFail('transcription', '', 429) : { ok: false, reason: t('err_generic', { reason: e.message }) };
   } finally {
     saveState(deps.tracker.state);
   }
-});
+}
+// A voice failure the person can act on: no provider, or one that is busy, comes with the free provider to add.
+function voiceFail(kind, name, status, text = '') {
+  const add = voiceSetup(deps.catalogue, keys)[kind].add;
+  const reason = status === 429 ? (name ? t('voice_busy', { name }) : t('voice_all_busy'))
+    : !name ? t(`no_${kind}_providers`)
+    : t('err_said_no', { name, text: text.slice(0, 300) });
+  return { ok: false, reason, ...(add && (!name || status === 429) ? { add } : {}) }; // a provider that refused the request has its own fix
+}
 
 // Saved chats live in the state folder (not window storage) so sync can reach them.
 let chatStore;
