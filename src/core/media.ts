@@ -3,7 +3,7 @@
 import { endpoint, type MediaKind, type MediaModel, type Provider } from './catalogue.js';
 import type { LimitTracker } from './limits.js';
 import { BadRequest } from './types.js';
-import { NoCapacityError, type RouteDeps, type RouteOptions, type KeyLookup } from './orchestrator.js';
+import { NoCapacityError, retryAfterMs, type RouteDeps, type RouteOptions, type KeyLookup } from './orchestrator.js';
 
 export const KIND_PATH: Record<MediaKind, string> = {
   embedding: '/embeddings', completion: '/completions', image: '/images/generations',
@@ -130,7 +130,7 @@ export async function routeMedia(kind: MediaKind, body: MediaBody, deps: RouteDe
       continue;
     }
     tracker.observe(c.key, res.headers);
-    if (res.status === 429) { fail(COOL.rateLimit); continue; }
+    if (res.status === 429) { fail(retryAfterMs(res.headers, tracker.now())); continue; }
     if (res.status === 401 || res.status === 403) { fail(COOL.auth); continue; }
     if (res.status >= 500) { fail(COOL.error); continue; }
     if (res.status >= 400) {

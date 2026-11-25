@@ -9,7 +9,7 @@ import { isIP } from 'node:net';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadCatalogue, makeDeps, parseArgs } from 'freeaitokens/dist/node/cli.js';
-import { startServer, DEFAULT_PORT } from 'freeaitokens/dist/node/server.js';
+import { startServer, keepServing, DEFAULT_PORT } from 'freeaitokens/dist/node/server.js';
 import { currentCatalogue, updateCatalogue } from 'freeaitokens/dist/node/remote.js';
 import { openKeyStore } from 'freeaitokens/dist/node/keys.js';
 import { localToken, saveState, loadState, stateDir } from 'freeaitokens/dist/node/state.js';
@@ -30,6 +30,11 @@ if (!app.requestSingleInstanceLock()) app.quit();
 
 let tray, srv, deps, keys, addWindow, mainWindow;
 const endpoint = () => `http://127.0.0.1:${srv.port}/v1`;
+// While another copy of FreeAITokens holds the port, the saved counts are that copy's: ours stay in memory.
+// A save that fails (disk full) never takes an answer with it.
+let follow;
+const ours = () => !srv?.reused || follow?.owns();
+const keepState = () => { if (ours()) try { saveState(deps.tracker.state); } catch { /* counts are best effort */ } };
 
 // Language: the one picked in Settings (saved next to the app's state), else the computer's.
 const LOCALES = JSON.parse(readFileSync(here('./i18n/locales.json'), 'utf8'));
@@ -49,7 +54,7 @@ function loadLang() {
 
 function refresh() {
   tray.setContextMenu(Menu.buildFromTemplate(menuTemplate(
-    { port: srv.port, reused: srv.reused, startAtLogin: app.getLoginItemSettings().openAtLogin },
+    { port: srv.port, reused: !ours(), startAtLogin: app.getLoginItemSettings().openAtLogin },
     {
       open: openMain,
       copyEndpoint: () => clipboard.writeText(endpoint()),
@@ -121,7 +126,7 @@ ipcMain.handle('connect', async (_e, id) => {
 
 // The main window's calls. Everything it sends is checked here: it is a web page.
 ipcMain.handle('app:status', () => ({
-  port: srv.port, reused: srv.reused, endpoint: endpoint(),
+  port: srv.port, reused: !ours(), endpoint: endpoint(),
   providers: providerRows(deps.catalogue, keys, deps.tracker),
   tools: Object.entries(LAUNCH_TOOLS).map(([id, name]) => ({ id, name, note: strings[`note_${id}`] ?? '' })),
   models: modelOptions(deps.catalogue, keys),
@@ -154,11 +159,11 @@ ipcMain.handle('app:chat', async (_e, list, choice = 'free') => {
   } catch (e) {
     return { ok: false, reason: e instanceof NoCapacityError ? e.message : t('err_generic', { reason: e.message }) };
   } finally {
-    saveState(deps.tracker.state);
+    keepState();
   }
 });
 // When another copy holds the port, its requests are in the saved state, not in this process.
-ipcMain.handle('app:usage', (_e, days) => usageSummary((srv.reused ? loadState() : deps.tracker.state).usage, [1, 7, 30, 90].includes(days) ? days : 7, deps.catalogue));
+ipcMain.handle('app:usage', (_e, days) => usageSummary((ours() ? deps.tracker.state : loadState()).usage, [1, 7, 30, 90].includes(days) ? days : 7, deps.catalogue));
 ipcMain.handle('app:login', (_e, on) => { app.setLoginItemSettings({ openAtLogin: on === true }); refresh(); return app.getLoginItemSettings().openAtLogin; });
 ipcMain.handle('app:updates', async () => {
   try {
@@ -257,7 +262,7 @@ ipcMain.handle('app:image', async (_e, prompt, choice = 'free') => {
   } catch (e) {
     return { ok: false, reason: e instanceof NoProviderError ? t('no_image_providers') : t('err_generic', { reason: e.message }) };
   } finally {
-    saveState(deps.tracker.state);
+    keepState();
   }
 });
 ipcMain.handle('app:imageData', (_e, image) => {
@@ -316,7 +321,7 @@ ipcMain.handle('app:sort', async (_e, text) => {
     return rules;
   } finally {
     clearTimeout(timer);
-    saveState(deps.tracker.state);
+    keepState();
   }
 });
 
@@ -355,7 +360,7 @@ ipcMain.handle('app:speech', async (_e, text, write = false) => {
   } catch (e) {
     return e instanceof NoProviderError ? voiceFail('speech') : e instanceof NoCapacityError ? voiceFail('speech', '', 429) : { ok: false, reason: t('err_generic', { reason: e.message }) };
   } finally {
-    saveState(deps.tracker.state);
+    keepState();
   }
 });
 ipcMain.handle('app:audioData', (_e, audio) => {
@@ -419,7 +424,7 @@ async function transcribe(bytes, type) {
   } catch (e) {
     return e instanceof NoProviderError ? voiceFail('transcription') : e instanceof NoCapacityError ? voiceFail('transcription', '', 429) : { ok: false, reason: t('err_generic', { reason: e.message }) };
   } finally {
-    saveState(deps.tracker.state);
+    keepState();
   }
 }
 // A voice failure the person can act on: no provider, or one that is busy, comes with the free provider to add.
@@ -537,7 +542,7 @@ app.on('window-all-closed', () => {}); // closing the add window must not quit t
 app.on('second-instance', () => openMain());
 app.on('activate', () => openMain());
 // A second copy quits before it has loaded anything, so there may be nothing to save.
-app.on('before-quit', async () => { sync?.stop(); if (deps) saveState(deps.tracker.state); await srv?.close(); });
+app.on('before-quit', async () => { sync?.stop(); follow?.stop(); if (deps) keepState(); await srv?.close(); });
 
 app.whenReady().then(async () => {
   app.dock?.hide();
@@ -554,6 +559,12 @@ app.whenReady().then(async () => {
   } catch (e) {
     tray.setContextMenu(Menu.buildFromTemplate([{ label: e.message, enabled: false }, { label: t('quit'), click: () => app.quit() }]));
     return;
+  }
+  if (srv.reused) {
+    // The other copy may stop first (a launcher session ending): take the port over so tools keep working.
+    follow = keepServing(deps, srv.port);
+    const watch = setInterval(() => { if (follow.owns()) { clearInterval(watch); refresh(); } }, 2000);
+    watch.unref?.();
   }
   refresh();
   startSync();

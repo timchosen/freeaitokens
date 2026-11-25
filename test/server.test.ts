@@ -115,3 +115,26 @@ test('a chat answer says which provider and model served it', async () => {
   assert.match(s.headers.get('x-freeaitokens-served-by') ?? '', /^[a-z0-9-]+\/.+/);
   await s.text();
 });
+
+test('a client that leaves mid-stream stops the provider', async () => {
+  let cancelled = false;
+  const enc = new TextEncoder();
+  setUpstream(() => new Response(new ReadableStream({
+    async pull(c) { await new Promise((r) => setTimeout(r, 20)); c.enqueue(enc.encode('data: {"model":"real","choices":[{"delta":{"content":"x"}}]}\n\n')); },
+    cancel() { cancelled = true; },
+  }), { headers: { 'content-type': 'text/event-stream' } }));
+  const ac = new AbortController();
+  const r = await fetch(url('/v1/chat/completions'), { method: 'POST', headers: auth(), body: JSON.stringify({ stream: true, messages: [{ role: 'user', content: 'x' }] }), signal: ac.signal });
+  await r.body!.getReader().read();
+  ac.abort();
+  for (let i = 0; i < 50 && !cancelled; i++) await new Promise((r) => setTimeout(r, 20));
+  assert.ok(cancelled, 'the provider stream was cancelled');
+});
+
+test('a chunk the converter cannot read ends that answer, not the server', async () => {
+  setUpstream(() => new Response('data: null\n\ndata: [DONE]\n\n', { headers: { 'content-type': 'text/event-stream' } }));
+  await post('/v1/chat/completions', { stream: true, messages: [{ role: 'user', content: 'x' }] }).then((r) => r.text()).catch(() => ''); // that answer is cut short
+  setUpstream(() => chatJson('still here'));
+  const j: any = await (await post('/v1/chat/completions', { messages: [{ role: 'user', content: 'x' }] })).json();
+  assert.equal(j.choices[0].message.content, 'still here');
+});

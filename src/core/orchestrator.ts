@@ -75,7 +75,7 @@ const enc = new TextEncoder();
 const dec = new TextDecoder();
 const ERROR_LINE = enc.encode('data: {"error":{"message":"upstream ended before the answer was complete"}}\n\n');
 
-function retryAfterMs(h: Headers, now: number): number {
+export function retryAfterMs(h: Headers, now: number): number {
   const v = h.get('retry-after');
   const d = parseDuration(v);
   if (d !== null) return d;

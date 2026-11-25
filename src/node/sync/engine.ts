@@ -11,7 +11,7 @@ export interface LocalStore {
   keys(): Record<string, string | null | undefined>; setKey(provider: string, key: string | null): void;
   state(): SyncState; setState(s: SyncState): void;
 }
-type Reason = 'expired' | 'revoked' | 'offline' | 'corrupt' | 'unauthorized' | 'full' | 'busy';
+type Reason = 'expired' | 'revoked' | 'offline' | 'corrupt' | 'unauthorized' | 'full' | 'busy' | 'toolarge';
 export type SyncResult = { ok: true; pulled: number; pushed: number } | { ok: false; reason: Reason; detail?: string };
 type Conn = { base: string; license: string; fetch: typeof fetch };
 
@@ -24,7 +24,8 @@ async function api(c: Conn, method: string, path: string, init: { body?: BodyIni
   } catch (e) { throw new SyncFail('offline', (e as Error).message); }
   if (r.status === 401) throw new SyncFail('unauthorized');
   if (r.status === 402) throw new SyncFail(((await r.json().catch(() => ({}))) as any).error === 'revoked' ? 'revoked' : 'expired');
-  if (r.status === 413 && path.startsWith('/v1/items/')) throw new SyncFail('full', 'Sync storage is full.');
+  // 413 is either the whole account (storage full) or this one item (too large): only the first stops the run.
+  if (r.status === 413 && path.startsWith('/v1/items/') && ((await r.clone().json().catch(() => ({}))) as any).error !== 'item too large') throw new SyncFail('full', 'Sync storage is full.');
   if (r.status === 429) throw new SyncFail('busy'); // write limit per minute: the next run carries on
   if (r.status >= 500) throw new SyncFail('offline', `The sync server answered ${r.status}.`);
   return r;
@@ -72,6 +73,7 @@ export class SyncEngine {
     let keysDirty = Object.keys(changes).length > 0;
     let cursor = st.cursor, pulled = 0, pushed = 0;
     const damaged: string[] = [];
+    const tooLarge = new Set<string>();
 
     const pull = async () => {
       for (let more = true; more;) {
@@ -129,6 +131,8 @@ export class SyncEngine {
         body: Buffer.from(encryptItem(dataKey, id, value)),
         headers: { 'content-type': 'application/octet-stream', ...(v ? { 'if-match': String(v) } : { 'if-none-match': '*' }) },
       });
+      // Over the server's size for one item: it stays on this computer, and everything else still syncs.
+      if (r.status === 413) { tooLarge.add(id); return true; }
       if (r.status === 412) {
         // The server has no such item any more: write it fresh next time.
         if (v && ((await r.json().catch(() => ({}))) as { version?: number }).version === 0) delete versions[id];
@@ -146,7 +150,8 @@ export class SyncEngine {
     for (let attempt = 0; attempt < 4; attempt++) {
       conflict = false;
       for (const id of [...dirty]) {
-        if (await put(id, { type: 'chat', chat: work.get(id) })) dirty.delete(id); else conflict = true;
+        if (tooLarge.has(id)) continue;
+        if (await put(id, { type: 'chat', chat: work.get(id) })) { if (!tooLarge.has(id)) dirty.delete(id); } else conflict = true;
       }
       if (keysDirty) { if (await put(keysId, { type: 'keys', keys: bundle })) keysDirty = false; else conflict = true; }
       if (!conflict) break;
@@ -167,6 +172,10 @@ export class SyncEngine {
     const keySnapshot = Object.fromEntries(Object.entries(bundle).filter(([, v]) => v.key != null).map(([p, v]) => [p, v.key!]));
     store.setState({ cursor, versions, keySnapshot, keysItemId: keysId, keyBundle: bundle, dirty: [...dirty] });
     if (damaged.length) return { ok: false, reason: 'corrupt', detail: new CorruptItemError().message };
+    if (tooLarge.size) {
+      const names = [...tooLarge].map((id) => `"${work.get(id)?.title || 'Untitled'}"`).join(', ');
+      return { ok: false, reason: 'toolarge', detail: `Too large to sync (over 1 MB): ${names}. Everything else is synced.` };
+    }
     return { ok: true, pulled, pushed };
   }
 }

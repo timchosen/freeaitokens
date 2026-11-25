@@ -288,3 +288,16 @@ test('engine: the server saying "too many writes" is reported as busy, not as an
   const limited = (async (u: any, i?: any) => (i?.method === 'PUT' ? new Response('{"error":"too many writes"}', { status: 429 }) : s.f(u, i))) as typeof fetch;
   assert.deepEqual(await new SyncEngine({ ...opts(limited), dataKey, store: A }).run(), { ok: false, reason: 'busy' });
 });
+
+test('a chat too large for the server stays here and everything else still syncs', async () => {
+  const { A, B, ea, eb } = await pair();
+  const big = randomUUID(), small = randomUUID();
+  edit(A, chat({ id: big, title: 'Huge', updated: 5, messages: [msg(randomUUID(), 1, 'x'.repeat(1_100_000))] }));
+  edit(A, chat({ id: small, title: 'Small', updated: 6, messages: [msg(randomUUID(), 2)] }));
+  const r = await ea.run() as any;
+  assert.equal(r.reason, 'toolarge');
+  assert.match(r.detail, /"Huge"/);
+  assert.deepEqual(A.data.st.dirty, [big], 'the large chat is still waiting; the small one went');
+  await eb.run();
+  assert.deepEqual(live(B).map((c) => c.title), ['Small']);
+});

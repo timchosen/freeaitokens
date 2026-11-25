@@ -115,13 +115,20 @@ async function readMedia(req: http.IncomingMessage): Promise<MediaBody> {
   try { return { form: await new Request('http://local/', { method: 'POST', headers: { 'content-type': type }, body: new Uint8Array(raw) }).formData() }; } catch { throw new HttpError(400, 'Request body is not valid multipart form data.'); }
 }
 
+// Sends a stream to the client. A source that fails ends the answer instead of the process, and a client
+// that leaves stops the source, so the provider stops generating.
+function pump(res: http.ServerResponse, source: ReadableStream<Uint8Array>) {
+  const body = Readable.fromWeb(source as any);
+  body.on('error', () => res.destroy());
+  body.pipe(res);
+  res.on('close', () => body.destroy());
+}
+
 // Passes a provider's answer through as it came: JSON, audio, images or video.
 function pipe(res: http.ServerResponse, r: Response) {
   res.writeHead(r.status, { 'content-type': r.headers.get('content-type') ?? 'application/octet-stream' });
   if (!r.body) return void res.end();
-  const body = Readable.fromWeb(r.body as any);
-  body.pipe(res);
-  res.on('close', () => body.destroy());
+  pump(res, r.body);
 }
 
 function send(res: http.ServerResponse, status: number, body: unknown, headers: Record<string, string> = {}) {
@@ -179,9 +186,7 @@ export function makeHandler(deps: RouteDeps, token: string, formats: Record<stri
       }
       if (chat.stream) {
         res.writeHead(200, { 'content-type': fmt.streamType ?? 'text/event-stream', 'cache-control': 'no-cache', ...servedBy });
-        const out = response.body!.pipeThrough(fmt.fromChatStream(requested, body));
-        Readable.fromWeb(out as any).pipe(res);
-        res.on('close', () => out.cancel().catch(() => {}));
+        pump(res, response.body!.pipeThrough(fmt.fromChatStream(requested, body)));
       } else {
         send(res, 200, fmt.fromChat(await response.json(), requested, body), servedBy);
       }

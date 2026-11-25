@@ -102,3 +102,13 @@ test('usage keeps a daily history per provider, and drops days older than 90', (
   assert.ok(!t.state.usage['2026-08-01'], 'old days are dropped');
   assert.ok(t.state.usage['2026-11-23'], 'recent days stay');
 });
+
+test('only the newest conversations are remembered', () => {
+  const t = new LimitTracker(emptyState());
+  for (let i = 0; i < 600; i++) t.setLastModel(`c${i}`, 'p/m');
+  t.setLastModel('c100', 'p/m2'); // used again: it becomes the newest
+  assert.equal(Object.keys(t.state.lastModel).length, 500);
+  assert.equal(t.lastModel('c99'), undefined);
+  assert.equal(t.lastModel('c100'), 'p/m2');
+  assert.equal(t.lastModel('c599'), 'p/m');
+});

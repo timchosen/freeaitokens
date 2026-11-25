@@ -151,3 +151,10 @@ test('Cloudflare transcription: the uploaded file goes as base64, the text comes
 test('catalogue rejects an unknown media api', () => {
   assert.throws(() => parseCatalogue([{ ...base, id: 'x', name: 'X', baseUrl: 'https://x.example', media: [{ id: 'm', kind: 'image', quality: 0.5, api: 'other' }] }]), /api/);
 });
+
+test('routeMedia waits as long as the provider asks after a 429', async () => {
+  const d = deps(() => new Response('{}', { status: 429, headers: { 'retry-after': '3600' } }));
+  await assert.rejects(routeMedia('image', { json: { prompt: 'cat' } }, d), NoCapacityError);
+  const until = Math.max(...Object.values(d.tracker.state.cooling));
+  assert.ok(until - d.tracker.now() > 3_000_000, 'cooling for about an hour, not a minute');
+});

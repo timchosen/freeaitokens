@@ -13,6 +13,7 @@ export interface LimitState {
 }
 export interface DayUsage { ok: number; fail: number; tokens: number; ms: number; providers: Record<string, { ok: number; fail: number; tokens: number }> }
 const KEEP_DAYS = 90;
+const KEEP_CONVERSATIONS = 500;
 
 export function emptyState(): LimitState {
   return { windows: {}, cooling: {}, stats: {}, lastModel: {}, paidDay: [0, 0], usage: {} };
@@ -108,7 +109,13 @@ export class LimitTracker {
   }
 
   lastModel(conversationId: string): string | undefined { return this.state.lastModel[conversationId]; }
-  setLastModel(conversationId: string, key: string): void { this.state.lastModel[conversationId] = key; }
+  setLastModel(conversationId: string, key: string): void {
+    const m = this.state.lastModel;
+    delete m[conversationId]; // set again below, so the newest is always last
+    m[conversationId] = key;
+    const ids = Object.keys(m);
+    for (let i = 0; i < ids.length - KEEP_CONVERSATIONS; i++) delete m[ids[i]];
+  }
 
   private paid(): [number, number] {
     const d = Math.floor(this.now() / DAY) * DAY;
