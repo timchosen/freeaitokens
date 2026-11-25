@@ -14,6 +14,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       HAS_MAC_CERT: ${{ secrets.MAC_CERT_P12_BASE64 != '' }} # true/false only; the certificate itself stays in the signing step
+      HAS_WIN_SIGN: ${{ secrets.AZURE_CLIENT_ID != '' }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -46,6 +47,26 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      # With Azure Trusted Signing in the repo secrets, the Windows installer and app are signed, so
+      # SmartScreen names the publisher instead of "Unknown publisher". Without them it stays unsigned, as before.
+      - if: runner.os == 'Windows' && env.HAS_WIN_SIGN == 'true'
+        shell: bash
+        run: |
+          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json'));const e=process.env;p.build.win.azureSignOptions={publisherName:e.WIN_PUBLISHER,endpoint:e.WIN_ENDPOINT,codeSigningAccountName:e.WIN_ACCOUNT,certificateProfileName:e.WIN_PROFILE};fs.writeFileSync('package.json',JSON.stringify(p,null,2))"
+          {
+            echo "AZURE_TENANT_ID=$AZ_TENANT"
+            echo "AZURE_CLIENT_ID=$AZ_CLIENT"
+            echo "AZURE_CLIENT_SECRET=$AZ_SECRET"
+          } >> "$GITHUB_ENV"
+        working-directory: desktop
+        env:
+          WIN_PUBLISHER: ${{ secrets.WIN_PUBLISHER_NAME }}
+          WIN_ENDPOINT: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
+          WIN_ACCOUNT: ${{ secrets.AZURE_SIGNING_ACCOUNT }}
+          WIN_PROFILE: ${{ secrets.AZURE_CERT_PROFILE }}
+          AZ_TENANT: ${{ secrets.AZURE_TENANT_ID }}
+          AZ_CLIENT: ${{ secrets.AZURE_CLIENT_ID }}
+          AZ_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
       - run: npx electron-builder --publish always
         working-directory: desktop
         env:

@@ -92,13 +92,23 @@ function openMain() {
 }
 
 function openAdd(id) {
-  if (addWindow) return addWindow.focus();
+  const page = typeof id === 'string' && /^[a-z0-9-]+$/.test(id) ? { query: { p: id } } : {};
+  if (addWindow) {
+    // Already open: show the provider just asked for, and bring the window forward even if it was minimised.
+    if (page.query) addWindow.loadFile(here('./add.html'), page);
+    if (addWindow.isMinimized()) addWindow.restore();
+    addWindow.show();
+    addWindow.focus();
+    return;
+  }
+  // A child of the main window, so it opens over it, even when that window is full screen on its own Space.
+  const parent = mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible() ? mainWindow : undefined;
   addWindow = new BrowserWindow({
-    width: 520, height: 600, title: t('add_title'), autoHideMenuBar: true,
+    width: 520, height: 600, title: t('add_title'), autoHideMenuBar: true, fullscreenable: false, ...(parent ? { parent } : {}),
     webPreferences: { preload: here('./preload.cjs'), contextIsolation: true, sandbox: true, nodeIntegration: false },
   });
   lockDown(addWindow);
-  addWindow.loadFile(here('./add.html'), typeof id === 'string' && /^[a-z0-9-]+$/.test(id) ? { query: { p: id } } : {});
+  addWindow.loadFile(here('./add.html'), page);
   addWindow.on('closed', () => { addWindow = null; refresh(); });
 }
 
