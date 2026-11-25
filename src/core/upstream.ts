@@ -12,10 +12,9 @@ function adapt(providerId: string, body: any): any {
 }
 
 // POST to the provider's chat completions. Resolves once response headers arrive.
-export async function callUpstream(c: Candidate, req: ChatRequest, f: Fetch, signal?: AbortSignal): Promise<Response> {
+export async function callUpstream(c: Candidate, req: ChatRequest, f: Fetch): Promise<Response> {
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(new Error('upstream timed out')), HEADERS_TIMEOUT_MS);
-  signal?.addEventListener('abort', () => ctl.abort(signal.reason), { once: true });
   const { base, key } = endpoint(c.provider.baseUrl, c.apiKey);
   try {
     return await f(`${base}/chat/completions`, {

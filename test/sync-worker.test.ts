@@ -459,3 +459,27 @@ test('a purchase can be picked up by the app for an hour, not longer', async () 
   assert.ok(expires <= Date.now() + 3_600_000 && expires > Date.now() + 3_500_000, `expires in ${(expires - Date.now()) / 60_000} min`);
   globalThis.fetch = realFetch;
 });
+
+test('webhook: an old "updated" event for a healthy subscription never shortens a paid year', async () => {
+  stubStripe();
+  const { env, db } = makeEnv();
+  await hook(env, 'checkout.session.completed', completed({ id: 'cs_late', mode: 'subscription', subscription: 'sub_1', payment_intent: null }));
+  const paid = (db.prepare('SELECT paid_until FROM licenses').get() as any).paid_until;
+  const lastYear = Math.floor(paid / 1000) - 365 * 86400;
+  await hook(env, 'customer.subscription.updated', { id: 'sub_1', status: 'active', items: { data: [{ current_period_end: lastYear }] } });
+  assert.equal((db.prepare('SELECT paid_until FROM licenses').get() as any).paid_until, paid, 'delivered late: ignored');
+  await hook(env, 'customer.subscription.updated', { id: 'sub_1', status: 'canceled', items: { data: [{ current_period_end: lastYear }] } });
+  assert.equal((db.prepare('SELECT paid_until FROM licenses').get() as any).paid_until, lastYear * 1000, 'a cancelled one still shortens');
+  globalThis.fetch = realFetch;
+});
+
+test('a write whose database step fails leaves no stored file behind', async () => {
+  const { env, db, blobs } = makeEnv();
+  await addLicense(db, K(0));
+  const batch = env.SYNC_DB.batch.bind(env.SYNC_DB);
+  (env.SYNC_DB as any).batch = async () => { throw new Error('database down'); };
+  const r = await put(env, crypto.randomUUID(), 'abc', K(0), { 'if-none-match': '*' });
+  (env.SYNC_DB as any).batch = batch;
+  assert.equal(r.status, 500);
+  assert.equal(blobs.size, 0);
+});

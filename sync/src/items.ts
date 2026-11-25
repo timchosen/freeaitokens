@@ -49,7 +49,10 @@ async function write(env: Env, lic: LicenseRow, id: string, want: number, bytes:
     swap,
     // Counts the bytes only if this request's swap is the one that landed.
     env.SYNC_DB.prepare(`UPDATE counters SET bytes = bytes + ?3 WHERE key_hash = ?1 AND EXISTS (SELECT 1 FROM items WHERE key_hash = ?1 AND id = ?2 AND version = ?4 AND seq = ${seq})`).bind(kh, id, delta, next),
-  ]) as { meta: { changes: number } }[];
+  ]).catch(async (e) => {
+    if (obj) await env.SYNC_BLOBS.delete(obj).catch(() => {}); // never leave a file no record points to
+    throw e;
+  }) as { meta: { changes: number } }[];
   if (res[1].meta.changes !== 1) {
     if (obj) await env.SYNC_BLOBS.delete(obj);
     const v = (await env.SYNC_DB.prepare('SELECT version FROM items WHERE key_hash = ? AND id = ?').bind(kh, id).first<number>('version')) ?? 0;

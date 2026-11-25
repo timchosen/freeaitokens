@@ -756,3 +756,13 @@ test('providerRows says what each provider does and whether it is having trouble
   assert.deepEqual(rows.map((r: any) => r.does), [['chat', 'voice'], ['chat', 'images'], []]);
   assert.deepEqual(rows.map((r: any) => r.trouble), [true, false, false]);
 });
+
+test('a damaged chats file is kept aside, never overwritten by an empty list', () => {
+  const file = pjoin(mkdtempSync(pjoin(tmpdir(), 'fat-chats-')), 'chats.json');
+  writeFileSync(file, '{"chats": [ broken');
+  const s = openChatStore(file);
+  assert.deepEqual(s.list(), []);
+  const [a] = migrateChats([{ title: 'a', model: 'free', updated: 1, messages: [] }]);
+  s.put(a);
+  assert.equal(readF(`${file}.bad`, 'utf8'), '{"chats": [ broken');
+});

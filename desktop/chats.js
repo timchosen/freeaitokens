@@ -54,7 +54,11 @@ export function openChatStore(file, merge = null) {
   let all;
   // Stubs older than 90 days are dropped: the sync server forgets deletes after the same time.
   const keepFrom = Date.now() - 90 * 86_400_000;
-  try { all = (JSON.parse(readFileSync(file, 'utf8')).chats ?? []).map(cleanChat).filter((c) => c && !(c.deleted < keepFrom)); } catch { all = []; }
+  try { all = (JSON.parse(readFileSync(file, 'utf8')).chats ?? []).map(cleanChat).filter((c) => c && !(c.deleted < keepFrom)); } catch (e) {
+    all = [];
+    // A file that is there but unreadable is kept aside, so the next save cannot write an empty list over it.
+    if (e?.code !== 'ENOENT') try { renameSync(file, `${file}.bad`); } catch { /* nothing to keep */ }
+  }
   const listeners = [];
   const write = (id) => {
     mkdirSync(dirname(file), { recursive: true });

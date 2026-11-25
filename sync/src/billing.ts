@@ -148,6 +148,9 @@ async function handle(env: Env, type: string, o: any, now: number): Promise<void
     // Only a paid invoice extends a plan; a subscription change (past_due, cancel) can only shorten it.
     case 'customer.subscription.updated':
     case 'customer.subscription.deleted': {
+      // A healthy subscription has nothing to shorten, and an old "updated" event delivered after a renewal's
+      // invoice must not pull the date back to the year before.
+      if (type === 'customer.subscription.updated' && (o.status === 'active' || o.status === 'trialing')) return;
       const end = periodEnd(o);
       if (end) await env.SYNC_DB.prepare("UPDATE licenses SET paid_until = MIN(paid_until, ?) WHERE stripe_ref = ? AND plan = 'year'").bind(end, o.id).run();
       return;
