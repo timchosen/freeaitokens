@@ -9,9 +9,12 @@ const later = <T extends { updated: number }>(a: T, b: T): T =>
 
 export function mergeChat(a: Chat, b: Chat): Chat {
   const byId = new Map<string, Msg>();
+  // Messages only ever gain fields (an answer read aloud gets its audio), so the fuller copy wins; ties go to the
+  // larger text, so every computer picks the same one.
+  const wins = (x: Msg, y: Msg) => { const jx = JSON.stringify(x), jy = JSON.stringify(y); return jx.length !== jy.length ? jx.length > jy.length : jx > jy; };
   for (const m of [...a.messages, ...b.messages]) {
     const had = byId.get(m.id);
-    byId.set(m.id, had && JSON.stringify(had) > JSON.stringify(m) ? had : m);
+    byId.set(m.id, had && wins(had, m) ? had : m);
   }
   const messages = [...byId.values()].sort((x, y) => x.at - y.at || (x.id < y.id ? -1 : x.id > y.id ? 1 : 0));
   const top = later(a, b);

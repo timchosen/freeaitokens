@@ -90,11 +90,16 @@ async function refresh() {
       const copy = el('button', 'copy', t('copy'));
       copy.addEventListener('click', () => copied(copy, cmd));
       line.append(el('code', '', cmd), copy);
-      card.append(el('b', '', tool.name), el('small', '', tool.note), line, b);
+      const title = el('div', 'with-logo');
+      title.append(brands.agent(tool.id, tool.name, 28), el('b', '', tool.name));
+      card.append(title, el('small', '', tool.note), line, b);
       return card;
     }));
   }
 }
+
+// a provider's logo from its name, as the answers and usage rows carry only the name
+const provLogo = (name, size) => brands.provider(provs.find((p) => p.name === name)?.id, name, size);
 
 // Keys page: every provider, filtered by whether it is added and what it does.
 let provs = [], keyShow = 'all', keyDoes = '';
@@ -109,7 +114,7 @@ function showKeys() {
     const does = el('span', 'does');
     does.append(...p.does.map((d) => el('span', 'chip', t(`does_${d}`))));
     const head = el('div', 'line');
-    head.append(el('b', '', p.name), does);
+    head.append(brands.provider(p.id, p.name), el('b', '', p.name), does);
     const facts = p.status === 'add' ? [t('prov_models', { n: p.models }), t('keys_free')]
       : [p.trouble ? t('keys_cooling') : p.left ? t('prov_left', { n: p.left }) : '', t('prov_models', { n: p.models })];
     name.append(head, el('small', '', facts.filter(Boolean).join(' · ')));
@@ -177,11 +182,11 @@ function showModels() {
     if (m.context) caps.append(el('span', 'chip', contextSize(m.context)));
     if (m.tools) caps.append(el('span', 'chip', t('cap_tools')));
     if (m.vision) caps.append(el('span', 'chip', t('cap_vision')));
-    head.append(el('b', 'mono', m.id), caps);
+    head.append(brands.model(m.id), el('b', 'mono', m.id), caps);
     const limits = [m.rpd && t('models_per_day', { n: m.rpd }), m.rpm && t('models_per_min', { n: m.rpm })].filter(Boolean).join(' · ');
     const record = m.ok + m.fail ? t('models_record', { pct: (m.ok / (m.ok + m.fail)).toLocaleString(tag, { style: 'percent' }), s: (m.ms / 1000).toLocaleString(tag, { maximumFractionDigits: 1 }) }) : '';
     const status = !m.ready ? t('models_needs_key') : m.cooling ? t('models_cooling', { time: new Date(m.cooling).toLocaleTimeString(tag, { hour: 'numeric', minute: '2-digit' }) }) : '';
-    name.append(head, el('small', '', [m.provider, limits, record, status].filter(Boolean).join(' · ')));
+    name.append(head, el('small', '', [brands.maker(m.id)?.name, t('models_via', { name: m.provider }), limits, record, status].filter(Boolean).join(' · ')));
     row.append(name);
     if (!m.ready) {
       const b = el('button', 'btn quiet', t('add'));
@@ -277,10 +282,18 @@ function bubble(m) {
   } else box.textContent = m.content;
   if (m.error && (m.add || [t('no_speech_providers'), t('no_transcription_providers')].includes(m.content))) box.append(' ', addButton(m.add));
   if (m.audio) box.append(player(m));
+  if (m.meta?.sources?.length) {
+    const src = el('div', 'sources');
+    src.append(el('span', '', t('sources')));
+    for (const p of m.meta.sources) { if (!/^https?:\/\//.test(p?.u)) continue; const a = el('a', 'chip', String(p.t)); a.href = p.u; a.title = p.u; src.append(a); } // synced chats come from other computers: web links only
+    box.append(src);
+  }
   if (m.meta) {
     const meta = el('div', 'meta');
     if (m.meta.auto) meta.append(el('span', 'chip auto', t('auto_kind', { kind: t(`kind_${m.meta.auto}`) })));
-    meta.append(el('span', 'chip who', m.meta.provider), el('span', 'chip', m.meta.model), el('span', 'chip', t('seconds', { n: (m.meta.ms / 1000).toFixed(1) })));
+    const who = el('span', 'chip who'), what = el('span', 'chip');
+    who.append(provLogo(m.meta.provider, 14), m.meta.provider); what.append(brands.model(m.meta.model, 14), m.meta.model);
+    meta.append(who, what, el('span', 'chip', t('seconds', { n: (m.meta.ms / 1000).toFixed(1) })));
     if (m.meta.tokens) meta.append(el('span', 'chip', t('tokens', { n: m.meta.tokens })));
     if (m.content && !m.audio && !m.image) meta.append(speakButton(m, box));
     box.append(meta);
@@ -336,6 +349,17 @@ function player(m) {
   fig.append(audio, save);
   return fig;
 }
+// Turn an answer into speech and keep the sound with it.
+async function speakIt(m) {
+  const r = await api.speech(m.content.replace(/[*_`#>|]/g, '').slice(0, 4000));
+  if (!r.ok) return r;
+  audioSrcs.set(r.audio, r.src);
+  m.audio = r.audio;
+  const live = current?.messages.find((x) => x.id === m.id); // sync may have swapped in a fresh copy of the chat
+  if (live) live.audio = r.audio;
+  if (current) { current.updated = Date.now(); save(current); }
+  return r;
+}
 // The speaker button under an answer reads it aloud; the sound is kept with that answer.
 function speakButton(m, box) {
   const b = el('button', 'icon-btn speak');
@@ -347,13 +371,10 @@ function speakButton(m, box) {
     if (b.disabled) return;
     b.disabled = true;
     b.title = t('speaking');
-    const r = await api.speech(m.content.replace(/[*_`#>|]/g, '').slice(0, 4000));
+    const r = await speakIt(m);
     b.disabled = false;
     b.title = t('read_aloud');
     if (!r.ok) { const line = el('p', 'status err-line', r.reason); if (r.add) line.append(' ', addButton(r.add)); box.append(line); return; }
-    audioSrcs.set(r.audio, r.src);
-    m.audio = r.audio;
-    if (current) { current.updated = Date.now(); save(current); }
     b.remove();
     box.querySelector('.meta').before(player(m));
     box.querySelector('audio').play().catch(() => {});
@@ -397,7 +418,7 @@ $('chat').addEventListener('click', (e) => {
 });
 async function send() {
   const text = $('prompt').value.trim();
-  if (!text || $('send').disabled) return;
+  if (!text || $('send').disabled) return null;
   if (!current) { current = { id: crypto.randomUUID(), title: text.slice(0, 60), model: $('model').value, mode, messages: [], updated: Date.now() }; chats.unshift(current); }
   const chat = current, asking = mode, model = $('model').value; // read before waiting: the person may switch chats
   const asked = { id: crypto.randomUUID(), at: Date.now(), role: 'user', content: text };
@@ -414,13 +435,13 @@ async function send() {
   const history = chat.messages.filter((m) => !m.error && !m.image && m.kind !== 'image' && m.kind !== 'speech').map(({ role, content }) => ({ role, content }));
   const r = kind === 'image' ? await api.image(text, asking === 'image' ? model : 'free')
     : kind === 'speech' ? await api.speech(text.slice(0, 4000), true)
-    : await api.chat(history, model);
+    : await api.chat(history, model, web);
   wait.remove();
   busy = false;
   fillModels();
   if (r.ok && r.image) srcs.set(r.image, r.src);
   if (r.ok && r.audio) audioSrcs.set(r.audio, r.src);
-  const meta = r.ok ? { provider: r.provider, model: r.model, ms: r.ms, ...(r.tokens ? { tokens: r.tokens } : {}), ...(auto && auto !== 'chat' ? { auto } : {}) } : null;
+  const meta = r.ok ? { provider: r.provider, model: r.model, ms: r.ms, ...(r.tokens ? { tokens: r.tokens } : {}), ...(r.sources?.length ? { sources: r.sources } : {}), ...(auto && auto !== 'chat' ? { auto } : {}) } : null;
   const stamp = { id: crypto.randomUUID(), at: Date.now() };
   chat.messages.push(!r.ok ? { ...stamp, role: 'assistant', content: r.reason, error: true, ...(r.add ? { add: r.add } : {}) }
     : r.image ? { ...stamp, role: 'assistant', content: '', image: r.image, prompt: text, meta }
@@ -439,13 +460,9 @@ async function send() {
     current = chats.find((c) => c.id === chat.id) ?? null;
     if (current) openChat(current);
   }
-  // Talk mode reads the answer out, from the bubble on screen now (the chat may have been redrawn above).
-  if (talk && r.ok && r.text && !r.audio && !r.image && current?.id === chat.id) {
-    if (!voice?.speech.using.length) voiceNote(t('no_speech_providers'), voice?.speech.add);
-    else [...$('chat').querySelectorAll('.speak')].at(-1)?.click();
-  }
   listChats();
   refresh();
+  return { r, chat, said: chat.messages.at(-1) };
 }
 $('ask').addEventListener('submit', (e) => { e.preventDefault(); send(); });
 $('prompt').addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); send(); } });
@@ -496,8 +513,7 @@ $('attach').addEventListener('click', async () => {
 });
 
 // Mic: record in the window, transcribe through your providers, and put the words in the box to edit.
-// In Talk mode the words are sent at once and the answer is read out.
-let rec = null, talk = false, voice = null;
+let rec = null, web = false, voice = null;
 // The line above the box that says what voice is doing: listening, transcribing, or what to fix.
 function voiceNote(text, add, busyNow = false) {
   const n = $('voiceNote');
@@ -505,18 +521,17 @@ function voiceNote(text, add, busyNow = false) {
   n.classList.toggle('working', busyNow);
   n.replaceChildren(...(text ? [el('span', '', text)] : []), ...(add ? [' ', addButton(add)] : []));
 }
-try { talk = localStorage.getItem('talk') === '1'; } catch { /* no storage: Talk starts off */ }
+try { web = localStorage.getItem('web') === '1'; } catch { /* no storage: search starts off */ }
 const micState = (on) => {
   $('mic').setAttribute('aria-pressed', String(on));
   $('mic').title = t(on ? 'mic_stop' : 'mic_start');
   $('mic').setAttribute('aria-label', $('mic').title);
 };
-const talkState = () => $('talk').setAttribute('aria-pressed', String(talk));
-$('talk').addEventListener('click', () => {
-  talk = !talk;
-  talkState();
-  try { localStorage.setItem('talk', talk ? '1' : '0'); } catch { /* not kept */ }
-  voiceNote(talk && voice && !voice.speech.using.length ? t('no_speech_providers') : '', talk ? voice?.speech.add : null);
+const webState = () => $('web').setAttribute('aria-pressed', String(web));
+$('web').addEventListener('click', () => {
+  web = !web;
+  webState();
+  try { localStorage.setItem('web', web ? '1' : '0'); } catch { /* not kept */ }
 });
 $('mic').addEventListener('click', async () => {
   if (rec) return rec.stop();
@@ -561,11 +576,134 @@ $('mic').addEventListener('click', async () => {
     voiceNote('');
     const box = $('prompt');
     box.value = box.value.trim() ? `${box.value.trimEnd()} ${got.text}` : got.text;
-    if (talk) send(); else box.focus();
+    box.focus();
   };
   r.start();
   micState(true);
 });
+
+// Talk: a voice conversation over the whole chat, like a call. It listens until you pause, sends what you said,
+// reads the answer out and listens again. Tap the orb to cut an answer short; every turn stays in the chat.
+const TK = { on: false, muted: false, stream: null, ctx: null, meter: null, out: null, rec: null, audio: null, raf: 0, turn: 0, drop: false, mode: 'auto' };
+const wave = new Uint8Array(512);
+const peak = (an) => { an.getByteTimeDomainData(wave); let p = 0; for (const v of wave) p = Math.max(p, Math.abs(v - 128)); return p; };
+function talkPhase(p, said) {
+  $('talkover').dataset.phase = p;
+  $('talkState').textContent = p ? t(`talk_${p}`) : '';
+  if (said !== undefined) $('talkSaid').textContent = said;
+}
+// The orb swells with whoever is talking: you, or the answer being read.
+function orbLoop() {
+  const lv = TK.rec ? peak(TK.meter) : TK.out ? peak(TK.out) : 0;
+  $('orb').style.setProperty('--lv', Math.min(1, lv / 50).toFixed(3));
+  TK.raf = requestAnimationFrame(orbLoop);
+}
+async function talkOpen() {
+  if (busy || TK.on) return;
+  if (!voice?.transcription.using.length) return voiceNote(t('no_transcription_providers'), voice?.transcription.add);
+  if (!voice?.speech.using.length) return voiceNote(t('no_speech_providers'), voice?.speech.add);
+  try { TK.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); } catch { return voiceNote(t('mic_denied')); }
+  voiceNote('');
+  TK.on = true; TK.muted = false; TK.mode = mode;
+  if (mode !== 'chat') setMode('chat'); // spoken turns are conversation, not pictures
+  TK.ctx = new AudioContext();
+  TK.meter = TK.ctx.createAnalyser();
+  TK.ctx.createMediaStreamSource(TK.stream).connect(TK.meter);
+  $('talkMute').setAttribute('aria-pressed', 'false');
+  talkPhase('listening', '');
+  $('talkover').hidden = false;
+  $('talkEnd').focus();
+  orbLoop();
+  listen();
+}
+function talkClose() {
+  if (!TK.on) return;
+  TK.on = false; TK.turn++;
+  cancelAnimationFrame(TK.raf);
+  if (TK.rec?.state === 'recording') TK.rec.stop();
+  TK.audio?.pause(); TK.audio = TK.out = null;
+  for (const tr of TK.stream.getTracks()) tr.stop();
+  TK.ctx.close();
+  $('talkover').hidden = true;
+  talkPhase('', '');
+  setMode(TK.mode);
+  if (current) openChat(current); // shows the players for the answers that were read out
+  $('talk').focus();
+}
+// Record until there has been speech and then 1.2 s of quiet. The room's quiet level is learnt in the first half second.
+function listen() {
+  if (!TK.on || TK.rec || TK.audio || TK.thinking) return;
+  if (TK.muted) return talkPhase('muted');
+  talkPhase('listening');
+  const type = ['audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/webm'].find((x) => MediaRecorder.isTypeSupported(x));
+  const parts = [], r = TK.rec = new MediaRecorder(TK.stream, type ? { mimeType: type } : {}), began = Date.now();
+  let floor = 0, spoke = 0, quiet = 0;
+  TK.drop = false;
+  const tick = setInterval(() => {
+    const lv = peak(TK.meter), now = Date.now();
+    if (now - began < 500) { floor = Math.max(floor, lv); return; }
+    if (lv > Math.max(10, Math.min(floor, 20) * 2)) { spoke ||= now; quiet = 0; } else if (spoke && !quiet) quiet = now;
+    if ((quiet && now - quiet > 1200) || now - began > 120_000) r.stop();
+  }, 50);
+  TK.endTurn = () => { if (spoke) r.stop(); };
+  r.ondataavailable = (e) => parts.push(e.data);
+  r.onstop = () => {
+    clearInterval(tick);
+    TK.rec = null;
+    if (!TK.on) return;
+    if (TK.drop || !spoke) return listen();
+    respond(new Blob(parts), TK.turn);
+  };
+  r.start(250);
+}
+// A problem is shown for a moment, then Talk listens again.
+function trouble(reason, turn) {
+  talkPhase('trouble', reason ?? '');
+  setTimeout(() => { if (TK.on && turn === TK.turn) listen(); }, 3500);
+}
+// While an answer is on its way the mic is not listened to (unmuting then waits for the answer).
+async function respond(blob, turn) {
+  TK.thinking = true;
+  let next;
+  try { next = await answer(blob, turn); } finally { TK.thinking = false; }
+  if (next === 'listen') listen();
+}
+async function answer(blob, turn) {
+  talkPhase('thinking', '');
+  const got = await api.transcribe(new Uint8Array(await blob.arrayBuffer()));
+  if (!TK.on || turn !== TK.turn) return;
+  if (!got.ok) return trouble(got.reason, turn);
+  if (!got.text?.trim()) return 'listen';
+  $('talkSaid').textContent = got.text;
+  $('prompt').value = got.text;
+  const sent = await send();
+  if (!TK.on || turn !== TK.turn) return;
+  if (!sent?.r.ok || !sent.r.text) return trouble(sent?.r.reason, turn);
+  const sp = await speakIt(sent.said);
+  if (!TK.on || turn !== TK.turn) return;
+  if (!sp.ok) return trouble(sp.reason, turn);
+  talkPhase('speaking', sent.r.text.replace(/[*_`#>|]/g, '').slice(0, 300));
+  const a = TK.audio = new Audio(sp.src), node = TK.ctx.createMediaElementSource(a);
+  TK.out = TK.ctx.createAnalyser();
+  node.connect(TK.out); TK.out.connect(TK.ctx.destination);
+  a.onended = a.onpause = () => {
+    if (TK.audio !== a) return;
+    TK.audio = TK.out = null;
+    node.disconnect();
+    listen();
+  };
+  a.play().catch(() => a.onended());
+}
+$('talk').addEventListener('click', talkOpen);
+$('talkEnd').addEventListener('click', talkClose);
+// The orb: cuts the answer short, or ends your turn now instead of waiting for the pause.
+$('orb').addEventListener('click', () => { if (TK.audio) TK.audio.pause(); else if (TK.rec) TK.endTurn(); });
+$('talkMute').addEventListener('click', () => {
+  TK.muted = !TK.muted;
+  $('talkMute').setAttribute('aria-pressed', String(TK.muted));
+  if (TK.muted && TK.rec) { TK.drop = true; TK.rec.stop(); } else if (!TK.muted) listen();
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && TK.on) { e.preventDefault(); talkClose(); } });
 
 // Chat or Image: which models the picker lists, and what the box and button say.
 let mode = 'auto', lists = { auto: [], chat: [], image: [] }, busy = false;
@@ -626,7 +764,9 @@ async function showUsage() {
   $('u-prov').replaceChildren(...(u.providers.length ? u.providers.map((p) => {
     const row = el('div', 'prov');
     const name = el('div', 'name');
-    name.append(el('b', '', p.name), el('small', '', t('prov_usage', { ok: p.ok, fail: p.fail, tokens: compact(p.tokens) })));
+    const head = el('div', 'line');
+    head.append(provLogo(p.name), el('b', '', p.name));
+    name.append(head, el('small', '', t('prov_usage', { ok: p.ok, fail: p.fail, tokens: compact(p.tokens) })));
     const share = el('div', 'bar');
     const fill = el('i');
     fill.style.width = `${Math.round((p.ok + p.fail) / Math.max(1, u.totals.requests) * 100)}%`;
@@ -776,7 +916,7 @@ applyStrings().then(loadChats).then(() => {
   const money = (n) => new Intl.NumberFormat(tag, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
   $('priceYear').textContent = money(PRICES.year);
   $('priceLife').textContent = money(PRICES.life);
-  talkState();
+  webState();
   showSide();
   listChats();
   refreshSync();

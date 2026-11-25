@@ -24,6 +24,7 @@ import { openChatStore, cleanChat, migrateChats } from './chats.js';
 import { createSyncService } from './syncsvc.js';
 import * as syncEngine from 'freeaitokens/dist/node/sync/engine.js';
 import { needsAccount, joinAccount } from 'freeaitokens/dist/core/catalogue.js';
+import { searchProviders, searchAnswer } from './search.js';
 
 const here = (f) => fileURLToPath(new URL(f, import.meta.url));
 if (!app.requestSingleInstanceLock()) app.quit();
@@ -139,9 +140,15 @@ ipcMain.handle('app:status', () => ({
 }));
 // Routed here rather than over HTTP, so the answer always says which provider and model gave it,
 // even when another copy of FreeAITokens holds the port.
-ipcMain.handle('app:chat', async (_e, list, choice = 'free') => {
+ipcMain.handle('app:chat', async (_e, list, choice = 'free', web = false) => {
   const messages = cleanMessages(list);
   if (!messages) return { ok: false, reason: t('err_send') };
+  if (web === true) {
+    // Web search: answered by a provider that searches as it answers, on this person's own keys.
+    if (!searchProviders(deps.catalogue, keys).length) return { ok: false, reason: t('no_search_providers'), add: 'groq' };
+    const start = Date.now(), r = await searchAnswer(deps.catalogue, keys, joinUsers(messages));
+    return r.ok ? { ...r, ms: Date.now() - start } : { ok: false, reason: t('err_search', { reasons: r.reasons.join(' · ').slice(0, 400) }) };
+  }
   const catalogue = narrowTo(deps.catalogue, choice);
   if (!catalogue || (choice !== 'free' && !modelOptions(catalogue, keys).length)) return { ok: false, reason: t('err_model') };
   const start = Date.now();
