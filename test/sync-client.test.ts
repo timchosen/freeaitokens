@@ -301,3 +301,11 @@ test('a chat too large for the server stays here and everything else still syncs
   await eb.run();
   assert.deepEqual(live(B).map((c) => c.title), ['Small']);
 });
+
+test('an answer read aloud keeps its audio when the copy without it is merged in, either way round', () => {
+  const msg = { id: '00000000-0000-4000-8000-000000000001', at: 1, role: 'assistant', content: 'Hi', meta: { provider: 'Groq', model: 'm', ms: 1 } } as any;
+  const plain: Chat = { id: 'c1', title: 't', model: 'free', updated: 1, messages: [msg] } as any;
+  const spoken: Chat = { ...plain, updated: 2, messages: [{ ...msg, audio: '00000000-0000-4000-8000-000000000002.wav' }] } as any;
+  assert.equal((mergeChat(plain, spoken).messages[0] as any).audio, '00000000-0000-4000-8000-000000000002.wav');
+  assert.equal((mergeChat(spoken, plain).messages[0] as any).audio, '00000000-0000-4000-8000-000000000002.wav');
+});

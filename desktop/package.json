@@ -28,17 +28,20 @@
       "logic.js",
       "chats.js",
       "docs.js",
+      "search.js",
       "syncsvc.js",
       "preload.cjs",
       "add.html",
       "app.html",
       "app.js",
       "md.js",
+      "brands.js",
       "app.css",
       "preload-app.cjs",
       "t.js",
       "i18n/*.json",
-      "icons/**"
+      "icons/**",
+      "logos/**"
     ],
     "icon": "icons/icon.png",
     "mac": {

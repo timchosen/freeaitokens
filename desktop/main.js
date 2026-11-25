@@ -24,6 +24,7 @@ import { openChatStore, cleanChat, migrateChats } from './chats.js';
 import { createSyncService } from './syncsvc.js';
 import * as syncEngine from 'freeaitokens/dist/node/sync/engine.js';
 import { needsAccount, joinAccount } from 'freeaitokens/dist/core/catalogue.js';
+import { searchProviders, searchAnswer } from './search.js';
 
 const here = (f) => fileURLToPath(new URL(f, import.meta.url));
 if (!app.requestSingleInstanceLock()) app.quit();
@@ -91,13 +92,23 @@ function openMain() {
 }
 
 function openAdd(id) {
-  if (addWindow) return addWindow.focus();
+  const page = typeof id === 'string' && /^[a-z0-9-]+$/.test(id) ? { query: { p: id } } : {};
+  if (addWindow) {
+    // Already open: show the provider just asked for, and bring the window forward even if it was minimised.
+    if (page.query) addWindow.loadFile(here('./add.html'), page);
+    if (addWindow.isMinimized()) addWindow.restore();
+    addWindow.show();
+    addWindow.focus();
+    return;
+  }
+  // A child of the main window, so it opens over it, even when that window is full screen on its own Space.
+  const parent = mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible() ? mainWindow : undefined;
   addWindow = new BrowserWindow({
-    width: 520, height: 600, title: t('add_title'), autoHideMenuBar: true,
+    width: 520, height: 600, title: t('add_title'), autoHideMenuBar: true, fullscreenable: false, ...(parent ? { parent } : {}),
     webPreferences: { preload: here('./preload.cjs'), contextIsolation: true, sandbox: true, nodeIntegration: false },
   });
   lockDown(addWindow);
-  addWindow.loadFile(here('./add.html'), typeof id === 'string' && /^[a-z0-9-]+$/.test(id) ? { query: { p: id } } : {});
+  addWindow.loadFile(here('./add.html'), page);
   addWindow.on('closed', () => { addWindow = null; refresh(); });
 }
 
@@ -139,9 +150,15 @@ ipcMain.handle('app:status', () => ({
 }));
 // Routed here rather than over HTTP, so the answer always says which provider and model gave it,
 // even when another copy of FreeAITokens holds the port.
-ipcMain.handle('app:chat', async (_e, list, choice = 'free') => {
+ipcMain.handle('app:chat', async (_e, list, choice = 'free', web = false) => {
   const messages = cleanMessages(list);
   if (!messages) return { ok: false, reason: t('err_send') };
+  if (web === true) {
+    // Web search: answered by a provider that searches as it answers, on this person's own keys.
+    if (!searchProviders(deps.catalogue, keys).length) return { ok: false, reason: t('no_search_providers'), add: 'groq' };
+    const start = Date.now(), r = await searchAnswer(deps.catalogue, keys, joinUsers(messages));
+    return r.ok ? { ...r, ms: Date.now() - start } : { ok: false, reason: t('err_search', { reasons: r.reasons.join(' · ').slice(0, 400) }) };
+  }
   const catalogue = narrowTo(deps.catalogue, choice);
   if (!catalogue || (choice !== 'free' && !modelOptions(catalogue, keys).length)) return { ok: false, reason: t('err_model') };
   const start = Date.now();

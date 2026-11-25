@@ -6,7 +6,7 @@ contextBridge.exposeInMainWorld('freeaitokens', {
   lang: (code) => ipcRenderer.invoke('app:lang', code),
   theme: (theme) => ipcRenderer.invoke('app:theme', theme),
   status: () => ipcRenderer.invoke('app:status'),
-  chat: (messages, model) => ipcRenderer.invoke('app:chat', messages, model),
+  chat: (messages, model, web) => ipcRenderer.invoke('app:chat', messages, model, web === true),
   image: (prompt, model) => ipcRenderer.invoke('app:image', prompt, model),
   imageData: (image) => ipcRenderer.invoke('app:imageData', image),
   copyImage: (png) => ipcRenderer.invoke('app:copyImage', png),

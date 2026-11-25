@@ -766,3 +766,44 @@ test('a damaged chats file is kept aside, never overwritten by an empty list', (
   s.put(a);
   assert.equal(readF(`${file}.bad`, 'utf8'), '{"chats": [ broken');
 });
+
+test('model makers are read from model ids, and every logo the app names is shipped', () => {
+  const src = readText(new URL('../desktop/brands.js', import.meta.url), 'utf8'), ctx: any = {};
+  vm.runInNewContext(src, ctx);
+  assert.equal(ctx.brands.maker('nvidia/nemotron-3-ultra-550b-a55b:free').name, 'NVIDIA');
+  assert.equal(ctx.brands.maker('google/gemma-3-27b-it').name, 'Google');
+  assert.equal(ctx.brands.maker('openai/gpt-oss-120b').name, 'OpenAI');
+  assert.equal(ctx.brands.maker('sea-lion-v4'), null);
+  for (const [, f] of src.matchAll(/'([a-z]+(?:-color)?)'(?=[,\s\]}])/g)) {
+    if (/^(chat|span|img|logo)$/.test(f)) continue;
+    assert.ok(statSync(new URL(`../desktop/logos/${f}.svg`, import.meta.url)).isFile(), `logos/${f}.svg`);
+  }
+});
+
+import { searchAnswer, searchProviders } from '../desktop/search.js';
+test('web search tries Groq then Gemini, on the keys present, and keeps a few safe source links', async () => {
+  const cat: any = [{ id: 'groq', name: 'Groq', models: [{ id: 'qwen/x' }, { id: 'openai/gpt-oss-120b' }] }, { id: 'gemini', name: 'Google Gemini', models: [{ id: 'gemini-3.5-flash' }] }];
+  const keyStore = (o: Record<string, string>) => ({ get: (id: string) => o[id] });
+  assert.deepEqual(searchProviders(cat, keyStore({})), []);
+  const calls: string[] = [];
+  const fetchFn: any = async (url: string, init: any) => {
+    calls.push(url);
+    if (url.includes('groq')) return new Response('busy', { status: 429 });
+    assert.equal(init.headers['x-goog-api-key'], 'g-key'); // the key goes in a header, never the address
+    return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: 'It is sunny.' }] }, groundingMetadata: { groundingChunks: [
+      { web: { uri: 'https://a.example/x', title: 'A' } }, { web: { uri: 'javascript:alert(1)', title: 'bad' } }, { web: { uri: 'https://a.example/x', title: 'again' } },
+      ...[1, 2, 3, 4].map((i) => ({ web: { uri: `https://b${i}.example`, title: `B${i}` } }))] } }] }), { status: 200 });
+  };
+  const r: any = await searchAnswer(cat, keyStore({ groq: 'q-key', gemini: 'g-key' }), [{ role: 'user', content: 'weather?' }], fetchFn);
+  assert.equal(calls.length, 2);
+  assert.ok(calls[1].includes('/models/gemini-3.5-flash:generateContent') && !calls[1].includes('key='));
+  assert.equal(r.ok, true);
+  assert.equal(r.provider, 'Google Gemini');
+  assert.deepEqual(r.sources.map((s: any) => s.u), ['https://a.example/x', 'https://b1.example', 'https://b2.example', 'https://b3.example']);
+  const groqOk: any = async () => new Response(JSON.stringify({ choices: [{ message: { content: 'Hi【1†L8-L12】', executed_tools: [{ search_results: { results: [{ title: 'G', url: 'https://g.example' }] } }] } }] }));
+  const g: any = await searchAnswer(cat, keyStore({ groq: 'q' }), [{ role: 'user', content: 'x' }], groqOk);
+  assert.deepEqual([g.provider, g.model, g.text, g.sources[0].u], ['Groq', 'openai/gpt-oss-120b', 'Hi', 'https://g.example']);
+  const none: any = await searchAnswer(cat, keyStore({ groq: 'q' }), [{ role: 'user', content: 'x' }], async () => new Response('nope', { status: 500 }));
+  assert.equal(none.ok, false);
+  assert.match(none.reasons[0], /^Groq: 500/);
+});

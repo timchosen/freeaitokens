@@ -57,6 +57,15 @@
       <div class="chat" id="chat" aria-live="polite"><div class="empty" id="empty"><img src="icons/logo.svg" alt="" width="40" height="40"><p data-i18n="play_empty">Ask anything. Each answer shows which provider and model gave it, and how long it took.</p></div></div>
       <p class="status" id="imgNote" hidden><span data-i18n="no_image_providers">To create images, add Cloudflare or OpenRouter. Both are free.</span> <button class="copy" id="addImg" type="button" data-i18n="btn_add">Add a free provider</button></p>
       <p class="status voice-note" id="voiceNote" role="status" hidden></p>
+      <div class="talkover" id="talkover" hidden role="dialog" aria-modal="true" data-i18n-label="talk" aria-label="Talk">
+        <button class="orb" id="orb" type="button" data-i18n-label="talk_interrupt" aria-label="Interrupt"><i></i></button>
+        <p class="talk-state" id="talkState" aria-live="polite"></p>
+        <p class="talk-said" id="talkSaid"></p>
+        <div class="talk-bar">
+          <button class="round" id="talkMute" type="button" aria-pressed="false" data-i18n-label="talk_mute" data-i18n-title="talk_mute" aria-label="Mute" title="Mute"><svg viewBox="0 0 20 20" width="22" height="22" aria-hidden="true"><rect x="7" y="2.5" width="6" height="10" rx="3"/><path d="M4 9.5a6 6 0 0 0 12 0M10 15.5v2.5"/><path class="slash" d="M3 3l14 14"/></svg></button>
+          <button class="round end" id="talkEnd" type="button" data-i18n-label="talk_end" data-i18n-title="talk_end" aria-label="End" title="End"><svg viewBox="0 0 20 20" width="22" height="22" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15"/></svg></button>
+        </div>
+      </div>
       <form id="ask" class="composer">
         <label for="prompt" class="sr" data-i18n="your_message">Your message</label>
         <textarea id="prompt" rows="2" data-i18n-placeholder="prompt_placeholder" placeholder="Write a message… (⌘/Ctrl + Enter to send)"></textarea>
@@ -64,6 +73,7 @@
           <button class="icon-btn" id="attach" type="button" data-i18n-label="attach_file" data-i18n-title="attach_file" aria-label="Attach a document, data file or audio" title="Attach a document, data file or audio"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M10.5 4.5 5.8 9.2a1.6 1.6 0 0 0 2.3 2.3l5-5a3 3 0 0 0-4.3-4.3l-5 5a4.4 4.4 0 0 0 6.2 6.2l4-4"/></svg></button>
           <button class="icon-btn mic" id="mic" type="button" aria-pressed="false" data-i18n-label="mic_start" data-i18n-title="mic_start" aria-label="Speak your message" title="Speak your message"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="5.5" y="1.5" width="5" height="8" rx="2.5"/><path d="M3 7.5a5 5 0 0 0 10 0M8 12.5v2"/></svg></button>
           <button class="talk" id="talk" type="button" aria-pressed="false" data-i18n-title="talk_title" title="Talk mode: speak, send, and hear the answer"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2.5 6v4h2.5l3.5 3V3L5 6zM11 5.5a3.5 3.5 0 0 1 0 5"/></svg><span data-i18n="talk">Talk</span></button>
+          <button class="talk" id="web" type="button" aria-pressed="false" data-i18n-title="web_title" title="Search the web for answers"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M2 8h12M8 2c1.8 1.7 2.6 3.7 2.6 6S9.8 12.3 8 14C6.2 12.3 5.4 10.3 5.4 8S6.2 3.7 8 2z"/></svg><span data-i18n="web">Search</span></button>
           <div class="range" role="group" data-i18n-label="mode_label" aria-label="Mode"><button type="button" data-mode="auto" aria-pressed="true" data-i18n="mode_auto">Auto</button><button type="button" data-mode="chat" aria-pressed="false" data-i18n="mode_chat">Chat</button><button type="button" data-mode="image" aria-pressed="false" data-i18n="mode_image">Image</button></div>
           <label class="pick"><span class="sr" data-i18n="model">Model</span><select id="model"></select></label>
           <button class="btn" id="send" type="submit" data-i18n="send">Send</button>
@@ -193,6 +203,7 @@
 </main>
 <script src="t.js"></script>
 <script src="md.js"></script>
+<script src="brands.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
