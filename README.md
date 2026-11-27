@@ -4,6 +4,8 @@
 
 Up to about **7 billion free AI tokens a month**. AI providers each give a small free allowance; freeaitokens adds many of them together behind one local endpoint, picks the best model available for every request, and moves to another one when a provider hits its limit. Use it from your own scripts and apps, chat clients, editors or coding agents.
 
+![FreeAITokens in 16 seconds: free tokens from many providers, one API, one app](media/readme-demo.gif)
+
 ```bash
 npx freeaitokens
 ```
