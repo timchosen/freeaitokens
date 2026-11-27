@@ -75,3 +75,13 @@ export function parseCatalogue(json: unknown): Provider[] {
     return p as Provider;
   });
 }
+
+// The catalogue narrowed to what a model name asks for: `provider` keeps that provider, `provider/model` that
+// one model (an unknown model keeps the provider). Any other name (free, a tool's own default) gives null.
+export function narrowTo(catalogue: Provider[], name: string): Provider[] | null {
+  const i = name.indexOf('/');
+  const p = catalogue.find((x) => x.id === (i < 0 ? name : name.slice(0, i)));
+  if (!p) return null;
+  const m = i < 0 ? undefined : p.models.find((x) => x.id === name.slice(i + 1));
+  return [m ? { ...p, models: [m] } : p];
+}

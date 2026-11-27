@@ -136,3 +136,12 @@ test('claude spec names the model, so Claude Code does not show a paid Claude mo
   // An unknown name makes Claude Code assume a 1M-token window; most free models hold about 200K.
   assert.equal(s.env.CLAUDE_CODE_MAX_CONTEXT_TOKENS, '200000');
 });
+
+test('a chosen provider is passed to the tool as its model name', () => {
+  const s = launchSpec('claude', 4949, TOKEN, [], '', 'groq');
+  assert.equal(s.env.ANTHROPIC_MODEL, 'groq');
+  assert.equal(s.env.ANTHROPIC_SMALL_FAST_MODEL, 'groq');
+  assert.ok(launchSpec('codex', 4949, TOKEN, [], '', 'groq').args.includes('model="groq"'));
+  assert.deepEqual(launchSpec('aider', 4949, TOKEN, [], '', 'groq').args.slice(0, 2), ['--model', 'openai/groq']);
+  assert.equal(launchSpec('gemini', 4949, TOKEN, [], '/tmp/x', 'groq').env.GEMINI_MODEL, 'groq');
+});

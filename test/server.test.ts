@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import { startServer, keepServing } from '../src/node/server.ts';
+import { parseCatalogue } from '../src/core/catalogue.ts';
 import { makeDeps, setUpstream, chatJson, chatSse, auth, url, post, srv, token, upstreamBodies } from './helpers.ts';
 
 
@@ -137,4 +138,21 @@ test('a chunk the converter cannot read ends that answer, not the server', async
   setUpstream(() => chatJson('still here'));
   const j: any = await (await post('/v1/chat/completions', { messages: [{ role: 'user', content: 'x' }] })).json();
   assert.equal(j.choices[0].message.content, 'still here');
+});
+
+test('a model name that names a provider keeps the request on that provider; other names route freely', async () => {
+  setUpstream(() => chatJson('hi'));
+  const model = (id: string, quality: number) => ({ id, context: 100000, tools: true, images: false, quality });
+  const prov = (id: string, models: object[]) => ({ id, name: id, baseUrl: `https://${id}.example/v1`, keyless: true, paid: false, terms: 'ok', steps: [], models });
+  const deps = { ...makeDeps(), catalogue: parseCatalogue([prov('best', [model('top', 0.9)]), prov('low', [model('a', 0.2), model('b', 0.1)])]) };
+  const s2 = await startServer(deps, 0);
+  try {
+    const ask = (m: string) => fetch(`http://127.0.0.1:${s2.port}/v1/chat/completions`, { method: 'POST', headers: auth(), body: JSON.stringify({ model: m, messages: [{ role: 'user', content: 'x' }] }) });
+    const served = async (m: string) => (await ask(m)).headers.get('x-freeaitokens-served-by');
+    assert.equal(await served('free'), 'best/top', 'free routing prefers the better model');
+    assert.equal(await served('FreeAITokens'), 'best/top', 'a label that names no provider routes as before');
+    for (let i = 0; i < 3; i++) assert.match((await served('low'))!, /^low\//, 'stays on the named provider');
+    assert.equal(await served('low/b'), 'low/b', 'provider/model picks that model');
+    assert.match((await served('low/no-such-model'))!, /^low\//, 'an unknown model keeps the provider');
+  } finally { await s2.close(); }
 });

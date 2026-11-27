@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { banner, parseArgs, HELP } from '../src/node/cli.ts';
+import { banner, parseArgs, HELP, checkUse } from '../src/node/cli.ts';
 
 const run = (...args: string[]) => spawnSync(process.execPath, ['--import', 'tsx', 'src/node/cli.ts', ...args], {
   encoding: 'utf8', env: { ...process.env, FREEAITOKENS_HOME: mkdtempSync(join(tmpdir(), 'ft-c-')), FREEAITOKENS_KEYS: 'file', FREEAITOKENS_CATALOGUE: 'bundled' },
@@ -56,4 +56,21 @@ test('first-run banner contains the endpoint URL, the token once, and "freeaitok
 test('banner leads with adding a key when nothing is usable', () => {
   const b = banner(4949, 'ft-x', { keyless: 0, keyed: 0, backend: 'keychain' });
   assert.match(b.split('\n')[0] + b.split('\n')[1], /freeaitokens add/);
+});
+
+test('parseArgs reads --use before the tool\'s own arguments', () => {
+  assert.deepEqual(parseArgs(['claude', '--use', 'groq', '-p', 'hi']), { command: 'claude', rest: ['-p', 'hi'], port: 4949, freeOnly: false, paidCap: 200, use: 'groq' });
+  assert.throws(() => parseArgs(['claude', '--use']), /--use needs a provider/);
+  assert.match(HELP, /--use <provider>/);
+});
+
+test('checkUse accepts a provider or provider/model that is usable, and explains what is wrong otherwise', () => {
+  const cat: any = [{ id: 'groq', name: 'Groq', keyless: false, models: [{ id: 'm1' }] }, { id: 'kilo', name: 'Kilo', keyless: true, models: [{ id: 'k' }] }];
+  const has = (id: string) => (id === 'groq' ? 'key' : null);
+  assert.equal(checkUse(cat, has, 'groq'), null);
+  assert.equal(checkUse(cat, has, 'groq/m1'), null);
+  assert.equal(checkUse(cat, has, 'kilo'), null);
+  assert.match(checkUse(cat, has, 'nope')!, /No provider "nope".*groq, kilo/s);
+  assert.match(checkUse(cat, has, 'groq/zzz')!, /Groq has no free model "zzz".*m1/s);
+  assert.match(checkUse(cat, () => null, 'groq')!, /freeaitokens add/);
 });

@@ -28,6 +28,8 @@ Usage:
 Options:
   --port <n>       Port for the local endpoint (default ${DEFAULT_PORT})
   --free-only      Never use paid keys
+  --use <provider> With a tool: keep to one provider, or provider/model (see \`freeaitokens list\`).
+                   There is no switching when it runs out.
   --paid-cap <n>   Most paid requests per day (default 200)
   -h, --help       Show this help
 
@@ -36,7 +38,7 @@ Rules: use your own keys, one account per provider, and never share the endpoint
 const LAUNCHERS = new Set(Object.keys(LAUNCH_TOOLS));
 const COMMANDS = new Set(['serve', 'add', 'list', 'remove', 'setup', ...LAUNCHERS]);
 
-export interface Args { command: string; rest: string[]; port: number; freeOnly: boolean; paidCap: number; help?: boolean; undo?: boolean }
+export interface Args { command: string; rest: string[]; port: number; freeOnly: boolean; paidCap: number; help?: boolean; undo?: boolean; use?: string }
 
 export function parseArgs(argv: string[]): Args {
   const a: Args = { command: 'serve', rest: [], port: DEFAULT_PORT, freeOnly: false, paidCap: 200 };
@@ -51,11 +53,12 @@ export function parseArgs(argv: string[]): Args {
     const x = argv[i];
     // After a launcher such as `claude`, our flags are read until the first argument that is not ours; the rest belongs to the tool.
     if (passThrough) { a.rest.push(x); continue; }
-    const ours = ['--port', '--paid-cap', '--free-only', '--undo', '-h', '--help'].includes(x);
+    const ours = ['--port', '--paid-cap', '--free-only', '--use', '--undo', '-h', '--help'].includes(x);
     if (command && LAUNCHERS.has(command) && !ours) { passThrough = true; a.rest.push(x); continue; }
     if (x === '--port') a.port = num('--port', argv[++i]);
     else if (x === '--paid-cap') a.paidCap = num('--paid-cap', argv[++i]);
     else if (x === '--free-only') a.freeOnly = true;
+    else if (x === '--use') { const v = argv[++i]; if (!v || v.startsWith('-')) throw new Error('--use needs a provider, such as --use groq.'); a.use = v; }
     else if (x === '--undo') a.undo = true;
     else if (x === '-h' || x === '--help') a.help = true;
     else if (!command) command = x;
@@ -97,11 +100,21 @@ export function makeDeps(catalogue: Provider[], keys: KeyStore, a: Args): RouteD
   };
 }
 
+// Why `--use <name>` can't work, or null when it can.
+export function checkUse(catalogue: Provider[], key: (id: string) => string | null | undefined, use: string): string | null {
+  const i = use.indexOf('/');
+  const p = catalogue.find((x) => x.id === (i < 0 ? use : use.slice(0, i)));
+  if (!p) return `No provider "${i < 0 ? use : use.slice(0, i)}". Providers: ${catalogue.map((x) => x.id).join(', ')}.`;
+  if (i >= 0 && !p.models.some((m) => m.id === use.slice(i + 1))) return `${p.name} has no free model "${use.slice(i + 1)}". Its models: ${p.models.map((m) => m.id).join(', ')}.`;
+  if (!p.keyless && !key(p.id)) return `${p.name} needs a key first. Run \`freeaitokens add\`.`;
+  return null;
+}
+
 const fail = (msg: string): never => { process.stderr.write(msg + '\n'); process.exit(1); };
 
 async function launch(tool: LaunchTool, a: Args, deps: RouteDeps): Promise<never> {
   const srv: ServerHandle = await startServer(deps, a.port);
-  const spec = launchSpec(tool, srv.port, localToken(), a.rest, stateDir());
+  const spec = launchSpec(tool, srv.port, localToken(), a.rest, stateDir(), a.use ?? 'free');
   for (const [f, text] of Object.entries(spec.files ?? {})) { mkdirSync(dirname(f), { recursive: true }); writeFileSync(f, text); }
   const child = spawn(spec.cmd, spec.args, { stdio: 'inherit', env: { ...process.env, ...spec.env } });
   // A reused endpoint belongs to another session: take it over if that session ends first, and leave its state alone.
@@ -155,6 +168,8 @@ export async function main(argv: string[]): Promise<void> {
     }
     default: {
       if (LAUNCHERS.has(a.command)) {
+        const wrong = a.use ? checkUse(catalogue, (id) => keys.get(id), a.use) : null;
+        if (wrong) return fail(wrong);
         const deps = makeDeps(catalogue, keys, a);
         void update.then((c) => { if (c) deps.catalogue = c; });
         return launch(a.command as LaunchTool, a, deps);

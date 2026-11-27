@@ -8,18 +8,19 @@ export interface LaunchSpec { cmd: string; args: string[]; env: Record<string, s
 
 // Kilo (an OpenCode fork) reads an inline config layer from an env var, so nothing is written to disk.
 // OpenCode 2.x no longer reads that layer, so OpenCode uses `setup opencode` instead.
-const inlineConfig = (base: string) => JSON.stringify({
-  model: 'freeaitokens/free',
+const inlineConfig = (base: string, model: string) => JSON.stringify({
+  model: `freeaitokens/${model}`,
   provider: { freeaitokens: {
     npm: '@ai-sdk/openai-compatible', name: 'freeaitokens (free models)',
     options: { baseURL: `${base}/v1`, apiKey: '{env:FREEAITOKENS_TOKEN}' },
-    models: { free: { name: 'Best free model', tool_call: true, limit: { context: 262144, output: 32768 } } },
+    models: { [model]: { name: model === 'free' ? 'Best free model' : model, tool_call: true, limit: { context: 262144, output: 32768 } } },
   } },
 });
 export type FileTool = 'opencode';
 
 // Launchers point a tool at the local endpoint for one session; the user's own config is untouched.
-export function launchSpec(tool: LaunchTool, port: number, token: string, args: string[], stateDir = ''): LaunchSpec {
+// `use` is the model name the tool sends: 'free' lets the endpoint pick; a provider id (or provider/model) keeps to it.
+export function launchSpec(tool: LaunchTool, port: number, token: string, args: string[], stateDir = '', use = 'free'): LaunchSpec {
   const base = `http://127.0.0.1:${port}`;
   switch (tool) {
     case 'gemini': {
@@ -27,26 +28,27 @@ export function launchSpec(tool: LaunchTool, port: number, token: string, args: 
       const settings = join(stateDir, 'gemini-system-settings.json');
       return {
         cmd: 'gemini', args,
-        env: { GOOGLE_GEMINI_BASE_URL: base, GEMINI_API_KEY: token, GEMINI_MODEL: 'free', GEMINI_CLI_SYSTEM_SETTINGS_PATH: settings },
-        files: { [settings]: JSON.stringify({ security: { auth: { selectedType: 'gemini-api-key' } }, model: { name: 'free' } }, null, 2) + '\n' },
+        env: { GOOGLE_GEMINI_BASE_URL: base, GEMINI_API_KEY: token, GEMINI_MODEL: use, GEMINI_CLI_SYSTEM_SETTINGS_PATH: settings },
+        files: { [settings]: JSON.stringify({ security: { auth: { selectedType: 'gemini-api-key' } }, model: { name: use } }, null, 2) + '\n' },
       };
     }
     case 'goose':
-      return { cmd: 'goose', args: ['session', ...args], env: { GOOSE_PROVIDER: 'openai', GOOSE_MODEL: 'free', OPENAI_HOST: base, OPENAI_BASE_PATH: 'v1/chat/completions', OPENAI_API_KEY: token } };
+      return { cmd: 'goose', args: ['session', ...args], env: { GOOSE_PROVIDER: 'openai', GOOSE_MODEL: use, OPENAI_HOST: base, OPENAI_BASE_PATH: 'v1/chat/completions', OPENAI_API_KEY: token } };
     case 'qwen':
-      return { cmd: 'qwen', args: ['--auth-type', 'openai', '--openai-base-url', `${base}/v1`, '-m', 'free', ...args], env: { OPENAI_API_KEY: token } };
+      return { cmd: 'qwen', args: ['--auth-type', 'openai', '--openai-base-url', `${base}/v1`, '-m', use, ...args], env: { OPENAI_API_KEY: token } };
     case 'aider':
-      return { cmd: 'aider', args: ['--model', 'openai/free', '--no-show-model-warnings', ...args], env: { OPENAI_API_BASE: `${base}/v1`, OPENAI_API_KEY: token } };
+      return { cmd: 'aider', args: ['--model', `openai/${use}`, '--no-show-model-warnings', ...args], env: { OPENAI_API_BASE: `${base}/v1`, OPENAI_API_KEY: token } };
     case 'kilo':
-      return { cmd: 'kilo', args, env: { KILO_CONFIG_CONTENT: inlineConfig(base), FREEAITOKENS_TOKEN: token } };
+      return { cmd: 'kilo', args, env: { KILO_CONFIG_CONTENT: inlineConfig(base, use), FREEAITOKENS_TOKEN: token } };
   }
   if (tool === 'claude') {
+    const label = use === 'free' ? 'FreeAITokens' : use;
     // Empty ANTHROPIC_API_KEY so a real key in the user's shell is never sent to the local endpoint.
     // The model names are only labels: the endpoint picks a free model per request. Without them Claude Code
     // shows its own default ("Opus …"), which is not what answers.
     // For a name it doesn't know, Claude Code assumes a 1M-token window; 200K is what most free models hold,
     // so it compacts the conversation before they overflow.
-    return { cmd: 'claude', args, env: { ANTHROPIC_BASE_URL: base, ANTHROPIC_AUTH_TOKEN: token, ANTHROPIC_API_KEY: '', ANTHROPIC_MODEL: 'FreeAITokens', ANTHROPIC_SMALL_FAST_MODEL: 'FreeAITokens', CLAUDE_CODE_MAX_CONTEXT_TOKENS: '200000' } };
+    return { cmd: 'claude', args, env: { ANTHROPIC_BASE_URL: base, ANTHROPIC_AUTH_TOKEN: token, ANTHROPIC_API_KEY: '', ANTHROPIC_MODEL: label, ANTHROPIC_SMALL_FAST_MODEL: label, CLAUDE_CODE_MAX_CONTEXT_TOKENS: '200000' } };
   }
   const c = (kv: string) => ['-c', kv];
   return {
@@ -57,7 +59,7 @@ export function launchSpec(tool: LaunchTool, port: number, token: string, args: 
       ...c('model_providers.freeaitokens.wire_api="responses"'),
       ...c('model_providers.freeaitokens.env_key="FREEAITOKENS_TOKEN"'),
       ...c('model_provider="freeaitokens"'),
-      ...c('model="free"'),
+      ...c(`model="${use}"`),
       ...args,
     ],
     env: { FREEAITOKENS_TOKEN: token },

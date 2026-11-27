@@ -8,6 +8,7 @@ import { fromResponses, toResponses, toResponsesStream, responsesError } from '.
 import { fromAnthropic, toAnthropic, toAnthropicStream, countTokens, anthropicError } from '../core/anthropic.js';
 import { fromOllamaChat, fromOllamaGenerate, toOllamaChat, toOllamaGenerate, toOllamaChatStream, toOllamaGenerateStream, ollamaError, ollamaShow, OLLAMA_TAGS } from '../core/ollama.js';
 import { fromGemini, toGemini, toGeminiStream, geminiCount, geminiError, GEMINI_MODEL } from '../core/gemini.js';
+import { narrowTo } from '../core/catalogue.js';
 import { localToken, saveState, loadState } from './state.js';
 import { LimitTracker } from '../core/limits.js';
 import { routeMedia, NoProviderError, target, type MediaBody, type MediaCandidate } from '../core/media.js';
@@ -177,7 +178,9 @@ export function makeHandler(deps: RouteDeps, token: string, formats: Record<stri
       if (fmt.direct) return send(res, 200, fmt.direct(body));
       const chat = fmt.toChat(body, path);
       const requested = typeof body?.model === 'string' ? body.model : 'free';
-      const { response, candidate } = await route(chat, deps);
+      // A tool can ask for one provider by naming it as the model (`freeaitokens claude --use groq` does).
+      const only = narrowTo(deps.catalogue, requested);
+      const { response, candidate } = await route(chat, only ? { ...deps, catalogue: only } : deps);
       // Ids only (header-safe); the app's playground shows who answered.
       const servedBy = { 'x-freeaitokens-served-by': `${candidate.provider.id}/${candidate.model.id}`.replace(/[^\x20-\x7e]/g, "") };
       if (response.status !== 200) {

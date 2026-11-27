@@ -36,6 +36,8 @@ The 7 billion figure adds up the free limits providers publish, counting 2,000 t
 | Anything OpenAI-compatible | Base URL `http://127.0.0.1:4949/v1`, model `free`, key from the startup banner |
 | Anthropic, Gemini or Ollama clients | Base URL `http://127.0.0.1:4949`, the same key |
 
+To keep a session on one provider, add `--use` before the tool's own arguments: `npx freeaitokens claude --use cerebras`, or `--use provider/model` for one model (`npx freeaitokens list` shows them). There is then no switching when that provider runs out, and a provider with a small per-minute allowance, such as Groq, can be too small for a coding agent's prompts. Any other client can do the same by sending the provider's id as the model name.
+
 The launchers only affect that one session and write nothing to your tool's config. Run the tool normally and it uses your own account as before. `setup opencode` adds a provider next to your existing ones and keeps a backup; `--undo` restores it.
 
 ## What it does
