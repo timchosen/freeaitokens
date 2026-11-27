@@ -1,6 +1,8 @@
 # freeaitokens
 
-Up to about **7 billion free AI tokens a month**. AI providers each give a small free allowance; freeaitokens adds 27 of them together behind one local endpoint, picks the best model available for every request, and moves to another one when a provider hits its limit. Use it from your own scripts and apps, chat clients, editors or coding agents.
+[Website](https://freeaitokens.co) · [Download the app](https://freeaitokens.co/download) · [Use it with your tools](#use-it-with-your-tools)
+
+Up to about **7 billion free AI tokens a month**. AI providers each give a small free allowance; freeaitokens adds many of them together behind one local endpoint, picks the best model available for every request, and moves to another one when a provider hits its limit. Use it from your own scripts and apps, chat clients, editors or coding agents.
 
 ```bash
 npx freeaitokens
@@ -12,7 +14,9 @@ That works straight away, with no account, on providers that need no key. Each f
 npx freeaitokens add
 ```
 
-Prefer an app? The [desktop app](#desktop-app) runs the same endpoint from your menu bar or system tray.
+Prefer an app? The [desktop app](#desktop-app) runs the same endpoint from your menu bar or system tray, with a playground for chat, images and speech.
+
+![The FreeAITokens desktop app](site/static/shots/app-light.webp)
 
 The 7 billion figure adds up the free limits providers publish, counting 2,000 tokens a request where only a request limit is published. Most of it comes from a few large allowances (Cerebras alone is most of it), and you get it only with a key for each provider. Several providers publish no limit and count as zero.
 
