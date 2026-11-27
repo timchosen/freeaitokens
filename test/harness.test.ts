@@ -127,3 +127,12 @@ test('manual setup gives Zed, JetBrains and VS Code their own steps, and explain
   assert.match(manualSetup('cursor', 4949, TOKEN), /Cursor's servers/);
   assert.match(manualSetup('cline', 4949, TOKEN), new RegExp(TOKEN));
 });
+
+test('claude spec names the model, so Claude Code does not show a paid Claude model that is not answering', () => {
+  const s = launchSpec('claude', 4949, TOKEN, []);
+  assert.equal(s.env.ANTHROPIC_MODEL, 'FreeAITokens');
+  // Claude Code's background requests use a second, small model: named too, so nothing is labelled Haiku.
+  assert.equal(s.env.ANTHROPIC_SMALL_FAST_MODEL, 'FreeAITokens');
+  // An unknown name makes Claude Code assume a 1M-token window; most free models hold about 200K.
+  assert.equal(s.env.CLAUDE_CODE_MAX_CONTEXT_TOKENS, '200000');
+});

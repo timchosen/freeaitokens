@@ -42,7 +42,11 @@ export function launchSpec(tool: LaunchTool, port: number, token: string, args: 
   }
   if (tool === 'claude') {
     // Empty ANTHROPIC_API_KEY so a real key in the user's shell is never sent to the local endpoint.
-    return { cmd: 'claude', args, env: { ANTHROPIC_BASE_URL: base, ANTHROPIC_AUTH_TOKEN: token, ANTHROPIC_API_KEY: '' } };
+    // The model names are only labels: the endpoint picks a free model per request. Without them Claude Code
+    // shows its own default ("Opus …"), which is not what answers.
+    // For a name it doesn't know, Claude Code assumes a 1M-token window; 200K is what most free models hold,
+    // so it compacts the conversation before they overflow.
+    return { cmd: 'claude', args, env: { ANTHROPIC_BASE_URL: base, ANTHROPIC_AUTH_TOKEN: token, ANTHROPIC_API_KEY: '', ANTHROPIC_MODEL: 'FreeAITokens', ANTHROPIC_SMALL_FAST_MODEL: 'FreeAITokens', CLAUDE_CODE_MAX_CONTEXT_TOKENS: '200000' } };
   }
   const c = (kv: string) => ['-c', kv];
   return {
